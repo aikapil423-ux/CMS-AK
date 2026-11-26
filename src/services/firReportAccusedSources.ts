@@ -1,4 +1,4 @@
-import fs from 'node:fs/promises';
+import { readRuntimeJson } from "@/lib/runtimeJsonStore";
 import path from 'node:path';
 import type { FIRItem, UserSession } from '@/types';
 import type { UniversalEvidenceRecord } from '@/types/evidence';
@@ -11,7 +11,7 @@ export async function firReportAccusedSources(fir: FIRItem, user: UserSession) {
 export async function firReportSources(fir: FIRItem, user: UserSession) {
   // The authoritative FIR list remains available even if no processed evidence exists.
   let records: UniversalEvidenceRecord[] = [];
-  try { records = JSON.parse(await fs.readFile(path.join(process.cwd(), 'prisma', 'processed-evidence-store.json'), 'utf8')); }
+  try { records = await readRuntimeJson(path.join(process.cwd(), 'prisma', 'processed-evidence-store.json')); }
   catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
   if (!Array.isArray(records)) throw new Error('Invalid processed evidence store.');
   const accessible = records.filter(record => user.role === 'SUPER_ADMIN' || evidenceOwner(record) === user.id);

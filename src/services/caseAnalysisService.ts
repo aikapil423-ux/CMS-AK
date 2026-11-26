@@ -1,7 +1,7 @@
+import { readRuntimeJson, writeRuntimeJson } from "@/lib/runtimeJsonStore";
 import { processingAIAvailable, PROCESSING_MODEL, processWithAI } from "@/lib/geminiProcessing";
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { randomUUID } from 'node:crypto';
 import type { FIRItem, UserSession } from '@/types';
 import type { UniversalEvidenceRecord } from '@/types/evidence';
 import type { CaseAnalysis, CaseSource } from '@/types/caseAnalysis';
@@ -23,7 +23,7 @@ export async function authorizedAnalysisFir(firId: string, user: UserSession) {
 }
 
 export async function readCaseAnalysis(firId: string, user: UserSession): Promise<CaseAnalysis | null> {
-  try { return JSON.parse(await fs.readFile(fileFor(firId, user.id), 'utf8')); }
+  try { return await readRuntimeJson<CaseAnalysis>(fileFor(firId, user.id)); }
   catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null; throw error; }
 }
 
@@ -72,7 +72,7 @@ async function analyze(fir: FIRItem, user: UserSession, force: boolean): Promise
   fir = latest;
   let evidence: UniversalEvidenceRecord[] = [];
   try {
-    evidence = JSON.parse(await fs.readFile(path.join(process.cwd(), 'prisma', 'processed-evidence-store.json'), 'utf8'));
+    evidence = await readRuntimeJson(path.join(process.cwd(), 'prisma', 'processed-evidence-store.json'));
     if (!Array.isArray(evidence)) throw new Error('Invalid evidence store.');
   } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
   const caseIds = new Set([fir.id, fir.sourceComplaintId].filter(Boolean));
@@ -124,9 +124,8 @@ async function analyze(fir: FIRItem, user: UserSession, force: boolean): Promise
   }
   result.conflicts.sort((a, b) => ['HIGH', 'MEDIUM', 'LOW'].indexOf(a.severity) - ['HIGH', 'MEDIUM', 'LOW'].indexOf(b.severity));
   await fs.mkdir(root(), { recursive: true });
-  const target = fileFor(fir.id, user.id), temp = target + '.' + randomUUID() + '.tmp';
-  try { await fs.writeFile(temp, JSON.stringify(result, null, 2)); await fs.rename(temp, target); }
-  finally { await fs.unlink(temp).catch(() => {}); }
+  const target = fileFor(fir.id, user.id);
+  await writeRuntimeJson(target, result);
   return result;
 }
 

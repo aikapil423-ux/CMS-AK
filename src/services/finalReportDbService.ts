@@ -3,6 +3,7 @@ import { buildFinalReport, validateFinalReport } from '@/lib/finalReport';
 import { finalReportRequestSchema } from '@/lib/finalReportSchema';
 import type { ComplaintReportItem, FIRItem } from '@/types';
 import { DEMO_USERS } from '@/lib/mockData';
+import { readMasterLocationReferences } from './masterLocationReferences';
 
 export class FinalReportConflict extends Error {}
 
@@ -10,7 +11,9 @@ export const finalReportDbService = {
   async notifications(userId: string) {
     const user = DEMO_USERS.find(u => u.id === userId);
     if (!user) return [];
-    const rows = await prisma.firFinalReport.findMany({ where: { policeStation: user.stationName, state: { in: ['SENT_TO_SHO', 'SHO_VIEWED', 'REJECTED'] } }, orderBy: { updatedAt: 'desc' } });
+    const locations = await readMasterLocationReferences();
+    const station = locations.station(user.stationName, user.district, 'id');
+    const rows = await prisma.firFinalReport.findMany({ where: { policeStation: { in: [user.stationName, station] }, state: { in: ['SENT_TO_SHO', 'SHO_VIEWED', 'REJECTED'] } }, orderBy: { updatedAt: 'desc' } });
     return rows.filter(row => {
       if (user.role === 'SHO') return row.state !== 'REJECTED';
       const fir = JSON.parse(row.firSnapshotJson) as FIRItem;
@@ -18,11 +21,12 @@ export const finalReportDbService = {
     }).map(row => ({ id: row.id, firId: row.firId, title: `${row.firNumber} — ${row.state === 'REJECTED' ? 'Report returned by SHO' : 'Final report for SHO review'}`, message: (JSON.parse(row.reportJson) as ComplaintReportItem).finalReportWorkflow?.rejectionReason || 'View the report before approving or rejecting.', unread: row.state !== 'SHO_VIEWED' }));
   },
   async review(id: string, firId: string, expectedVersion: number, authorId: string, action: 'VIEW_SHO' | 'APPROVE_SHO' | 'REJECT_SHO', reason?: string) {
+    const locations = await readMasterLocationReferences();
     return prisma.$transaction(async tx => {
       const stored = await tx.firFinalReport.findUnique({ where: { id } });
       const actor = DEMO_USERS.find(u => u.id === authorId);
       if (!stored || stored.firId !== firId || stored.version !== expectedVersion) throw new FinalReportConflict('Report changed. Reload before review.');
-      if (!actor || actor.role !== 'SHO' || actor.stationName !== stored.policeStation) throw new FinalReportConflict('Only the SHO of this police station can review this report.');
+      if (!actor || actor.role !== 'SHO' || actor.stationName !== locations.location(stored, 'name').policeStation) throw new FinalReportConflict('Only the SHO of this police station can review this report.');
       const report = JSON.parse(stored.reportJson) as ComplaintReportItem;
       const workflow = report.finalReportWorkflow!;
       if (action === 'VIEW_SHO' && stored.state === 'SHO_VIEWED' && workflow.viewedBy === authorId) return report;
@@ -46,9 +50,18 @@ export const finalReportDbService = {
     });
   },
   async stationReports(policeStation?: string, district?: string) {
-    const rows = await prisma.firFinalReport.findMany({ where: { policeStation, district }, orderBy: { updatedAt: 'desc' } });
+    const locations = await readMasterLocationReferences();
+    const rows = await prisma.firFinalReport.findMany({
+      where: district ? { district: { in: [district, locations.district(district, 'id')] } } : undefined,
+      orderBy: { updatedAt: 'desc' },
+    });
     const seen = new Set<string>();
-    return rows.filter(row => { if (seen.has(row.firId)) return false; seen.add(row.firId); return true; })
+    return rows.filter(row => {
+      if (policeStation && locations.location(row, 'name').policeStation !== policeStation) return false;
+      if (seen.has(row.firId)) return false;
+      seen.add(row.firId);
+      return true;
+    })
       .map(row => ({ firNumber: row.firNumber, report: JSON.parse(row.reportJson) as ComplaintReportItem }));
   },
   async history(firId: string) {
@@ -63,6 +76,7 @@ export const finalReportDbService = {
     const errors = validateFinalReport(body.data);
     if (errors.length) throw new Error(errors.join(' '));
     if (new Set(body.data.accused.map(a => a.accusedId)).size !== body.data.accused.length) throw new Error('Duplicate accused identifiers.');
+    const locations = await readMasterLocationReferences();
     return prisma.$transaction(async tx => {
       const stored = await tx.firFinalReport.findUnique({ where: { id: body.id } });
       if (stored && stored.firId !== body.fir.id) throw new FinalReportConflict('Report belongs to a different FIR.');
@@ -72,7 +86,8 @@ export const finalReportDbService = {
       const previous = stored ? JSON.parse(stored.reportJson) as ComplaintReportItem : undefined;
       const report = { ...buildFinalReport(body.fir as unknown as FIRItem, body.data, body.author, previous, body.previewHtml), id: body.id };
       const values = {
-        firId: body.fir.id, firNumber: body.fir.firNumber, policeStation: body.fir.policeStation, district: body.fir.district,
+        firId: body.fir.id, firNumber: body.fir.firNumber,
+        ...locations.location({ policeStation: body.fir.policeStation, district: body.fir.district }, 'id'),
         reportNumber: body.data.reportNo, reportType: body.data.formType,
         reportCategory: body.data.formType === 'CHARGESHEET' ? 'CHALLAN' : 'FINAL_REPORT',
         finalReportReason: body.data.formType === 'CHARGESHEET' ? '' : body.data.finalReportReason,

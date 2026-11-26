@@ -1,5 +1,5 @@
+import { readRuntimeJson } from "@/lib/runtimeJsonStore";
 import { processingAIAvailable, processWithAI } from "@/lib/geminiProcessing";
-import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { FIRItem, UserSession } from '@/types';
 import type { UniversalEvidenceRecord } from '@/types/evidence';
@@ -45,7 +45,7 @@ export function firScrutinyFields(fir: FIRItem, accusedIndex = 0): ScrutinyValue
 export async function prepareScrutinyFields(fir: FIRItem, user: UserSession, accusedIndex = 0) {
   const fields = firScrutinyFields(fir,accusedIndex), warnings: string[] = [];
   let evidence: UniversalEvidenceRecord[] = [];
-  try { evidence = JSON.parse(await fs.readFile(path.join(process.cwd(),'prisma','processed-evidence-store.json'),'utf8')); }
+  try { evidence = await readRuntimeJson(path.join(process.cwd(),'prisma','processed-evidence-store.json')); }
   catch(e) { if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e; }
   evidence = evidence.filter(e=>(e.caseId===fir.id || Boolean(fir.sourceComplaintId && e.caseId===fir.sourceComplaintId)) && (user.role==='SUPER_ADMIN' || evidenceOwner(e)===user.id));
   if (evidence.some(e=>e.processingStatus!=='COMPLETED')) warnings.push('Some documents are not fully processed. Missing facts remain blank.');

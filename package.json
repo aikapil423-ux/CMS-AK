@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "predev": "npm run whisper:setup",
-    "build": "next build",
+    "predev": "node scripts/generate-runtime-prisma.mjs --dev && npm run whisper:setup",
+    "build": "node scripts/generate-runtime-prisma.mjs && next build",
     "start": "next start",
     "prestart": "npm run whisper:setup",
     "whisper:setup": "node scripts/setup-whisper.mjs",

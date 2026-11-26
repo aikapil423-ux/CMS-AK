@@ -1,7 +1,8 @@
+import { readRuntimeJson, writeRuntimeJson } from "../lib/runtimeJsonStore";
+import { readMasterLocationReferences } from "@/services/masterLocationReferences";
 import {readFirRecords} from "@/services/firRepository";
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import {randomUUID} from 'node:crypto';
 import {z} from 'zod';
 import type {ComplaintItem,UserSession} from '@/types';
 import {canViewComplaint,isShoOrSuperior,canDeleteDocument,canEditDocument,isUserAssignedEo,isComplaintAssignedToEo} from '@/utils/complaintPermissions';
@@ -16,7 +17,7 @@ const row=z.object({id:z.string().min(1).max(200)}).passthrough();
 const complaintInput=item.extend({attachments:z.array(row.extend({name:z.string(),dataUrl:z.string().optional()})).optional(),documents:z.array(row.extend({fileName:z.string()})).optional(),reports:z.array(row.extend({title:z.string()})).optional(),enquiryNotes:z.array(row).optional(),timeline:z.array(row).optional(),auditTrail:z.array(row).optional(),accusedList:z.array(z.object({id:z.string().optional(),name:z.string()}).passthrough()).optional()});
 const request=z.object({operation:z.string().min(1),changes:z.array(z.object({complaint:complaintInput,expectedVersion:z.number().int().nonnegative()})).min(1).max(100)});
 export async function readComplaints():Promise<ComplaintItem[]>{
- try{const parsed=JSON.parse(await fs.readFile(file,'utf8'));if(!Array.isArray(parsed))throw new Error('Invalid complaint store');return parsed.map(c=>stabilizeComplaint(c));}
+ try{const parsed=await readRuntimeJson<ComplaintItem[]>(file);if(!Array.isArray(parsed))throw new Error('Invalid complaint store');const locations = await readMasterLocationReferences(); return (parsed as ComplaintItem[]).map(c=>stabilizeComplaint(locations.caseRecord(c, 'name')));}
  catch(e){if((e as NodeJS.ErrnoException).code==='ENOENT')return [];throw e;}
 }
 function authorize(user:UserSession,next:ComplaintItem,old?:ComplaintItem,registeredFir=false){
@@ -75,7 +76,8 @@ export async function saveComplaintChanges(input:unknown,user:UserSession){
  next=stabilizeComplaint({...next,persistenceVersion:(old?.persistenceVersion||0)+1},old);next.daysPending=computeDaysPending(next);
  if(index<0)list.unshift(next);else list[index]=next;saved.push(next);
  }
- const temp=file+'.'+randomUUID()+'.tmp';try{await fs.writeFile(temp,JSON.stringify(list,null,2),'utf8');await fs.rename(temp,file);}finally{await fs.unlink(temp).catch(()=>{});}
+ const locations = await readMasterLocationReferences();
+ await writeRuntimeJson(file, list.map(record => locations.caseRecord(record, 'id')));
  return saved;
  });
 }
@@ -88,11 +90,8 @@ export async function updateComplaintTransfer(id: string, update: (record: Compl
     const current = records[index];
     const saved = { ...update(current), persistenceVersion: (current.persistenceVersion || 0) + 1 };
     records[index] = saved;
-    const temp = file + '.' + randomUUID() + '.tmp';
-    try {
-      await fs.writeFile(temp, JSON.stringify(records, null, 2), 'utf8');
-      await fs.rename(temp, file);
-    } finally { await fs.unlink(temp).catch(() => {}); }
+    const locations = await readMasterLocationReferences();
+    await writeRuntimeJson(file, records.map(record => locations.caseRecord(record, 'id')));
     return saved;
   });
 }

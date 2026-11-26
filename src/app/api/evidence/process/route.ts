@@ -1,10 +1,9 @@
+import { readEvidenceStore, writeEvidenceStore } from "@/services/processedEvidenceStore";
 import { canAccessEvidenceCase } from "@/services/evidenceCaseAccess";
 import { processingAIAvailable, PROCESSING_MODEL, processWithAI } from "@/lib/openRouter";
 import { apiAccess } from "@/lib/apiSecurity";
 import { after, NextRequest, NextResponse } from "next/server";
 import { authorizedAnalysisFir, refreshCaseAnalysis } from "@/services/caseAnalysisService";
-import fs from "fs";
-import path from "path";
 import crypto from "crypto";
 import { UniversalEvidenceRecord, EvidenceModuleType } from "@/types/evidence";
 import { extractVocabulary } from "@/lib/vocabularyExtractor";
@@ -12,30 +11,8 @@ import { losslessCompressionService } from "@/services/losslessCompressionServic
 import { investigationPrompts, normalizeInvestigation, withInvestigationPrompt } from "@/services/investigationPromptService";
 
 export const maxDuration = 300;
-const EVIDENCE_STORE_PATH = path.join(process.cwd(), "prisma", "processed-evidence-store.json");
 
-function readEvidenceStore(): UniversalEvidenceRecord[] {
-  try {
-    if (fs.existsSync(EVIDENCE_STORE_PATH)) {
-      const data = fs.readFileSync(EVIDENCE_STORE_PATH, "utf-8");
-      const parsed = JSON.parse(data);
-      if (Array.isArray(parsed)) return parsed;
-    }
-  } catch (err) {
-    console.error("Error reading evidence store in process:", err);
-  }
-  return [];
-}
 
-function writeEvidenceStore(records: UniversalEvidenceRecord[]): void {
-  try {
-    const dir = path.dirname(EVIDENCE_STORE_PATH);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(EVIDENCE_STORE_PATH, JSON.stringify(records, null, 2), "utf-8");
-  } catch (err) {
-    throw new Error("Evidence could not be saved. Please retry.");
-  }
-}
 
 function computeSha256(buffer: Buffer | string): string {
   return crypto.createHash("sha256").update(buffer).digest("hex");
@@ -60,7 +37,7 @@ export async function POST(req: NextRequest) {
     const forceReprocess = formData.get("forceReprocess") === "true";
     const deferCaseAnalysis = formData.get('deferCaseAnalysis') === 'true';
 
-    const store = readEvidenceStore();
+    const store = await readEvidenceStore();
     const existingById = store.find((r) => r.ownerId === apiUser.id && (r.fileId === fileId || r.id === fileId));
 
     let effectiveDataUrl = rawDataUrl;
@@ -116,7 +93,7 @@ export async function POST(req: NextRequest) {
           details: `Cached processed data reused without reprocessing for Case: ${caseNumber || caseId || "General"}.`,
         },
       ];
-      writeEvidenceStore(store);
+      await writeEvidenceStore(store);
 
       return NextResponse.json({
         success: true,
@@ -186,7 +163,7 @@ export async function POST(req: NextRequest) {
     } else {
       store.unshift(inProgressRecord);
     }
-    writeEvidenceStore(store);
+    await writeEvidenceStore(store);
 
     // 4. Run Processing Engine
     try {
@@ -414,11 +391,11 @@ Return a valid JSON object matching:
         ],
       };
 
-      const finalStore = readEvidenceStore();
+      const finalStore = await readEvidenceStore();
       const fIdx = finalStore.findIndex((r) => r.id === newRecordId);
       if (fIdx !== -1) finalStore[fIdx] = completedRecord;
       else finalStore.unshift(completedRecord);
-      writeEvidenceStore(finalStore);
+      await writeEvidenceStore(finalStore);
 
       // Evidence is safely saved before the case-wide AI pass. Failure never discards the upload.
       if (moduleType === "FIR" && caseId && !deferCaseAnalysis) after(async () => {
@@ -463,11 +440,11 @@ Return a valid JSON object matching:
         ],
       };
 
-      const finalStore = readEvidenceStore();
+      const finalStore = await readEvidenceStore();
       const fIdx = finalStore.findIndex((r) => r.id === newRecordId);
       if (fIdx !== -1) finalStore[fIdx] = failedRecord;
       else finalStore.unshift(failedRecord);
-      writeEvidenceStore(finalStore);
+      await writeEvidenceStore(finalStore);
 
       return NextResponse.json({
         success: false,

@@ -1,4 +1,4 @@
-import fs from 'node:fs/promises';
+import { readRuntimeJson } from "@/lib/runtimeJsonStore";
 import path from 'node:path';
 import { apiAccess } from '@/lib/apiSecurity';
 import { isFirVisibleToUser } from '@/lib/firIntegrity';
@@ -29,7 +29,7 @@ export async function GET(req: Request) {
     const caseIds = new Set(firs.flatMap(fir=>[fir.id, fir.sourceComplaintId]));
     let evidence:UniversalEvidenceRecord[] = [];
     try {
-      const saved:unknown = JSON.parse(await fs.readFile(path.join(process.cwd(),'prisma','processed-evidence-store.json'),'utf8'));
+      const saved:unknown = await readRuntimeJson(path.join(process.cwd(),'prisma','processed-evidence-store.json'));
       if(Array.isArray(saved))evidence = saved.filter(item=>item?.caseId && caseIds.has(item.caseId)
         && (user.role==='SUPER_ADMIN' || evidenceOwner(item)===user.id));
     } catch (error) {

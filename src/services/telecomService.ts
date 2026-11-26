@@ -1,3 +1,5 @@
+import { readRuntimeJson, writeRuntimeJson } from "@/lib/runtimeJsonStore";
+import { updateFirTransfer } from "./firRepository";
 // src/services/telecomService.ts
 // Comprehensive Telecom Intelligence & Forensic Analysis Engine
 // Haryana Police Criminal Case Management System (CMS)
@@ -167,13 +169,14 @@ export class TelecomService {
   public async getStore(): Promise<TelecomIntelligenceStore> {
     ensureDirectories();
     try {
-      if (!fsSync.existsSync(STORE_PATH)) {
-        const initial = this.getInitialStore();
-        await fs.writeFile(STORE_PATH, JSON.stringify(initial, null, 2), "utf8");
-        return initial;
+      let parsed: TelecomIntelligenceStore;
+      try {
+        parsed = await readRuntimeJson<TelecomIntelligenceStore>(STORE_PATH);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+        parsed = this.getInitialStore();
+        await writeRuntimeJson(STORE_PATH, parsed);
       }
-      const data = await fs.readFile(STORE_PATH, "utf8");
-      const parsed = JSON.parse(data);
       // Ensure collections exist
       if (!parsed.snapshots) parsed.snapshots = [];
       if (!parsed.statementChecks) parsed.statementChecks = [];
@@ -219,9 +222,7 @@ export class TelecomService {
 
   public async saveStore(store: TelecomIntelligenceStore): Promise<void> {
     return this.withLock(async () => {
-      const temp = `${STORE_PATH}.${Date.now()}.tmp`;
-      await fs.writeFile(temp, JSON.stringify(store, null, 2), "utf8");
-      await fs.rename(temp, STORE_PATH);
+      await writeRuntimeJson(STORE_PATH, store);
     });
   }
 
@@ -690,21 +691,11 @@ export class TelecomService {
         };
         firService.addDocument(params.firId, firDoc);
 
-        // Also persist to prisma/firs-store.json so it is always present across server restarts
-        const firStorePath = path.join(process.cwd(), "prisma", "firs-store.json");
-        if (fsSync.existsSync(firStorePath)) {
-          const rawFirs = JSON.parse(fsSync.readFileSync(firStorePath, "utf8"));
-          if (Array.isArray(rawFirs)) {
-            const firTarget = rawFirs.find((f: any) => f.id === params.firId || f.firNumber === params.firNumber);
-            if (firTarget) {
-              if (!Array.isArray(firTarget.documents)) firTarget.documents = [];
-              if (!firTarget.documents.some((d: any) => d.id === firDoc.id || d.fileName === firDoc.fileName)) {
-                firTarget.documents.unshift(firDoc);
-                fsSync.writeFileSync(firStorePath, JSON.stringify(rawFirs, null, 2), "utf8");
-              }
-            }
-          }
-        }
+        await updateFirTransfer(params.firId, (record) => {
+          const documents = record.documents ?? [];
+          if (documents.some((doc) => doc.id === firDoc.id || doc.fileName === firDoc.fileName)) return record;
+          return { ...record, documents: [firDoc, ...documents] };
+        });
       } catch (docErr) {
         console.warn(`[TelecomService] Could not attach file to FIR ${params.firId} documents:`, docErr);
       }

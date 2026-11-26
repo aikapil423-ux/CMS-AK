@@ -1,24 +1,19 @@
+import { readEvidenceStore } from "@/services/processedEvidenceStore";
 import { apiAccess } from "@/lib/apiSecurity";
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
 import { losslessCompressionService } from "@/services/losslessCompressionService";
 import { UniversalEvidenceRecord } from "@/types/evidence";
 
-const EVIDENCE_STORE_PATH = path.join(process.cwd(), "prisma", "processed-evidence-store.json");
 
 export async function GET(req: Request) {
  const apiUser=await apiAccess(req);if(apiUser instanceof Response)return apiUser;
   if(apiUser.role !== "SUPER_ADMIN") return Response.json({error:"Storage administration requires Super Admin."},{status:403});
   try {
-    const stats = losslessCompressionService.getStorageOptimizationStats();
+    const stats = await losslessCompressionService.getStorageOptimizationStats();
 
     // Read all records to return lightweight list for table view
-    let recordsList: any[] = [];
-    if (fs.existsSync(EVIDENCE_STORE_PATH)) {
-      const raw = fs.readFileSync(EVIDENCE_STORE_PATH, "utf-8");
-      const records: UniversalEvidenceRecord[] = JSON.parse(raw);
-      recordsList = records.map((r) => ({
+    const records = await readEvidenceStore();
+    const recordsList = records.map((r) => ({
         id: r.id,
         fileId: r.fileId,
         caseId: r.caseId || null,
@@ -40,7 +35,6 @@ export async function GET(req: Request) {
           compressionMethod: "NONE_RETAINED",
         },
       }));
-    }
 
     return NextResponse.json({
       success: true,
@@ -64,7 +58,7 @@ export async function POST(req: NextRequest) {
     if (batch) {
       // Trigger system-wide batch compression
       const batchResult = await losslessCompressionService.batchProcessAll(Boolean(force));
-      const updatedStats = losslessCompressionService.getStorageOptimizationStats();
+      const updatedStats = await losslessCompressionService.getStorageOptimizationStats();
 
       return NextResponse.json({
         success: true,

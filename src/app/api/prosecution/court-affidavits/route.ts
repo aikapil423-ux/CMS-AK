@@ -1,3 +1,4 @@
+import { readRuntimeJson, writeRuntimeJson, listRuntimeJson, removeRuntimeJson } from "@/lib/runtimeJsonStore";
 import { createHash, randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -68,7 +69,7 @@ async function courtCase(key: string, user: UserSession) {
 }
 
 async function readRecord(file: string): Promise<Stored | null> {
-  try { return JSON.parse(await fs.readFile(file, 'utf8')); }
+  try { return await readRuntimeJson<Stored>(file); }
   catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null; throw error; }
 }
 
@@ -79,12 +80,12 @@ export async function GET(req: Request) {
   if (!kind.success) return Response.json({ error: 'Select a document kind.' }, { status: 400 });
   try {
     const root = directory(user.id);
-    const names = await fs.readdir(root).catch(error => { if (error.code === 'ENOENT') return []; throw error; });
+    const files = await listRuntimeJson(root);
     const visible = new Set((await readFirRecords()).filter(fir => isFirVisibleToUser(user, fir)).map(fir => fir.id));
     if (kind.data === 'status') {
       for (const row of await readComplaints()) if (canViewComplaint(user, row).allowed) visible.add('complaint:' + row.id);
     }
-    const saved = await Promise.all(names.filter(name => /^[a-f0-9]{64}\.json$/.test(name)).map(name => readRecord(path.join(root, name))));
+    const saved = await Promise.all(files.filter(file => /^[a-f0-9]{64}\.json$/.test(path.basename(file))).map(readRecord));
     const records = saved.flatMap(item => item?.kind === kind.data && item.record.affidavit && visible.has(item.record.affidavit.firId) ? [item.record] : []);
     return Response.json({ records }, { headers: { 'Cache-Control': 'no-store' } });
   } catch { return Response.json({ error: 'Saved court documents could not be loaded.' }, { status: 503 }); }
@@ -216,17 +217,14 @@ export async function POST(req: Request) {
       if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
       return Response.json({ error: 'A save is in progress. Reopen the draft before saving.' }, { status: 409 });
     }
-    const temp = file + '.' + randomUUID() + '.tmp';
     try {
       const latest = await readRecord(file);
       if (latest?.record.revision !== input.revision || Boolean(latest) !== Boolean(previous)) {
         return Response.json({ error: 'This draft has changed. Reopen it before saving.' }, { status: 409 });
       }
-      await fs.writeFile(temp, JSON.stringify({ kind: input.kind, record } satisfies Stored), { mode: 0o600 });
-      await fs.rename(temp, file);
+      await writeRuntimeJson(file, { kind: input.kind, record } satisfies Stored);
     } finally {
       await fs.rmdir(lock);
-      await fs.rm(temp, { force: true });
     }
     return Response.json({ record });
   } catch {
@@ -245,6 +243,6 @@ export async function DELETE(req: Request) {
   const saved = await readRecord(file);
   if (!saved) return Response.json({ deleted: false });
   if (!saved.record.affidavit || !await courtCase(saved.record.affidavit.firId, user)) return Response.json({ error: 'Case access denied.' }, { status: 403 });
-  await fs.rm(file, { force: true });
+  await removeRuntimeJson(file);
   return Response.json({ deleted: true });
 }

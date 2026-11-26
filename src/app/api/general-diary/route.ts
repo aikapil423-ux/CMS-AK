@@ -1,5 +1,6 @@
 import { apiAccess, scopeAllowed, forbidden, officerDetails } from "@/lib/apiSecurity";
 import { NextRequest, NextResponse } from "next/server";
+import { readMasterLocationReferences, type MasterLocationReferences } from "@/services/masterLocationReferences";
 import { Prisma, GDRecord } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
@@ -105,14 +106,13 @@ function cleanGdNarrative(text: string | null | undefined): string {
     .trim();
 }
 
-function mapRowToRecord(row: GDRecord): GeneralDiaryRecord {
+function mapRowToRecord(row: GDRecord, locations: MasterLocationReferences): GeneralDiaryRecord {
   const related = parseJson<GDRelatedRecords>(row.relatedRecordsJson, {});
   return {
     id: row.id,
     gdNumber: row.gdNumber,
     sequencePerDay: row.sequencePerDay,
-    policeStation: row.policeStation,
-    district: row.district,
+    ...locations.location({ policeStation: row.policeStation, district: row.district }, "name"),
     entryForOfficer: parseJson<GDOfficerParticulars>(row.entryForOfficerJson, {
       name: "Police Officer",
       rank: "Officer",
@@ -254,7 +254,8 @@ function resolveEntryDateTime(body: Record<string, unknown>): Date {
 // back-dated by the officer; the GD number is computed by chronological
 // position and later entries of the same day are renumbered automatically.
 async function createLockedEntry(
-  body: Record<string, unknown>
+  body: Record<string, unknown>,
+  locations: MasterLocationReferences,
 ): Promise<{ record: GeneralDiaryRecord; resequenced: number }> {
   const now = new Date();
   const entryDateTime = resolveEntryDateTime(body);
@@ -273,8 +274,10 @@ async function createLockedEntry(
   const typeDisplay = String(body.typeDisplay || typeCode);
   const typeDisplayHi = String(body.typeDisplayHi || typeDisplay);
   const category = String(body.category || "ROUTINE_ADMINISTRATION");
-  const policeStation = String(body.policeStation || DEFAULT_STATION);
-  const district = String(body.district || DEFAULT_DISTRICT);
+  const { policeStation, district } = locations.location({
+    policeStation: String(body.policeStation || DEFAULT_STATION),
+    district: String(body.district || DEFAULT_DISTRICT),
+  }, "id");
 
   // Enforce policy: Automated GD entries must NEVER be auto-submitted as locked records.
   // They must route as suggestions so only human users can review and lock them.
@@ -285,7 +288,7 @@ async function createLockedEntry(
     actualAuthor.name === "System Automation" ||
     actualAuthor.pno === "00000000"
   ) {
-    const suggestion = await createSystemSuggestion(body);
+    const suggestion = await createSystemSuggestion(body, locations);
     return { record: suggestion, resequenced: 0 };
   }
 
@@ -360,7 +363,7 @@ async function createLockedEntry(
       const resequenced = await resequenceDay(gdDate);
       // Re-fetch: resequencing may have changed this row's final GD number
       const fresh = await prisma.gDRecord.findUnique({ where: { id: row.id } });
-      return { record: mapRowToRecord(fresh ?? row), resequenced };
+      return { record: mapRowToRecord(fresh ?? row, locations), resequenced };
     } catch (err) {
       lastError = err;
       // P2002 = unique constraint collision -> another entry took the number; retry
@@ -378,7 +381,7 @@ async function createLockedEntry(
     : new Error("Could not assign a unique GD number after multiple attempts.");
 }
 
-async function saveDraftEntry(body: Record<string, unknown>): Promise<GeneralDiaryRecord> {
+async function saveDraftEntry(body: Record<string, unknown>, locations: MasterLocationReferences): Promise<GeneralDiaryRecord> {
   const now = new Date();
   const typeCode = String(body.typeCode || "OTHERS");
   const subject = String(body.subject || "").trim();
@@ -430,7 +433,7 @@ async function saveDraftEntry(body: Record<string, unknown>): Promise<GeneralDia
           ...(hasActivity ? { entryDateTime, gdDate: draftGdDate } : {}),
         },
       });
-      return mapRowToRecord(updated);
+      return mapRowToRecord(updated, locations);
     }
   }
 
@@ -445,8 +448,10 @@ async function saveDraftEntry(body: Record<string, unknown>): Promise<GeneralDia
       sequencePerDay: 0,
       gdDate: draftGdDate,
       entryDateTime,
-      policeStation: String(body.policeStation || DEFAULT_STATION),
-      district: String(body.district || DEFAULT_DISTRICT),
+      ...locations.location({
+        policeStation: String(body.policeStation || DEFAULT_STATION),
+        district: String(body.district || DEFAULT_DISTRICT),
+      }, "id"),
       typeCode,
       category: String(body.category || "ROUTINE_ADMINISTRATION"),
       typeDisplay: String(body.typeDisplay || typeCode),
@@ -473,11 +478,11 @@ async function saveDraftEntry(body: Record<string, unknown>): Promise<GeneralDia
       ]),
     },
   });
-  return mapRowToRecord(row);
+  return mapRowToRecord(row, locations);
 }
 
 async function deleteDraftEntry(id: string): Promise<boolean> {
-  dismissSuggestionId(id);
+  await dismissSuggestionId(id);
   const existing = await prisma.gDRecord.findUnique({ where: { id } });
   if (!existing) return true;
   if (existing.isLocked) {
@@ -490,14 +495,15 @@ async function deleteDraftEntry(id: string): Promise<boolean> {
 async function verifyAndLockEntry(
   id: string,
   verifierRaw: unknown,
+  locations: MasterLocationReferences,
   remarks?: string
 ): Promise<{ record: GeneralDiaryRecord; resequenced: number }> {
   const verifier = buildOfficer(verifierRaw, FALLBACK_AUTHOR);
   let existing = await prisma.gDRecord.findUnique({ where: { id } });
   if (!existing) {
-    const sugg = getSmartVerifiedSuggestions().find((s) => s.id === id);
+    const sugg = (await getSmartVerifiedSuggestions()).find((s) => s.id === id);
     if (sugg) {
-      dismissSuggestionId(id);
+      await dismissSuggestionId(id);
       return await createLockedEntry({
         typeCode: sugg.typeCode,
         category: sugg.category,
@@ -510,7 +516,7 @@ async function verifyAndLockEntry(
         activityDateTime: sugg.activityDateTime,
         relatedRecords: sugg.relatedRecords,
         source: sugg.source,
-      });
+      }, locations);
     }
     throw new Error("GD entry not found.");
   }
@@ -571,7 +577,7 @@ async function verifyAndLockEntry(
       const resequenced = await resequenceDay(gdDate);
       // Re-fetch: resequencing may have changed this row's final GD number
       const fresh = await prisma.gDRecord.findUnique({ where: { id: existing.id } });
-      return { record: mapRowToRecord(fresh ?? updated), resequenced };
+      return { record: mapRowToRecord(fresh ?? updated, locations), resequenced };
     } catch (err) {
       lastError = err;
       if (
@@ -588,7 +594,7 @@ async function verifyAndLockEntry(
     : new Error("Could not assign a unique GD number after multiple attempts.");
 }
 
-async function createSystemSuggestion(body: Record<string, unknown>): Promise<GeneralDiaryRecord> {
+async function createSystemSuggestion(body: Record<string, unknown>, locations: MasterLocationReferences): Promise<GeneralDiaryRecord> {
   const now = new Date();
   const event = (body.event || body) as Record<string, unknown>;
   const officer = buildOfficer(event.officer, FALLBACK_OFFICER);
@@ -663,8 +669,10 @@ async function createSystemSuggestion(body: Record<string, unknown>): Promise<Ge
       sequencePerDay: 0,
       gdDate: startOfDay(now),
       entryDateTime: now,
-      policeStation: String(event.policeStation || DEFAULT_STATION),
-      district: String(event.district || DEFAULT_DISTRICT),
+      ...locations.location({
+        policeStation: String(event.policeStation || DEFAULT_STATION),
+        district: String(event.district || DEFAULT_DISTRICT),
+      }, "id"),
       typeCode,
       category: String(
         event.category ||
@@ -713,7 +721,7 @@ async function createSystemSuggestion(body: Record<string, unknown>): Promise<Ge
       ]),
     },
   });
-  return mapRowToRecord(row);
+  return mapRowToRecord(row, locations);
 }
 
 // ------------------------------------------------------------------
@@ -723,6 +731,8 @@ export async function GET(req: NextRequest) {
   const apiUser = await apiAccess(req); if (apiUser instanceof Response) return apiUser;
 
   try {
+    const locations = await readMasterLocationReferences();
+    const accessScope = locations.sessionScope(apiUser);
     const { searchParams } = new URL(req.url);
     const action = searchParams.get("action") || "SEARCH";
 
@@ -752,13 +762,13 @@ export async function GET(req: NextRequest) {
         row = await prisma.gDRecord.findFirst({ where: { gdNumber: id } });
       }
       if (!row && id) {
-        const sugg = getSmartVerifiedSuggestions().find((s) => s.id === id);
-        if (sugg && scopeAllowed(apiUser,sugg)) {
+        const sugg = (await getSmartVerifiedSuggestions()).find((s) => s.id === id);
+        if (sugg && scopeAllowed(accessScope, locations.location(sugg, "id"))) {
           return NextResponse.json({ success: true, record: sugg });
         }
       }
-      if (row && !scopeAllowed(apiUser,row)) return forbidden();
-      return NextResponse.json({ success: true, record: row ? mapRowToRecord(row) : null });
+      if (row && !scopeAllowed(accessScope, locations.location(row, "id"))) return forbidden();
+      return NextResponse.json({ success: true, record: row ? mapRowToRecord(row, locations) : null });
     }
 
     // ---- Search / paginated register ----
@@ -789,15 +799,15 @@ export async function GET(req: NextRequest) {
     });
 
     let list = rows
-      .filter((row) => scopeAllowed(apiUser, row))
-      .map(mapRowToRecord)
+      .filter((row) => scopeAllowed(accessScope, locations.location(row, "id")))
+      .map((row) => mapRowToRecord(row, locations))
       .filter((r) => !isGdRecordExpired(r));
 
     // Merge verified smart suggestions from live system state
-    const verifiedSuggestions = getSmartVerifiedSuggestions();
+    const verifiedSuggestions = await getSmartVerifiedSuggestions();
     const existingIds = new Set(list.map((r) => r.id));
     for (const sugg of verifiedSuggestions) {
-      if (scopeAllowed(apiUser, sugg) && !existingIds.has(sugg.id) && !isGdRecordExpired(sugg)) {
+      if (scopeAllowed(accessScope, locations.location(sugg, "id")) && !existingIds.has(sugg.id) && !isGdRecordExpired(sugg)) {
         list.push(sugg);
       }
     }
@@ -932,11 +942,13 @@ export async function POST(req: NextRequest) {
   const apiUser = await apiAccess(req); if (apiUser instanceof Response) return apiUser;
 
   try {
+    const locations = await readMasterLocationReferences();
+    const accessScope = locations.sessionScope(apiUser);
     const body = (await req.json()) as Record<string, unknown>;
     if (!['SHO','MHC_GD_INCHARGE','DUTY_OFFICER','SUPER_ADMIN','SP_DISTRICT','DSP_SUBDIV'].includes(apiUser.role)) return forbidden('GD writes require a diary or supervisory officer.');
     if (body.id) {
       const existing=await prisma.gDRecord.findUnique({where:{id:String(body.id)}});
-      if (!existing || !scopeAllowed(apiUser,existing)) return forbidden();
+      if (!existing || !scopeAllowed(accessScope, locations.location(existing, "id"))) return forbidden();
     }
     body.actualAuthor=officerDetails(apiUser);
     body.verifier=officerDetails(apiUser);
@@ -951,7 +963,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "SYSTEM_EVENT_SUGGESTION") {
-      const suggestion = await createSystemSuggestion(body);
+      const suggestion = await createSystemSuggestion(body, locations);
       return NextResponse.json({ success: true, suggestion });
     }
 
@@ -959,6 +971,7 @@ export async function POST(req: NextRequest) {
       const locked = await verifyAndLockEntry(
         String(body.id || ""),
         body.verifier,
+        locations,
         body.remarks ? String(body.remarks) : undefined
       );
       return NextResponse.json({ success: true, record: locked.record });
@@ -991,17 +1004,17 @@ export async function POST(req: NextRequest) {
           relatedRecordsJson: JSON.stringify(rel),
         },
       });
-      return NextResponse.json({ success: true, record: mapRowToRecord(updated) });
+      return NextResponse.json({ success: true, record: mapRowToRecord(updated, locations) });
     }
 
     if (action === "SAVE_DRAFT") {
-      const draft = await saveDraftEntry(body);
+      const draft = await saveDraftEntry(body, locations);
       return NextResponse.json({ success: true, draft });
     }
 
     // Default: permanent register entry — back-dated date/time supported,
     // later entries of the same day renumber automatically
-    const result = await createLockedEntry(body);
+    const result = await createLockedEntry(body, locations);
     return NextResponse.json({
       success: true,
       record: result.record,

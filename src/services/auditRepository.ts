@@ -1,3 +1,5 @@
+import { readRuntimeJson, writeRuntimeJson, listRuntimeJson } from "@/lib/runtimeJsonStore";
+import { readMasterLocationReferences } from "@/services/masterLocationReferences";
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
@@ -16,16 +18,14 @@ const root = () => path.join(process.cwd(),'prisma','audits');
 export const auditSupervisor = (user: UserSession) => ['SUPER_ADMIN','SP_DISTRICT','ASP_HQ','DSP_SUBDIV','SHO'].includes(user.role);
 type Meta = { id: string; owner: string; action: string; at: string; name: string; data: Record<string, unknown> };
 export async function auditMetadata(): Promise<Meta[]> {
-  const names = await fs.readdir(root()).catch(e=>{if(e.code==='ENOENT')return [];throw e;});
-  return Promise.all(names.filter(n=>/^[a-f0-9-]+\.json$/.test(n)).map(async n=>JSON.parse(await fs.readFile(path.join(root(),n),'utf8')) as Meta));
+  const files = await listRuntimeJson(root());
+  return Promise.all(files.filter(file => /^[a-f0-9-]+\.json$/.test(path.basename(file))).map(file => readRuntimeJson<Meta>(file)));
 }
 // Each event is a new exclusive file: finalized inspections and their history are never overwritten.
 export async function appendAudit(user: UserSession, action: string, name: string, data: Record<string,unknown>) {
   const event: Meta = {id:randomUUID(),owner:user.id,action,name,at:new Date().toISOString(),data};
   await fs.mkdir(root(),{recursive:true});
-  const target = path.join(root(),event.id+'.json'), temporary = target+'.tmp';
-  await fs.writeFile(temporary,JSON.stringify(event),{flag:'wx',mode:0o600});
-  await fs.rename(temporary,target);
+  await writeRuntimeJson(path.join(root(), event.id + '.json'), event);
   return event;
 }
 export async function recordReplyRequirement(user:UserSession,name:string,data:Record<string,unknown>) {
@@ -54,13 +54,12 @@ export async function advanceInspection(user:UserSession,input:{runId:string;exp
   }finally{await fs.rmdir(lock);}
 }
 async function jsonFiles(directory: string, nested = false): Promise<unknown[]> {
-  const entries=await fs.readdir(directory,{withFileTypes:true}).catch(e=>{if(e.code==='ENOENT')return [];throw e;});
-  const result: unknown[]=[];
-  for(const entry of entries) {
-    if(nested&&entry.isDirectory()&&/^[a-f0-9]{64}$/.test(entry.name)) result.push(...await jsonFiles(path.join(directory,entry.name)));
-    else if(entry.isFile()&&/^[a-f0-9]{64}\.json$/.test(entry.name)) result.push(JSON.parse(await fs.readFile(path.join(directory,entry.name),'utf8')));
-  }
-  return result;
+  const files = await listRuntimeJson(directory, nested);
+  return Promise.all(files.filter(file => {
+    const relative = path.relative(directory, file).split(path.sep);
+    return /^[a-f0-9]{64}\.json$/.test(path.basename(file)) &&
+      (relative.length === 1 || (nested && relative.length === 2 && /^[a-f0-9]{64}$/.test(relative[0])));
+  }).map(file => readRuntimeJson(file)));
 }
 // Only project audit metadata; never send raw operational documents to this screen.
 type Bag = Record<'id'|'status'|'workflowState'|'createdAt'|'updatedAt'|'firDate'|'assignedAt'|'sentToShoAt'|'complaintNumber'|'firNumber'|'district'|'policeStation'|'assignedEoName'|'assignedIoName'|'assignedEoId'|'assignedEoPno'|'categoryDisplay'|'category'|'actsAndSections'|'shoDecision'|'shoDecisionAt'|'sourceComplaintId'|'bailType'|'reportType'|'submittedByOfficer'|'submittedBy'|'submissionDate'|'firId'|'ownerId'|'scrutinyNumber'|'challanType'|'decision'|'scrutinyOfficer',string> & {
@@ -108,8 +107,8 @@ export async function loadAuditRows(user: UserSession) {
       registered:auditDate(report.createdAt||report.generatedDate),updated:auditDate(report.updatedAt),submitted:auditDate(report.sentToShoAt),age:auditAge(report.createdAt||report.generatedDate),pending:null,findings:[],signals:[report.isUploaded?'Uploaded report':'Saved report',...(report.sentToSho||report.isSentToSho?['Report sent to SHO']:[])]});
   }
   try {
-    const records=await prisma.gDRecord.findMany();
-    for(const g of records.filter(g=>scopeAllowed(user,g))) {
+    const [records, locations] = await Promise.all([prisma.gDRecord.findMany(), readMasterLocationReferences()]);
+    for(const g of records.map(g => locations.location(g, 'name')).filter(g=>scopeAllowed(user,g))) {
       const author=JSON.parse(g.actualAuthorJson||'{}');
       // EO/IO audits do not broaden existing assignment access to station-wide diary contents.
       if(!auditSupervisor(user)&&!['MHC_GD_INCHARGE','DUTY_OFFICER'].includes(user.role)&&author.id!==user.id&&author.pno!==user.pno)continue;

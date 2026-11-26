@@ -1,5 +1,5 @@
+import { readRuntimeJson } from "@/lib/runtimeJsonStore";
 import { processingAIAvailable } from "@/lib/openRouter";
-import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { NextRequest } from 'next/server';
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     if (!fir) return Response.json({ error: 'FIR not found or access denied.' }, { status: 404 });
     if (!processingAIAvailable()) return Response.json({ jobs: [], aiAvailable: false });
     let all: UniversalEvidenceRecord[] = [];
-    try { all = JSON.parse(await fs.readFile(path.join(process.cwd(), 'prisma', 'processed-evidence-store.json'), 'utf8')); }
+    try { all = await readRuntimeJson(path.join(process.cwd(), 'prisma', 'processed-evidence-store.json')); }
     catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
     const records = all.filter(e => (e.caseId === fir.id || (fir.sourceComplaintId && e.caseId === fir.sourceComplaintId)) && (user.role === 'SUPER_ADMIN' || evidenceOwner(e) === user.id));
     const audit = investigationPrompts().audit;

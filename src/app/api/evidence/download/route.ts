@@ -1,3 +1,4 @@
+import { readEvidenceStore } from "@/services/processedEvidenceStore";
 import { canReadCaseEvidence } from "@/services/evidenceCaseAccess";
 import { apiAccess } from "@/lib/apiSecurity";
 import { NextRequest, NextResponse } from "next/server";
@@ -6,19 +7,11 @@ import path from "path";
 import { createHash } from "node:crypto";
 import { UniversalEvidenceRecord } from "@/types/evidence";
 
-const EVIDENCE_STORE_PATH = path.join(process.cwd(), "prisma", "processed-evidence-store.json");
 const STORAGE_ROOT = path.join(process.cwd(), "prisma", "storage", "evidence");
 const ORIGINAL_STORAGE_DIR = path.join(STORAGE_ROOT, "original");
 const COMPRESSED_STORAGE_DIR = path.join(STORAGE_ROOT, "compressed");
 
-function readStore(): UniversalEvidenceRecord[] {
-  try {
-    if (fs.existsSync(EVIDENCE_STORE_PATH)) {
-      return JSON.parse(fs.readFileSync(EVIDENCE_STORE_PATH, "utf-8"));
-    }
-  } catch {}
-  return [];
-}
+
 
 export async function GET(req: NextRequest) {
   const apiUser = await apiAccess(req); if (apiUser instanceof Response) return apiUser;
@@ -33,7 +26,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Missing evidence id or sha256 hash parameter." }, { status: 400 });
     }
 
-    const store = readStore();
+    const store = await readEvidenceStore();
     const matches = store.filter((r) => ((!!id && (r.id === id || r.fileId === id)) || (!!sha256 && r.rawDocument?.sha256Hash === sha256)));
 
     let record: UniversalEvidenceRecord | undefined;

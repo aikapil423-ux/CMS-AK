@@ -1,3 +1,4 @@
+import { readRuntimeJson, writeRuntimeJson, listRuntimeJson, removeRuntimeJson } from "@/lib/runtimeJsonStore";
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
@@ -16,18 +17,17 @@ const root = () => path.join(process.cwd(), 'prisma', 'scrutiny-records');
 const file = (id: string) => path.join(root(), createHash('sha256').update(id).digest('hex') + '.json');
 let queue: Promise<unknown> = Promise.resolve();
 export async function listPdfScrutiny(user: UserSession) {
-  let names: string[];
-  try { names = await fs.readdir(root()); } catch (e) { if ((e as NodeJS.ErrnoException).code === 'ENOENT') return []; throw e; }
+  const files = await listRuntimeJson(root());
   const result: PdfScrutinyRecord[] = [];
-  for (const name of names.filter(n => /^[a-f0-9]{64}\.json$/.test(n))) {
-    const r: PdfScrutinyRecord = JSON.parse(await fs.readFile(path.join(root(), name), 'utf8'));
+  for (const location of files.filter(item => /^[a-f0-9]{64}\.json$/.test(path.basename(item)))) {
+    const r: PdfScrutinyRecord = await readRuntimeJson<PdfScrutinyRecord>(location);
     if (r.ownerId === user.id && await authorizedAnalysisFir(r.firId, user)) result.push(r);
   }
   return result.sort((a,b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 export async function readPdfScrutiny(id: string, user: UserSession) {
   let r: PdfScrutinyRecord;
-  try { r = JSON.parse(await fs.readFile(file(id), 'utf8')); } catch(e) { if ((e as NodeJS.ErrnoException).code === 'ENOENT') return null; throw e; }
+  try { r = await readRuntimeJson<PdfScrutinyRecord>(file(id)); } catch(e) { if ((e as NodeJS.ErrnoException).code === 'ENOENT') return null; throw e; }
   return r.ownerId === user.id && await authorizedAnalysisFir(r.firId, user) ? r : null;
 }
 export async function savePdfScrutiny(input: {id?: string; firId: string; fields: ScrutinyValues; revision?: string; status: 'DRAFT'|'SAVED'; warnings?: string[]; accusedIndex?:number; decision?:ScrutinyPerformaRecord['decision'];courtName?:string;scrutinyOfficer?:string;challanType?:ScrutinyPerformaRecord['challanType'];objectionsNote?:string}, user: UserSession) {
@@ -52,14 +52,12 @@ export async function savePdfScrutiny(input: {id?: string; firId: string; fields
       status: input.status, processingWarnings: input.warnings || previous?.processingWarnings || [],accusedIndex:previous?.accusedIndex ?? input.accusedIndex ?? 0,
     };
     await fs.mkdir(root(), {recursive:true});
-    const temporary = file(id) + '.' + randomUUID() + '.tmp';
-    try { await fs.writeFile(temporary, JSON.stringify(record, null, 2), {mode:0o600}); await fs.rename(temporary, file(id)); }
-    finally { await fs.rm(temporary, {force:true}); }
+    await writeRuntimeJson(file(id), record);
     return record;
   });
   queue = run.catch(()=>undefined); return run;
 }
 export async function deletePdfScrutiny(id: string, user: UserSession) {
-  const run = queue.then(async()=>{ if (!await readPdfScrutiny(id,user)) throw new Error('Record not found or access denied.'); await fs.unlink(file(id)); });
+  const run = queue.then(async()=>{ if (!await readPdfScrutiny(id,user)) throw new Error('Record not found or access denied.'); await removeRuntimeJson(file(id)); });
   queue = run.catch(()=>undefined); return run;
 }

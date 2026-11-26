@@ -1,6 +1,7 @@
+import { readRuntimeJson, writeRuntimeJson } from "../lib/runtimeJsonStore";
+import { readMasterLocationReferences } from "@/services/masterLocationReferences";
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { FIRItem, UserSession } from '@/types';
 import { isFirVisibleToUser, nextFirNumber } from '@/lib/firIntegrity';
@@ -12,7 +13,7 @@ const recordSchema=z.object({id:z.string().min(1).max(200),firNumber:z.string().
 const changesSchema=z.array(z.object({record:recordSchema,expectedVersion:z.number().int().nonnegative(),preserveNumber:z.boolean().optional()})).min(1).max(500);
 export async function readFirRecords():Promise<FIRItem[]> {
   // This mutable runtime store is provisioned/backed up separately, never bundled as source.
-  try{const data=JSON.parse(await fs.readFile(/* turbopackIgnore: true */ file(),'utf8'));if(!Array.isArray(data))throw new Error('Invalid FIR store.');return data;}
+  try{const data=await readRuntimeJson<FIRItem[]>(file());if(!Array.isArray(data))throw new Error('Invalid FIR store.');const locations = await readMasterLocationReferences(); return (data as FIRItem[]).map(record => locations.caseRecord(record, 'name'));}
   catch(error){if((error as NodeJS.ErrnoException).code==='ENOENT')return [];throw error;}
 }
 async function withFirStore<T>(update: (records: FIRItem[]) => T): Promise<T> {
@@ -21,14 +22,13 @@ async function withFirStore<T>(update: (records: FIRItem[]) => T): Promise<T> {
   let lock;
   for(let i=0;i<100;i++){try{lock=await fs.open(target+'.lock','wx');break;}catch(error){if((error as NodeJS.ErrnoException).code!=='EEXIST')throw error;await new Promise(resolve=>setTimeout(resolve,25));}}
   if(!lock)throw new FirRepositoryConflict('Another FIR save is in progress. Retry.');
-  const temp=target+'.'+randomUUID()+'.tmp';
   try{
     const records=await readFirRecords();
     const result=update(records);
-    await fs.writeFile(temp,JSON.stringify(records,null,2),'utf8');
-    await fs.rename(temp,target);
+    const locations = await readMasterLocationReferences();
+    await writeRuntimeJson(target, records.map(record => locations.caseRecord(record, 'id')));
     return result;
-  }finally{await fs.unlink(temp).catch(()=>{});await lock.close();await fs.unlink(target+'.lock');}
+  }finally{await lock.close();await fs.unlink(target+'.lock');}
 }
 export async function updateFirTransfer(id: string, update: (record: FIRItem) => FIRItem) {
   return withFirStore(records => {
