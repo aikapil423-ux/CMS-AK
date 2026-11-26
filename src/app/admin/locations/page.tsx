@@ -56,6 +56,7 @@ import type {
 } from "@/types/adminMaster";
 
 type AdminTab =
+  | "locations"
   | "dashboard"
   | "states"
   | "ranges"
@@ -71,6 +72,23 @@ type AdminTab =
   | "hierarchy";
 
 type EntityType = "state" | "range" | "district" | "office" | "station" | "unit" | "zone" | "battalion";
+
+const LOCATION_TYPES = [
+  { type: "state", label: "State" },
+  { type: "range", label: "Range" },
+  { type: "district", label: "District" },
+  { type: "office", label: "Administrative office" },
+  { type: "station", label: "Police station" },
+  { type: "unit", label: "Specialized unit" },
+] as const;
+
+const WING_VIEWS = [
+  { tab: "commissionerates", label: "Commissionerates & zones" },
+  { tab: "armed-police", label: "Armed police (HAP/IRB)" },
+  { tab: "grp", label: "Railway police (GRP)" },
+  { tab: "forensic-labs", label: "Forensic labs & training" },
+  { tab: "deputation-units", label: "Deputation & special wings" },
+] as const;
 
 // Master seed data for authentic Haryana Police wings
 const COMMISSIONERATES_MASTER_DATA = [
@@ -234,7 +252,7 @@ export default function LocationMasterPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const activeTab: AdminTab = (searchParams.get("tab") as AdminTab) || "dashboard";
+  const activeTab: AdminTab = (searchParams.get("tab") as AdminTab) || "locations";
 
   // Data State
   const [loading, setLoading] = useState(true);
@@ -252,6 +270,12 @@ export default function LocationMasterPage() {
 
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState("");
+
+  const [directoryQuery, setDirectoryQuery] = useState("");
+  const [directoryType, setDirectoryType] = useState("");
+  const [directoryParent, setDirectoryParent] = useState("");
+  const [directoryLimit, setDirectoryLimit] = useState(30);
+  const [choosingLocationType, setChoosingLocationType] = useState(false);
 
   // Selected District Detail View (Tabs 4. District Management)
   const [activeDistrictDetailId, setActiveDistrictDetailId] = useState<string | null>(null);
@@ -375,6 +399,62 @@ export default function LocationMasterPage() {
     setExpandedNodes({});
   };
 
+  const locationRecords = { state: states, range: ranges, district: districts, office: offices, station: policeStations, unit: specializedUnits };
+  const wingRecords = [
+    { type: "commissionerates", label: "Commissionerate", records: COMMISSIONERATES_MASTER_DATA },
+    { type: "armed-police", label: "Armed police battalion", records: ARMED_BATTALIONS_MASTER_DATA },
+    { type: "grp", label: "Railway police station", records: GRP_STATIONS_MASTER_DATA },
+    { type: "labs", label: "Forensic lab", records: FORENSIC_LABS_MASTER_DATA },
+    { type: "training", label: "Training centre", records: TRAINING_CENTRES_MASTER_DATA },
+    { type: "deputation-units", label: "Deputation unit", records: DEPUTATION_UNITS_MASTER_DATA },
+    { type: "specialised", label: "Special wing", records: SPECIALISED_WINGS_MASTER_DATA },
+  ] as const;
+
+  const selectedCommissionerate = COMMISSIONERATES_MASTER_DATA.find((item) => item.id === directoryParent);
+  const commissionerateStationNames = new Set(
+    selectedCommissionerate?.zones.flatMap((zone) => zone.stations.map((name) => name.toLowerCase())) ?? []
+  );
+  const query = directoryQuery.trim().toLowerCase();
+  const directoryRows = activeTab === "locations" && !loading
+    ? [
+        ...LOCATION_TYPES.flatMap(({ type, label }) => locationRecords[type].map((record) => ({
+          type, label, record,
+          parent: [
+            "districtName" in record ? record.districtName : "",
+            "rangeName" in record ? record.rangeName : "",
+            "stateName" in record ? record.stateName : "",
+          ].filter(Boolean).join(" · "),
+          parentId: "districtId" in record ? record.districtId : type === "district" ? record.id : undefined,
+          action: () => openEditModal(type, record),
+          actionLabel: "Edit",
+        }))),
+        ...wingRecords.flatMap(({ type, label, records }) => records.map((record) => ({
+          type, label, record,
+          parent: "district" in record ? String(record.district) : "subDivision" in record ? record.subDivision : "location" in record ? record.location : "hq" in record ? record.hq : "",
+          parentId: type === "commissionerates" ? record.id : undefined,
+          action: () => {
+            if (type === "commissionerates") setActiveCommId(record.id);
+            if (type === "grp") setGrpSubTab("all");
+            if (type === "labs" || type === "training") setForensicSubTab(type);
+            if (type === "deputation-units" || type === "specialised") {
+              setDeputationSubTab(type === "specialised" ? "specialised" : "type" in record && record.type === "Central Deputation" ? "central" : "state");
+            }
+            if (type === "armed-police") setArmedSubTab("all");
+            setTab(type === "labs" || type === "training" ? "forensic-labs" : type === "specialised" ? "deputation-units" : type);
+          },
+          actionLabel: "Open category",
+        }))),
+      ].filter(({ type, record, parent, parentId }) =>
+        (!directoryType || directoryType === type) &&
+        (!directoryParent || parentId === directoryParent ||
+          (selectedCommissionerate && (
+            ("rangeName" in record && record.rangeName === selectedCommissionerate.name) ||
+            (type === "station" && commissionerateStationNames.has(record.name.toLowerCase()))
+          ))) &&
+        (!query || [record.name, record.code, parent].some((value) => value?.toLowerCase().includes(query)))
+      ).sort((a, b) => a.record.name.localeCompare(b.record.name))
+    : [];
+
   // Toggle Entity Status
   const handleToggleStatus = async (
     entityType: EntityType,
@@ -401,14 +481,14 @@ export default function LocationMasterPage() {
   };
 
   // Open Add Modal
-  const openAddModal = (type: EntityType) => {
+  const openAddModal = (type: EntityType, parentDistrict?: MasterDistrict) => {
     setModalType(type);
     setModalMode("add");
     setEditingId(null);
 
-    const defaultState = states[0] || { id: "st_hr_01", name: "Haryana" };
-    const defaultRange = ranges[0] || { id: "rng_knl_01", name: "Karnal Range" };
-    const defaultDistrict = districts[0] || { id: "dst_pnp_01", name: "Panipat" };
+    const defaultState = states.find((state) => state.id === parentDistrict?.stateId) || states[0] || { id: "st_hr_01", name: "Haryana" };
+    const defaultRange = ranges.find((range) => range.id === parentDistrict?.rangeId) || ranges[0] || { id: "rng_knl_01", name: "Karnal Range" };
+    const defaultDistrict = parentDistrict || districts[0] || { id: "dst_pnp_01", name: "Panipat" };
 
     if (type === "state") {
       setFormData({
@@ -508,6 +588,14 @@ export default function LocationMasterPage() {
     setEditingId(entity.id);
     setFormData({ ...entity });
     setModalOpen(true);
+  };
+
+  const getHierarchyEditAction = (node: HierarchyTreeNode) => {
+    const type = node.type === "POLICE_STATION" ? "station" : node.type.toLowerCase();
+    const category = LOCATION_TYPES.find((item) => item.type === type);
+    if (!category) return undefined;
+    const record = locationRecords[category.type].find((item) => item.id === node.id);
+    return record ? () => openEditModal(category.type, record) : undefined;
   };
 
   // Save Modal (Create or Update)
@@ -666,7 +754,7 @@ export default function LocationMasterPage() {
           </div>
           <h2 className="text-lg font-bold text-slate-900">Developer Administrator Required</h2>
           <p className="text-xs text-slate-600">
-            Location & Organization Management is a centralized administrative master module
+            Location Management is a centralized administrative master module
             restricted exclusively to the Developer Administrator.
           </p>
           <div className="pt-2 flex justify-center gap-3">
@@ -756,53 +844,31 @@ export default function LocationMasterPage() {
         </div>
       )}
 
-      {/* Tabs Navigation */}
-      <div className="flex items-center gap-1 overflow-x-auto border-b border-slate-200 text-xs pb-px scrollbar-none">
+      <nav aria-label="Location views" className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3 text-xs">
         {[
-          { key: "dashboard", label: "Dashboard Overview", icon: Layers },
-          { key: "states", label: "State Master", count: states.length, icon: MapPin },
-          { key: "ranges", label: "Ranges", count: ranges.length, icon: Network },
-          { key: "commissionerates", label: "Commissionerates & Zones", count: 5, icon: Landmark },
-          { key: "districts", label: "Districts", count: districts.length, icon: Building2 },
-          { key: "armed-police", label: "Armed Police (HAP/IRB)", count: 10, icon: ShieldAlert },
-          { key: "grp", label: "GRP Haryana", count: 9, icon: Train },
-          { key: "forensic-labs", label: "Forensic Labs & Training", count: 11, icon: FlaskConical },
-          { key: "deputation-units", label: "Deputation & Special Wings", count: 23, icon: Briefcase },
-          { key: "offices", label: "Administrative Offices", count: offices.length, icon: Building },
-          { key: "stations", label: "Police Stations", count: policeStations.length, icon: Shield },
-          { key: "units", label: "Specialized Units", count: specializedUnits.length, icon: Radio },
-          { key: "hierarchy", label: "Organizational Hierarchy", icon: FolderTree },
-        ].map((t) => {
-          const Icon = t.icon;
-          const isActive = activeTab === t.key;
-          return (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() => setTab(t.key as AdminTab)}
-              className={cn(
-                "flex items-center gap-2 px-3.5 py-2.5 font-semibold transition-all border-b-2 whitespace-nowrap cursor-pointer",
-                isActive
-                  ? "border-[#1e3a8a] text-[#1e3a8a] bg-blue-50/50"
-                  : "border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300"
-              )}
-            >
-              <Icon className={cn("w-3.5 h-3.5", isActive ? "text-[#1e3a8a]" : "text-slate-400")} />
-              <span>{t.label}</span>
-              {t.count !== undefined && (
-                <span
-                  className={cn(
-                    "text-[10px] px-1.5 py-0.2 rounded-full font-mono",
-                    isActive ? "bg-blue-200/70 text-[#1e3a8a]" : "bg-slate-100 text-slate-600"
-                  )}
-                >
-                  {t.count}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
+          { tab: "locations", label: "Locations" },
+          { tab: "hierarchy", label: "View hierarchy" },
+        ].map(({ tab, label }) => (
+          <button key={tab} type="button" aria-current={activeTab === tab ? "page" : undefined}
+            onClick={() => setTab(tab as AdminTab)}
+            className={cn("rounded-lg px-3 py-2 font-semibold", activeTab === tab ? "bg-blue-100 text-blue-900" : "text-slate-700 hover:bg-slate-100")}>
+            {label}
+          </button>
+        ))}
+        <select aria-label="Browse location categories" className="rounded-lg border border-slate-200 bg-white px-2 py-2"
+          value={activeTab === "locations" || activeTab === "hierarchy" ? "" : activeTab}
+          onChange={(event) => setTab(event.target.value as AdminTab)}>
+          <option value="" disabled>Browse by category</option>
+          <option value="dashboard">Overview</option>
+          <option value="states">States</option>
+          <option value="ranges">Ranges</option>
+          <option value="districts">Districts</option>
+          <option value="offices">Administrative offices</option>
+          <option value="stations">Police stations</option>
+          <option value="units">Specialized units</option>
+          {WING_VIEWS.map(({ tab, label }) => <option key={tab} value={tab}>{label}</option>)}
+        </select>
+      </nav>
 
       {loading && (
         <div className="p-8 text-center text-xs text-slate-500 flex items-center justify-center gap-2">
@@ -816,6 +882,89 @@ export default function LocationMasterPage() {
           <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
           <span>{error}</span>
         </div>
+      )}
+
+      {!loading && activeTab === "locations" && (
+        <section className="rounded-xl border border-slate-200 bg-white">
+          <div className="flex flex-wrap items-end gap-3 border-b border-slate-200 p-4 text-xs">
+            <label className="grid min-w-48 flex-1 gap-1 font-semibold">
+              Find a location
+              <input className="rounded-lg border border-slate-200 px-3 py-2 font-normal"
+                placeholder="Search name, code or parent location" value={directoryQuery}
+                onChange={(event) => { setDirectoryQuery(event.target.value); setDirectoryLimit(30); }} />
+            </label>
+            <label className="grid gap-1 font-semibold">
+              Type
+              <select className="rounded-lg border border-slate-200 bg-white px-3 py-2 font-normal" value={directoryType}
+                onChange={(event) => { setDirectoryType(event.target.value); setDirectoryLimit(30); }}>
+                <option value="">All types</option>
+                {[...LOCATION_TYPES, ...wingRecords].map(({ type, label }) => <option key={type} value={type}>{label}</option>)}
+              </select>
+            </label>
+            <label className="grid gap-1 font-semibold">
+              District / Commissionerate
+              <select className="rounded-lg border border-slate-200 bg-white px-3 py-2 font-normal" value={directoryParent}
+                onChange={(event) => { setDirectoryParent(event.target.value); setDirectoryLimit(30); }}>
+                <option value="">All jurisdictions</option>
+                {districts.map((district) => <option key={district.id} value={district.id}>{district.name}</option>)}
+                {COMMISSIONERATES_MASTER_DATA.map((commissionerate) => (
+                  <option key={commissionerate.id} value={commissionerate.id}>{commissionerate.name}</option>
+                ))}
+              </select>
+            </label>
+            <button type="button" className="rounded-lg bg-blue-900 px-3 py-2 font-semibold text-white"
+              aria-expanded={choosingLocationType} onClick={() => setChoosingLocationType(!choosingLocationType)}>
+              Add location
+            </button>
+          </div>
+          {choosingLocationType && (
+            <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-slate-50 p-4 text-xs">
+              <span className="font-semibold">Choose a location type</span>
+              {LOCATION_TYPES.map(({ type, label }) => (
+                <button key={type} type="button"
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 hover:bg-blue-50"
+                  onClick={() => {
+                    setChoosingLocationType(false);
+                    openAddModal(type, districts.find((district) => district.id === directoryParent));
+                  }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+          <p className="px-4 py-3 text-xs text-slate-600" aria-live="polite">
+            {directoryRows.length} {directoryRows.length === 1 ? "location" : "locations"}
+          </p>
+          {directoryRows.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 text-slate-600">
+                  <tr>{["Location", "Type", "Parent location", "Status", "Actions"].map((label) => (
+                    <th scope="col" key={label} className="px-4 py-3 font-semibold">{label}</th>
+                  ))}</tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {directoryRows.slice(0, directoryLimit).map(({ type, label, record, parent, action, actionLabel }) => (
+                    <tr key={type + ":" + record.id}>
+                      <th scope="row" className="px-4 py-3 font-semibold">{record.name}<span className="block text-slate-500 font-normal">{record.code}</span></th>
+                      <td className="px-4 py-3">{label}</td>
+                      <td className="px-4 py-3">{parent || "—"}</td>
+                      <td className="px-4 py-3">{("status" in record ? String(record.status) : "ACTIVE").toLowerCase().replace(/^./, (letter) => letter.toUpperCase())}</td>
+                      <td className="px-4 py-3">
+                        <button type="button" className="font-semibold text-blue-800 hover:underline"
+                          aria-label={actionLabel + " for " + record.name} onClick={action}>{actionLabel}</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : <p className="px-4 pb-5 text-sm text-slate-600">No locations match your filters.</p>}
+          {directoryLimit < directoryRows.length && (
+            <button type="button" onClick={() => setDirectoryLimit(directoryLimit + 30)}
+              className="m-4 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold">Show more locations</button>
+          )}
+        </section>
       )}
 
       {/* TAB 1: DASHBOARD OVERVIEW */}
@@ -1893,7 +2042,7 @@ export default function LocationMasterPage() {
                   <div className="p-3 bg-slate-50 flex justify-end">
                     <button
                       type="button"
-                      onClick={() => openAddModal("station")}
+                      onClick={() => openAddModal("station", selectedDistrict)}
                       className="px-2.5 py-1 text-xs bg-[#1e3a8a] text-white rounded-lg font-bold"
                     >
                       + Add Station to {selectedDistrict.name}
@@ -1941,7 +2090,7 @@ export default function LocationMasterPage() {
                   <div className="p-3 bg-slate-50 flex justify-end">
                     <button
                       type="button"
-                      onClick={() => openAddModal("office")}
+                      onClick={() => openAddModal("office", selectedDistrict)}
                       className="px-2.5 py-1 text-xs bg-purple-800 text-white rounded-lg font-bold"
                     >
                       + Add Office to {selectedDistrict.name}
@@ -1989,7 +2138,7 @@ export default function LocationMasterPage() {
                   <div className="p-3 bg-slate-50 flex justify-end">
                     <button
                       type="button"
-                      onClick={() => openAddModal("unit")}
+                      onClick={() => openAddModal("unit", selectedDistrict)}
                       className="px-2.5 py-1 text-xs bg-emerald-800 text-white rounded-lg font-bold"
                     >
                       + Add Unit to {selectedDistrict.name}
@@ -2159,7 +2308,7 @@ export default function LocationMasterPage() {
             <div className="flex items-center gap-2">
               <div className="bg-slate-100 p-0.5 rounded-lg flex items-center text-xs flex-wrap">
                 {[
-                  { key: "all", label: "All Stations (16)" },
+                  { key: "all", label: "All Stations (" + GRP_STATIONS_MASTER_DATA.length + ")" },
                   { key: "ambala", label: "Ambala Sub-Div (6)" },
                   { key: "faridabad", label: "Faridabad Sub-Div (7)" },
                   { key: "hisar", label: "Hisar Sub-Div (3)" },
@@ -2969,6 +3118,7 @@ export default function LocationMasterPage() {
                 node={stateNode}
                 expandedNodes={expandedNodes}
                 onToggle={toggleNode}
+                getEditAction={getHierarchyEditAction}
                 level={0}
               />
             ))}
@@ -3415,13 +3565,16 @@ function TreeNodeItem({
   node,
   expandedNodes,
   onToggle,
+  getEditAction,
   level,
 }: {
   node: HierarchyTreeNode;
   expandedNodes: Record<string, boolean>;
   onToggle: (id: string) => void;
+  getEditAction: (node: HierarchyTreeNode) => (() => void) | undefined;
   level: number;
 }) {
+  const editAction = getEditAction(node);
   const isExpanded = !!expandedNodes[node.id];
   const hasChildren = node.children && node.children.length > 0;
 
@@ -3469,6 +3622,12 @@ function TreeNodeItem({
 
         {/* Node Name */}
         <span className="font-bold text-slate-900 group-hover:text-blue-900">{node.name}</span>
+        {editAction && (
+          <button type="button" aria-label={"Edit " + node.name} className="ml-auto px-2 font-semibold text-blue-800 hover:underline"
+            onClick={(event) => { event.stopPropagation(); editAction(); }}>
+            Edit
+          </button>
+        )}
       </div>
 
       {/* Children */}
@@ -3480,6 +3639,7 @@ function TreeNodeItem({
               node={child}
               expandedNodes={expandedNodes}
               onToggle={onToggle}
+              getEditAction={getEditAction}
               level={level + 1}
             />
           ))}

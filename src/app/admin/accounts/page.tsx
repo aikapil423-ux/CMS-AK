@@ -49,6 +49,77 @@ import type {
   AssignedUnitType,
 } from "@/types/adminMaster";
 
+const ACCOUNT_ROLE_GROUPS = [
+  { label: "Police Commissionerate System (Gurugram, Faridabad, Panchkula, Sonipat, Jhajjar)", roles: [
+    { value: "CP", label: "CP (Commissioner of Police)" },
+    { value: "JOINT_CP", label: "Joint / Additional CP" },
+    { value: "DCP", label: "DCP (Deputy Commissioner of Police)" },
+    { value: "ADDL_DCP", label: "Additional DCP" },
+    { value: "ACP", label: "ACP (Assistant Commissioner of Police)" },
+    { value: "COMMISSIONERATE_SHO", label: "SHO (Commissionerate Police Station)" },
+    { value: "COMMISSIONERATE_SI", label: "Sub-Inspector (SI - Commissionerate)" },
+    { value: "COMMISSIONERATE_ASI", label: "Assistant Sub-Inspector (ASI - Commissionerate)" },
+    { value: "COMMISSIONERATE_MHC", label: "MHC (Moharrir Head Constable - Commissionerate)" },
+    { value: "COMMISSIONERATE_HC", label: "Head Constable (HC - Commissionerate)" },
+    { value: "COMMISSIONERATE_CONSTABLE", label: "Constable (Commissionerate Beat / Patrol)" },
+    { value: "COMMISSIONERATE_STAFF", label: "Station Staff (Commissionerate)" },
+    { value: "COMMISSIONERATE_AUDITOR", label: "Viewer / Auditor (Commissionerate)" },
+  ] },
+  { label: "Armed Police (Haryana Armed Police - HAP & IRB Battalions)", roles: [
+    { value: "COMMANDANT_ARMED", label: "Commandant (HAP / IRB Battalion)" },
+    { value: "ADDL_COMMANDANT", label: "Additional Commandant (Armed Police)" },
+    { value: "ASST_COMMANDANT", label: "Assistant Commandant (DSP Armed)" },
+    { value: "ARMED_INSPECTOR", label: "Company Commander (Inspector Armed / CDI)" },
+    { value: "ARMED_SI", label: "Platoon Commander (Sub-Inspector Armed)" },
+    { value: "ARMED_ASI", label: "Section Commander (ASI Armed)" },
+    { value: "ARMED_MHC", label: "MHC (Moharrir Head Constable - Armed Police / Battalion)" },
+    { value: "ARMED_HC", label: "Head Constable (CHM / Section 2IC)" },
+    { value: "ARMED_CONSTABLE", label: "Armed Constable (HAP / IRB Guard & Escort)" },
+  ] },
+  { label: "Training Academies & Colleges (HPA Madhuban, PTC Sunaria, RTC Bhondsi)", roles: [
+    { value: "TRAINING_DIRECTOR", label: "Director / DIG (Police Academy / HPA)" },
+    { value: "TRAINING_PRINCIPAL", label: "Principal / SP (PTC / RTC College)" },
+    { value: "TRAINING_INSTRUCTOR", label: "Training Instructor (Inspector / SI)" },
+    { value: "TRAINING_MHC", label: "MHC (Moharrir Head Constable - Academy / Training)" },
+    { value: "TRAINING_HC", label: "Drill Instructor (DI) / Head Constable" },
+    { value: "TRAINING_CONSTABLE", label: "Recruit / Trainee Constable" },
+  ] },
+  { label: "Specialized Units (CID, STF, Cyber Cell, State Crime)", roles: [
+    { value: "SPECIAL_UNIT_SP", label: "SP (CID / STF / State Cyber / State Crime)" },
+    { value: "SPECIAL_UNIT_DSP", label: "DSP (Special Operations / Cyber Crime)" },
+    { value: "SPECIAL_UNIT_INSPECTOR", label: "Inspector (Specialized Investigation / Cyber Cell)" },
+    { value: "SPECIAL_UNIT_SI", label: "Sub-Inspector (Special Intelligence / Technical IO)" },
+    { value: "SPECIAL_UNIT_ASI", label: "Assistant Sub-Inspector (ASI)" },
+    { value: "SPECIAL_UNIT_IO", label: "Investigating Officer (IO)" },
+    { value: "SPECIAL_UNIT_MHC", label: "MHC (Moharrir Head Constable)" },
+    { value: "SPECIAL_UNIT_HC", label: "Head Constable" },
+    { value: "SPECIAL_UNIT_CONSTABLE", label: "Constable" },
+    { value: "SPECIAL_UNIT_STAFF", label: "Station Staff" },
+    { value: "SPECIAL_UNIT_AUDITOR", label: "Viewer / Auditor" },
+  ] },
+  { label: "District Executive Police", roles: [
+    { value: "SP_DISTRICT", label: "SP (Superintendent of Police)" },
+    { value: "ASP", label: "ASP (Additional SP)" },
+    { value: "DSP_SUBDIV", label: "DSP (Deputy SP - Sub-Division)" },
+    { value: "SHO", label: "SHO (Station House Officer)" },
+    { value: "INSPECTOR", label: "Inspector of Police" },
+    { value: "SI", label: "Sub-Inspector (SI)" },
+    { value: "ASI", label: "Assistant Sub-Inspector (ASI)" },
+    { value: "ENQUIRY_OFFICER", label: "Investigating Officer (IO)" },
+    { value: "MHC_GD_INCHARGE", label: "MHC (Moharrir Head Constable)" },
+    { value: "HEAD_CONSTABLE", label: "Head Constable" },
+    { value: "CONSTABLE", label: "Constable" },
+    { value: "STATION_STAFF", label: "Station Staff" },
+    { value: "VIEWER_AUDITOR", label: "Viewer / Auditor" },
+  ] },
+  { label: "State Command & Police Ranges", roles: [
+    { value: "DGP", label: "DGP (Director General of Police)" },
+    { value: "ADGP", label: "ADGP (Additional DGP)" },
+    { value: "IG", label: "IG (Inspector General of Police)" },
+    { value: "DIG", label: "DIG (Deputy Inspector General)" },
+  ] },
+];
+
 type AccountTab = "directory" | "new" | "special-allocations" | "policies" | "audits";
 
 export const POLICE_RANKS_OPTIONS = [
@@ -508,6 +579,8 @@ export default function AccountManagementPage() {
   const [locationUnits, setLocationUnits] = useState<MasterSpecializedUnit[]>([]);
 
   // Filters for Directory
+  const [createStep, setCreateStep] = useState(0);
+  const [postingQuery, setPostingQuery] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [districtFilter, setDistrictFilter] = useState("ALL");
@@ -521,7 +594,7 @@ export default function AccountManagementPage() {
   const [resettingPin, setResettingPin] = useState(false);
 
   // Edit / Shift Officer Modal State
-  const [showEditModal, setShowEditModal] = useState(false);
+  const [editMode, setEditMode] = useState<"details" | "posting" | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<MasterAccount>>({});
   const [savingEdit, setSavingEdit] = useState(false);
 
@@ -629,6 +702,7 @@ export default function AccountManagementPage() {
 
   // Dynamic Role Selection Rules (Police Rank is kept independent as requested)
   const handleRoleChange = (newRole: AccountRole | "") => {
+    setPostingQuery("");
     if (!newRole) {
       setFormData((prev) => ({
         ...prev,
@@ -956,6 +1030,7 @@ export default function AccountManagementPage() {
 
   // Range / Wing Change logic
   const handleRangeChange = (newRange: string) => {
+    setPostingQuery("");
     setFormData((prev) => {
       if (!newRange) {
         return {
@@ -1076,6 +1151,7 @@ export default function AccountManagementPage() {
 
   // District Change cascading logic - sets posting location to empty by default
   const handleDistrictChange = (newDistrict: string) => {
+    setPostingQuery("");
     if (!newDistrict) {
       setFormData((prev) => ({
         ...prev,
@@ -1165,6 +1241,7 @@ export default function AccountManagementPage() {
 
   // Zone change logic for Commissionerates
   const handleZoneChange = (newZone: string) => {
+    setPostingQuery("");
     setFormData((prev) => {
       let updatedDesignation = prev.designation;
       let updatedRoleDisplay = prev.roleDisplay;
@@ -1426,7 +1503,7 @@ export default function AccountManagementPage() {
   }, [formData.district, locationUnits]);
 
   // Open Edit & Shift Officer Modal
-  const openEditAccountModal = (acc: MasterAccount) => {
+  const openEditAccountModal = (acc: MasterAccount, mode: "details" | "posting") => {
     setSelectedAccount(acc);
     setEditFormData({
       fullName: acc.fullName,
@@ -1444,7 +1521,7 @@ export default function AccountManagementPage() {
       assignedUnitName: acc.assignedUnitName,
       assignedUnitId: acc.assignedUnitId,
     });
-    setShowEditModal(true);
+    setEditMode(mode);
   };
 
   // Save Edit & Shift Account
@@ -1466,7 +1543,7 @@ export default function AccountManagementPage() {
       if (!res.ok) throw new Error(data.error || "Failed to update account.");
 
       setSuccessMsg(`Account for ${selectedAccount.fullName} (${selectedAccount.pno}) updated / shifted successfully!`);
-      setShowEditModal(false);
+      setEditMode(null);
       await loadData();
     } catch (err: any) {
       alert(err.message || "Failed to update officer posting.");
@@ -1515,39 +1592,56 @@ export default function AccountManagementPage() {
     }
   };
 
+  const matchesPostingQuery = (name: string) =>
+    name === formData.policeStation || name.toLowerCase().includes(postingQuery.trim().toLowerCase());
+
   // Submit New Account
   const handleCreateAccountSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingAccount) return;
+    setError(null);
+    if (createStep === 0) {
+      if (!formData.fullName.trim() || !formData.pno.trim() || !formData.mobileNumber.trim()) {
+        setError("Enter the officer name, PNO and mobile number.");
+        return;
+      }
+      setCreateStep(1);
+      return;
+    }
     if (!formData.fullName || !formData.pno || !formData.mobileNumber) {
-      alert("Please fill all required personal fields (Name, PNO, Mobile).");
+      setError("Please fill all required personal fields (Name, PNO, Mobile).");
       return;
     }
     if (!formData.role) {
-      alert("Please select a System Role.");
+      setError("Please select a System Role.");
       return;
     }
     if (!formData.rank) {
-      alert("Please select a Police Rank.");
+      setError("Please select a Police Rank.");
       return;
     }
     if (!formData.assignedUnitType) {
-      alert("Please select an Assigned Unit Type.");
+      setError("Please select an Assigned Unit Type.");
       return;
     }
     if (!formData.district && !formData.range) {
-      alert("Please select a District or Range / Commissionerate.");
+      setError("Please select a District or Range / Commissionerate.");
       return;
     }
     if (!formData.policeStation && !formData.assignedUnitName) {
-      alert("Please select a Police Station or Posting Location.");
+      setError("Please select a Police Station or Posting Location.");
+      return;
+    }
+    if (createStep === 1) {
+      setCreateStep(2);
       return;
     }
     if (!formData.pin || formData.pin.length < 4) {
-      alert("Please enter a valid Login PIN (at least 4 digits).");
+      setError("Please enter a valid Login PIN (at least 4 digits).");
       return;
     }
     if (formData.pin !== formData.confirmPin) {
-      alert("PIN and Confirm PIN do not match.");
+      setError("PIN and Confirm PIN do not match.");
       return;
     }
 
@@ -1572,6 +1666,8 @@ export default function AccountManagementPage() {
       setSuccessMsg(`Account for ${formData.fullName} (${formData.pno}) generated successfully!`);
       await loadData();
       setFormData(initialFormData);
+      setPostingQuery("");
+      setCreateStep(0);
       setTab("directory");
     } catch (err: any) {
       setError(err.message || "Failed to generate account.");
@@ -1736,7 +1832,7 @@ export default function AccountManagementPage() {
           </div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-1 flex items-center gap-2">
             <Users className="w-6 h-6 text-[#1e3a8a]" />
-            Account Management & User Generation
+            Account Management
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
             Create, edit, shift postings, configure jurisdictions and audit officer accounts across all police ranks.
@@ -1756,11 +1852,11 @@ export default function AccountManagementPage() {
           </button>
           <button
             type="button"
-            onClick={() => setTab("new")}
+            onClick={() => { setCreateStep(0); setError(null); setTab("new"); }}
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#1e3a8a] text-white text-xs font-bold hover:bg-[#152865] transition-colors shadow-xs cursor-pointer"
           >
             <UserPlus className="w-3.5 h-3.5" />
-            <span>+ Generate Officer Account</span>
+            <span>Create account</span>
           </button>
         </div>
       </div>
@@ -1769,9 +1865,8 @@ export default function AccountManagementPage() {
       <div className="flex items-center gap-1 overflow-x-auto border-b border-slate-200 text-xs pb-px scrollbar-none">
         {[
           { key: "directory", label: "Officer Directory", count: accounts.length, icon: Users },
-          { key: "new", label: "Account Generation Form", icon: UserPlus },
-          { key: "special-allocations", label: "Special Station Allocations", icon: BadgeCheck },
-          { key: "policies", label: "Role Jurisdiction Regulations", icon: Shield },
+          { key: "special-allocations", label: "Extra Station Access", icon: BadgeCheck },
+          { key: "policies", label: "Role Guide", icon: Shield },
           { key: "audits", label: "Audit Logs", count: auditLogs.length, icon: Clock },
         ].map((t) => {
           const Icon = t.icon;
@@ -1821,7 +1916,7 @@ export default function AccountManagementPage() {
         </div>
       )}
 
-      {error && (
+      {error && activeTab !== "new" && (
         <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-center gap-2">
           <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
           <span>{error}</span>
@@ -1853,12 +1948,17 @@ export default function AccountManagementPage() {
                 className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 font-medium"
               >
                 <option value="ALL">All Roles</option>
-                <option value="SP_DISTRICT">SP / ASP</option>
-                <option value="DSP_SUBDIV">DSP</option>
-                <option value="SHO">SHO (Inspector)</option>
-                <option value="ENQUIRY_OFFICER">Investigating Officer (IO)</option>
-                <option value="MHC_GD_INCHARGE">MHC (Store & GD)</option>
-
+                {ACCOUNT_ROLE_GROUPS.map((group) => (
+                  <optgroup key={group.label} label={group.label}>
+                    {group.roles.map((role) => (
+                      <option key={role.value} value={role.value}>{role.label}</option>
+                    ))}
+                  </optgroup>
+                ))}
+                {[...new Map(accounts
+                  .filter((account) => !ACCOUNT_ROLE_GROUPS.some((group) => group.roles.some((role) => role.value === account.role)))
+                  .map((account) => [account.role, account.roleDisplay || account.role])).entries()]
+                  .map(([value, label]) => <option key={value} value={value}>{label}</option>)}
               </select>
 
               <select
@@ -1956,52 +2056,63 @@ export default function AccountManagementPage() {
                       <td className="p-3 text-right space-x-1 whitespace-nowrap">
                         <button
                           type="button"
-                          onClick={() => handleLoginAsOfficer(acc)}
-                          className="px-2 py-1 bg-slate-900 text-white rounded text-[10px] font-bold hover:bg-slate-800 transition-colors shadow-2xs"
-                          title="View system as this officer"
-                        >
-                          View As
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => openEditAccountModal(acc)}
+                          onClick={() => openEditAccountModal(acc, "details")}
                           className="px-2 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded text-[10px] font-bold hover:bg-blue-100 transition-colors"
-                          title="Edit details or shift posting/district"
+                          title="Edit officer details"
                         >
-                          Edit / Shift
+                          Edit officer
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedAccount(acc);
-                            setShowResetPinModal(true);
-                          }}
-                          className="px-2 py-1 border border-slate-200 text-slate-700 rounded text-[10px] font-semibold hover:bg-slate-100 transition-colors"
-                          title="Reset Login PIN"
-                        >
-                          Reset PIN
+                        <button type="button" onClick={() => openEditAccountModal(acc, "posting")}
+                          className="px-2 py-1 rounded border border-slate-200 text-[10px] font-semibold hover:bg-slate-100">
+                          Change posting
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => handleToggleAccountStatus(acc)}
-                          className="px-2 py-1 border border-slate-200 text-slate-600 rounded text-[10px] font-semibold hover:bg-slate-100 transition-colors"
-                        >
-                          {acc.status === "ACTIVE" ? "Deactivate" : "Activate"}
-                        </button>
-                        {isDeveloper && acc.pno !== "DEV-ADMIN" && acc.id !== "cms_developer_admin" && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setAccountToDelete(acc);
-                              setShowDeleteModal(true);
-                            }}
-                            className="px-2 py-1 bg-red-50 text-red-700 border border-red-200 rounded text-[10px] font-bold hover:bg-red-100 transition-colors inline-flex items-center gap-0.5 cursor-pointer"
-                            title="Delete officer account"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                            Delete
-                          </button>
-                        )}
+                        <details className="inline-block align-top text-left">
+                          <summary className="cursor-pointer rounded border border-slate-200 px-2 py-1 text-[10px] font-semibold">
+                            More actions
+                          </summary>
+                          <div className="mt-1 grid gap-1 rounded border border-slate-200 bg-white p-1">
+                            <button
+                              type="button"
+                              onClick={() => handleLoginAsOfficer(acc)}
+                              className="px-2 py-1 bg-slate-900 text-white rounded text-[10px] font-bold hover:bg-slate-800 transition-colors shadow-2xs"
+                              title="View system as this officer"
+                            >
+                              View As
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedAccount(acc);
+                                setShowResetPinModal(true);
+                              }}
+                              className="px-2 py-1 border border-slate-200 text-slate-700 rounded text-[10px] font-semibold hover:bg-slate-100 transition-colors"
+                              title="Reset Login PIN"
+                            >
+                              Reset PIN
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleAccountStatus(acc)}
+                              className="px-2 py-1 border border-slate-200 text-slate-600 rounded text-[10px] font-semibold hover:bg-slate-100 transition-colors"
+                            >
+                              {acc.status === "ACTIVE" ? "Deactivate" : "Activate"}
+                            </button>
+                            {isDeveloper && acc.pno !== "DEV-ADMIN" && acc.id !== "cms_developer_admin" && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setAccountToDelete(acc);
+                                  setShowDeleteModal(true);
+                                }}
+                                className="px-2 py-1 bg-red-50 text-red-700 border border-red-200 rounded text-[10px] font-bold hover:bg-red-100 transition-colors inline-flex items-center gap-0.5 cursor-pointer"
+                                title="Delete officer account"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                                Delete
+                              </button>
+                            )}
+                          </div>
+                        </details>
                       </td>
                     </tr>
                   ))}
@@ -2023,663 +2134,642 @@ export default function AccountManagementPage() {
       {activeTab === "new" && (
         <form onSubmit={handleCreateAccountSubmit} className="space-y-6 max-w-4xl">
           <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-2xs space-y-6">
-            {/* Section 1: Personal Information */}
-            <div className="space-y-4">
-              <div className="border-b border-slate-100 pb-2">
-                <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">Section 1</span>
-                <h3 className="text-sm font-bold text-slate-900">Personal & Identification Details</h3>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs">
-                <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Full Officer Name *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Inspector Surender Singh"
-                    value={formData.fullName}
-                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 focus:ring-1 focus:ring-blue-500"
-                  />
+            <ol aria-label="Account setup steps" className="flex flex-wrap gap-2 text-xs font-semibold">
+              {["Officer details", "Posting & access", "Review & create"].map((label, index) => (
+                <li key={label} aria-current={createStep === index ? "step" : undefined}
+                  className={cn("rounded-lg px-3 py-2", createStep === index ? "bg-blue-100 text-blue-900" : "bg-slate-100 text-slate-600")}>
+                  {index + 1}. {label}
+                </li>
+              ))}
+            </ol>
+            <fieldset hidden={createStep !== 0} disabled={createStep !== 0}>
+              {/* Section 1: Personal Information */}
+              <div className="space-y-4">
+                <div className="border-b border-slate-100 pb-2">
+                  <h3 className="text-sm font-bold text-slate-900">Personal & Identification Details</h3>
                 </div>
-                <div>
-                  <label className="font-semibold text-slate-700 block mb-1">PNO / Employee ID *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. HR-08192033"
-                    value={formData.pno}
-                    onChange={(e) => setFormData({ ...formData, pno: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-mono uppercase focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Belt Number</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 412/PNP"
-                    value={formData.beltNumber}
-                    onChange={(e) => setFormData({ ...formData, beltNumber: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Mobile Number *</label>
-                  <input
-                    type="tel"
-                    required
-                    placeholder="e.g. 9812044321"
-                    value={formData.mobileNumber}
-                    onChange={(e) => setFormData({ ...formData, mobileNumber: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Govt Official Email</label>
-                  <input
-                    type="email"
-                    placeholder="e.g. officer@hry.police.gov.in"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Official Designation</label>
-                  <input
-                    type="text"
-                    value={formData.designation}
-                    onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Section 2: Login Credentials & Temporary PIN Generation */}
-            <div className="space-y-4">
-              <div className="border-b border-slate-100 pb-2 flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">Section 2</span>
-                  <h3 className="text-sm font-bold text-slate-900">Login Authentication Credentials</h3>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleGeneratePin}
-                  className="px-2.5 py-1 rounded bg-amber-50 text-amber-800 border border-amber-200 text-xs font-semibold hover:bg-amber-100 cursor-pointer"
-                >
-                  ⚡ Generate Random 6-Digit PIN
-                </button>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Login PIN / Password *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. 123456"
-                    value={formData.pin}
-                    onChange={(e) => setFormData({ ...formData, pin: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-mono text-center tracking-widest font-bold focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Confirm PIN *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Re-enter PIN"
-                    value={formData.confirmPin}
-                    onChange={(e) => setFormData({ ...formData, confirmPin: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-mono text-center tracking-widest font-bold focus:ring-1 focus:ring-blue-500"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+                  <div>
+                    <label htmlFor="create-full-officer-name" className="font-semibold text-slate-700 block mb-1">Full Officer Name *</label>
+                    <input id="create-full-officer-name"
+                      type="text"
+                      required
+                      placeholder="e.g. Inspector Surender Singh"
+                      value={formData.fullName}
+                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="create-pno-employee-id" className="font-semibold text-slate-700 block mb-1">PNO / Employee ID *</label>
+                    <input id="create-pno-employee-id"
+                      type="text"
+                      required
+                      placeholder="e.g. HR-08192033"
+                      value={formData.pno}
+                      onChange={(e) => setFormData({ ...formData, pno: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-mono uppercase focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="create-belt-number" className="font-semibold text-slate-700 block mb-1">Belt Number</label>
+                    <input id="create-belt-number"
+                      type="text"
+                      placeholder="e.g. 412/PNP"
+                      value={formData.beltNumber}
+                      onChange={(e) => setFormData({ ...formData, beltNumber: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="create-mobile-number" className="font-semibold text-slate-700 block mb-1">Mobile Number *</label>
+                    <input id="create-mobile-number"
+                      type="tel"
+                      required
+                      placeholder="e.g. 9812044321"
+                      value={formData.mobileNumber}
+                      onChange={(e) => setFormData({ ...formData, mobileNumber: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="create-govt-official-email" className="font-semibold text-slate-700 block mb-1">Govt Official Email</label>
+                    <input id="create-govt-official-email"
+                      type="email"
+                      placeholder="e.g. officer@hry.police.gov.in"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="create-official-designation" className="font-semibold text-slate-700 block mb-1">Official Designation</label>
+                    <input id="create-official-designation"
+                      type="text"
+                      value={formData.designation}
+                      onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Section 3: Role & Dynamic Role Regulations */}
-            <div className="space-y-4">
-              <div className="border-b border-slate-100 pb-2 flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">Section 3</span>
-                  <h3 className="text-sm font-bold text-slate-900">Role Selection & Assigned Unit</h3>
+            </fieldset>
+            <fieldset hidden={createStep !== 1} disabled={createStep !== 1} className="space-y-6">
+              {/* Section 3: Role & Dynamic Role Regulations */}
+              <div className="space-y-4">
+                <div className="border-b border-slate-100 pb-2 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">Role Selection & Assigned Unit</h3>
+                  </div>
+                  <span className="text-[11px] text-slate-500 font-medium italic">
+                    Choose a role to prefill unit type and access scope.
+                  </span>
                 </div>
-                <span className="text-[11px] text-slate-500 font-medium italic">
-                  All role, rank and unit dropdowns default to unselected.
-                </span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs">
-                <div>
-                  <label className="font-semibold text-slate-700 block mb-1">System Role *</label>
-                  <select
-                    value={formData.role}
-                    onChange={(e) => handleRoleChange(e.target.value as AccountRole)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold text-blue-900 focus:ring-1 focus:ring-blue-500"
-                  >
-                    <option value="">-- Select System Role --</option>
-
-                    <optgroup label="Police Commissionerate System (Gurugram, Faridabad, Panchkula, Sonipat, Jhajjar)">
-                      <option value="CP">CP (Commissioner of Police)</option>
-                      <option value="JOINT_CP">Joint / Additional CP</option>
-                      <option value="DCP">DCP (Deputy Commissioner of Police)</option>
-                      <option value="ADDL_DCP">Additional DCP</option>
-                      <option value="ACP">ACP (Assistant Commissioner of Police)</option>
-                      <option value="COMMISSIONERATE_SHO">SHO (Commissionerate Police Station)</option>
-                      <option value="COMMISSIONERATE_SI">Sub-Inspector (SI - Commissionerate)</option>
-                      <option value="COMMISSIONERATE_ASI">Assistant Sub-Inspector (ASI - Commissionerate)</option>
-                      <option value="COMMISSIONERATE_MHC">MHC (Moharrir Head Constable - Commissionerate)</option>
-                      <option value="COMMISSIONERATE_HC">Head Constable (HC - Commissionerate)</option>
-                      <option value="COMMISSIONERATE_CONSTABLE">Constable (Commissionerate Beat / Patrol)</option>
-                      <option value="COMMISSIONERATE_STAFF">Station Staff (Commissionerate)</option>
-                      <option value="COMMISSIONERATE_AUDITOR">Viewer / Auditor (Commissionerate)</option>
-                    </optgroup>
-
-                    <optgroup label="Armed Police (Haryana Armed Police - HAP & IRB Battalions)">
-                      <option value="COMMANDANT_ARMED">Commandant (HAP / IRB Battalion)</option>
-                      <option value="ADDL_COMMANDANT">Additional Commandant (Armed Police)</option>
-                      <option value="ASST_COMMANDANT">Assistant Commandant (DSP Armed)</option>
-                      <option value="ARMED_INSPECTOR">Company Commander (Inspector Armed / CDI)</option>
-                      <option value="ARMED_SI">Platoon Commander (Sub-Inspector Armed)</option>
-                      <option value="ARMED_ASI">Section Commander (ASI Armed)</option>
-                      <option value="ARMED_MHC">MHC (Moharrir Head Constable - Armed Police / Battalion)</option>
-                      <option value="ARMED_HC">Head Constable (CHM / Section 2IC)</option>
-                      <option value="ARMED_CONSTABLE">Armed Constable (HAP / IRB Guard & Escort)</option>
-                    </optgroup>
-
-                    <optgroup label="Training Academies & Colleges (HPA Madhuban, PTC Sunaria, RTC Bhondsi)">
-                      <option value="TRAINING_DIRECTOR">Director / DIG (Police Academy / HPA)</option>
-                      <option value="TRAINING_PRINCIPAL">Principal / SP (PTC / RTC College)</option>
-                      <option value="TRAINING_INSTRUCTOR">Training Instructor (Inspector / SI)</option>
-                      <option value="TRAINING_MHC">MHC (Moharrir Head Constable - Academy / Training)</option>
-                      <option value="TRAINING_HC">Drill Instructor (DI) / Head Constable</option>
-                      <option value="TRAINING_CONSTABLE">Recruit / Trainee Constable</option>
-                    </optgroup>
-
-                    <optgroup label="Specialized Units (CID, STF, Cyber Cell, State Crime)">
-                      <option value="SPECIAL_UNIT_SP">SP (CID / STF / State Cyber / State Crime)</option>
-                      <option value="SPECIAL_UNIT_DSP">DSP (Special Operations / Cyber Crime)</option>
-                      <option value="SPECIAL_UNIT_INSPECTOR">Inspector (Specialized Investigation / Cyber Cell)</option>
-                      <option value="SPECIAL_UNIT_SI">Sub-Inspector (Special Intelligence / Technical IO)</option>
-                      <option value="SPECIAL_UNIT_ASI">Assistant Sub-Inspector (ASI)</option>
-                      <option value="SPECIAL_UNIT_IO">Investigating Officer (IO)</option>
-                      <option value="SPECIAL_UNIT_MHC">MHC (Moharrir Head Constable)</option>
-
-                      <option value="SPECIAL_UNIT_HC">Head Constable</option>
-                      <option value="SPECIAL_UNIT_CONSTABLE">Constable</option>
-                      <option value="SPECIAL_UNIT_STAFF">Station Staff</option>
-                      <option value="SPECIAL_UNIT_AUDITOR">Viewer / Auditor</option>
-                    </optgroup>
-
-                    <optgroup label="District Executive Police">
-                      <option value="SP_DISTRICT">SP (Superintendent of Police)</option>
-                      <option value="ASP">ASP (Additional SP)</option>
-                      <option value="DSP_SUBDIV">DSP (Deputy SP - Sub-Division)</option>
-                      <option value="SHO">SHO (Station House Officer)</option>
-                      <option value="INSPECTOR">Inspector of Police</option>
-                      <option value="SI">Sub-Inspector (SI)</option>
-                      <option value="ASI">Assistant Sub-Inspector (ASI)</option>
-                      <option value="ENQUIRY_OFFICER">Investigating Officer (IO)</option>
-                      <option value="MHC_GD_INCHARGE">MHC (Moharrir Head Constable)</option>
-
-                      <option value="HEAD_CONSTABLE">Head Constable</option>
-                      <option value="CONSTABLE">Constable</option>
-                      <option value="STATION_STAFF">Station Staff</option>
-                      <option value="VIEWER_AUDITOR">Viewer / Auditor</option>
-                    </optgroup>
-
-                    <optgroup label="State Command & Police Ranges">
-                      <option value="DGP">DGP (Director General of Police)</option>
-                      <option value="ADGP">ADGP (Additional DGP)</option>
-                      <option value="IG">IG (Inspector General of Police)</option>
-                      <option value="DIG">DIG (Deputy Inspector General)</option>
-                    </optgroup>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Police Rank *</label>
-                  <select
-                    value={formData.rank}
-                    onChange={(e) => {
-                      const selected = POLICE_RANKS_OPTIONS.find((r) => r.rank === e.target.value);
-                      setFormData((prev) => ({
-                        ...prev,
-                        rank: e.target.value,
-                        rankDisplay: selected ? selected.display : e.target.value,
-                        designation: prev.designation || (selected ? selected.display : e.target.value),
-                      }));
-                    }}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold text-blue-900 focus:ring-1 focus:ring-blue-500"
-                  >
-                    <option value="">-- Select Police Rank --</option>
-                    {POLICE_RANKS_OPTIONS.map((opt) => (
-                      <option key={opt.rank} value={opt.rank}>
-                        {opt.display}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Assigned Unit Type *</label>
-                  <select
-                    value={formData.assignedUnitType}
-                    onChange={(e) => {
-                      const uType = e.target.value as AssignedUnitType;
-                      setFormData((prev) => ({
-                        ...prev,
-                        assignedUnitType: uType,
-                        policeStation: "",
-                        assignedUnitName: "",
-                        assignedUnitId: "",
-                        authorizedPoliceStations: [],
-                      }));
-                    }}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold text-blue-900 focus:ring-1 focus:ring-blue-500"
-                  >
-                    <option value="">-- Select Assigned Unit Type --</option>
-                    {ASSIGNED_UNIT_TYPE_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Section 4: Jurisdiction & Location Cascading */}
-            <div className="space-y-4">
-              <div className="border-b border-slate-100 pb-2 flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">Section 4</span>
-                  <h3 className="text-sm font-bold text-slate-900">Jurisdiction & Posting Location</h3>
-                </div>
-                <span className="text-[11px] text-slate-500 font-medium italic">
-                  Fully dynamic from Location Master
-                </span>
-              </div>
-              <div className={cn(
-                "grid gap-3 text-xs",
-                isCommissionerate ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-4" : "grid-cols-1 sm:grid-cols-3"
-              )}>
-                <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Range / Commissionerate / Wing</label>
-                  <select
-                    value={formData.range}
-                    onChange={(e) => handleRangeChange(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold focus:ring-1 focus:ring-blue-500"
-                  >
-                    <option value="">-- Select Range / Commissionerate / Wing --</option>
-                    <optgroup label="Police Ranges">
-                      {locationRanges
-                        .filter((r) => !r.name.toLowerCase().includes("commissionerate"))
-                        .map((r) => (
-                          <option key={r.id} value={r.name}>
-                            {r.name}
-                          </option>
-                        ))}
-                    </optgroup>
-                    <optgroup label="Police Commissionerates">
-                      {COMMISSIONERATES_LIST.map((c) => (
-                        <option key={c.name} value={c.name}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                    <optgroup label="State Level / Specialized Wings">
-                      <option value="State Headquarters (PHQ)">State Headquarters (PHQ Panchkula)</option>
-                      <option value="GRP Haryana">GRP Haryana (Railway Police)</option>
-                      <option value="Armed Police (HAP & IRB)">Armed Police (HAP & IRB)</option>
-                      <option value="Forensic Science Laboratories">Forensic Science Laboratories (FSL/RFSL)</option>
-                      <option value="Training Academies & Colleges">Training Academies & Colleges</option>
-                      <option value="Specialized State Units">Specialized State Directorates (CID/STF/ERSS)</option>
-                      <option value="Deputation Units">Deputation Units (Central & State)</option>
-                    </optgroup>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="font-semibold text-slate-700 block mb-1">District *</label>
-                  <select
-                    disabled={!formData.range}
-                    value={formData.district}
-                    onChange={(e) => handleDistrictChange(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold focus:ring-1 focus:ring-blue-500 disabled:opacity-60 disabled:bg-slate-100 disabled:cursor-not-allowed"
-                  >
-                    {!formData.range ? (
-                      <option value="">-- Select Range / Wing First --</option>
-                    ) : (
-                      <>
-                        <option value="">-- Select District ({filteredDistricts.length}) --</option>
-                        {filteredDistricts.map((d) => (
-                          <option key={d.id} value={d.name}>
-                            {d.name}
-                          </option>
-                        ))}
-                      </>
-                    )}
-                  </select>
-                </div>
-
-                {/* Commissionerate Zone Selection - Active when Commissionerate is selected */}
-                {isCommissionerate && (
-                  <div className="p-2 bg-blue-50/80 border border-blue-200 rounded-xl space-y-1">
-                    <label className="font-bold text-blue-900 block flex items-center justify-between">
-                      <span>Commissionerate Zone *</span>
-                      <span className="text-[10px] text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded font-mono">DCP Zone</span>
-                    </label>
-                    <select
-                      value={formData.zone || ""}
-                      onChange={(e) => handleZoneChange(e.target.value)}
-                      className="w-full bg-white border border-blue-300 rounded-lg p-2 font-bold text-blue-950 focus:ring-1 focus:ring-blue-500 shadow-2xs"
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+                  <div>
+                    <label htmlFor="create-system-role" className="font-semibold text-slate-700 block mb-1">System Role *</label>
+                    <select id="create-system-role"
+                      value={formData.role}
+                      onChange={(e) => handleRoleChange(e.target.value as AccountRole)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold text-blue-900 focus:ring-1 focus:ring-blue-500"
                     >
-                      <option value="">-- Select Zone ({activeCommissionerateZones.length}) --</option>
-                      {activeCommissionerateZones.map((z) => (
-                        <option key={z.id} value={z.name}>
-                          {z.name} ({z.dcpTitle})
+                      <option value="">-- Select System Role --</option>
+
+                      {ACCOUNT_ROLE_GROUPS.map((group) => (
+                        <optgroup key={group.label} label={group.label}>
+                          {group.roles.map((role) => (
+                            <option key={role.value} value={role.value}>{role.label}</option>
+                          ))}
+                        </optgroup>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor="create-police-rank" className="font-semibold text-slate-700 block mb-1">Police Rank *</label>
+                    <select id="create-police-rank"
+                      value={formData.rank}
+                      onChange={(e) => {
+                        const selected = POLICE_RANKS_OPTIONS.find((r) => r.rank === e.target.value);
+                        setFormData((prev) => ({
+                          ...prev,
+                          rank: e.target.value,
+                          rankDisplay: selected ? selected.display : e.target.value,
+                          designation: prev.designation || (selected ? selected.display : e.target.value),
+                        }));
+                      }}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold text-blue-900 focus:ring-1 focus:ring-blue-500"
+                    >
+                      <option value="">-- Select Police Rank --</option>
+                      {POLICE_RANKS_OPTIONS.map((opt) => (
+                        <option key={opt.rank} value={opt.rank}>
+                          {opt.display}
                         </option>
                       ))}
                     </select>
                   </div>
-                )}
 
-                <div>
-                  <label className="font-semibold text-slate-700 block mb-1">
-                    Police Station / Posting Unit *
-                    {formData.assignedUnitType && (
-                      <span className="ml-1 text-[10px] font-normal text-blue-700">
-                        ({ASSIGNED_UNIT_TYPE_OPTIONS.find((o) => o.value === formData.assignedUnitType)?.label})
-                      </span>
+                  <div>
+                    <label htmlFor="create-assigned-unit-type" className="font-semibold text-slate-700 block mb-1">Assigned Unit Type *</label>
+                    <select id="create-assigned-unit-type"
+                      value={formData.assignedUnitType}
+                      onChange={(e) => {
+                        setPostingQuery("");
+                        const uType = e.target.value as AssignedUnitType;
+                        setFormData((prev) => ({
+                          ...prev,
+                          assignedUnitType: uType,
+                          policeStation: "",
+                          assignedUnitName: "",
+                          assignedUnitId: "",
+                          authorizedPoliceStations: [],
+                        }));
+                      }}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold text-blue-900 focus:ring-1 focus:ring-blue-500"
+                    >
+                      <option value="">-- Select Assigned Unit Type --</option>
+                      {ASSIGNED_UNIT_TYPE_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 4: Jurisdiction & Location Cascading */}
+              <div className="space-y-4">
+                <div className="border-b border-slate-100 pb-2 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">Jurisdiction & Posting Location</h3>
+                  </div>
+                  <span className="text-[11px] text-slate-500 font-medium italic">
+                    Fully dynamic from Location Master
+                  </span>
+                </div>
+                <div className={cn(
+                  "grid gap-3 text-xs",
+                  isCommissionerate ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-4" : "grid-cols-1 sm:grid-cols-3"
+                )}>
+                  <div>
+                    <label htmlFor="create-range-commissionerate-wing" className="font-semibold text-slate-700 block mb-1">Range / Commissionerate / Wing</label>
+                    <select id="create-range-commissionerate-wing"
+                      value={formData.range}
+                      onChange={(e) => handleRangeChange(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold focus:ring-1 focus:ring-blue-500"
+                    >
+                      <option value="">-- Select Range / Commissionerate / Wing --</option>
+                      <optgroup label="Police Ranges">
+                        {locationRanges
+                          .filter((r) => !r.name.toLowerCase().includes("commissionerate"))
+                          .map((r) => (
+                            <option key={r.id} value={r.name}>
+                              {r.name}
+                            </option>
+                          ))}
+                      </optgroup>
+                      <optgroup label="Police Commissionerates">
+                        {COMMISSIONERATES_LIST.map((c) => (
+                          <option key={c.name} value={c.name}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="State Level / Specialized Wings">
+                        <option value="State Headquarters (PHQ)">State Headquarters (PHQ Panchkula)</option>
+                        <option value="GRP Haryana">GRP Haryana (Railway Police)</option>
+                        <option value="Armed Police (HAP & IRB)">Armed Police (HAP & IRB)</option>
+                        <option value="Forensic Science Laboratories">Forensic Science Laboratories (FSL/RFSL)</option>
+                        <option value="Training Academies & Colleges">Training Academies & Colleges</option>
+                        <option value="Specialized State Units">Specialized State Directorates (CID/STF/ERSS)</option>
+                        <option value="Deputation Units">Deputation Units (Central & State)</option>
+                      </optgroup>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor="create-district" className="font-semibold text-slate-700 block mb-1">District *</label>
+                    <select id="create-district"
+                      disabled={!formData.range}
+                      value={formData.district}
+                      onChange={(e) => handleDistrictChange(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold focus:ring-1 focus:ring-blue-500 disabled:opacity-60 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                    >
+                      {!formData.range ? (
+                        <option value="">-- Select Range / Wing First --</option>
+                      ) : (
+                        <>
+                          <option value="">-- Select District ({filteredDistricts.length}) --</option>
+                          {filteredDistricts.map((d) => (
+                            <option key={d.id} value={d.name}>
+                              {d.name}
+                            </option>
+                          ))}
+                        </>
+                      )}
+                    </select>
+                  </div>
+
+                  {/* Commissionerate Zone Selection - Active when Commissionerate is selected */}
+                  {isCommissionerate && (
+                    <div className="p-2 bg-blue-50/80 border border-blue-200 rounded-xl space-y-1">
+                      <label className="font-bold text-blue-900 block flex items-center justify-between">
+                        <span>Commissionerate Zone *</span>
+                        <span className="text-[10px] text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded font-mono">DCP Zone</span>
+                      </label>
+                      <select
+                        value={formData.zone || ""}
+                        onChange={(e) => handleZoneChange(e.target.value)}
+                        className="w-full bg-white border border-blue-300 rounded-lg p-2 font-bold text-blue-950 focus:ring-1 focus:ring-blue-500 shadow-2xs"
+                      >
+                        <option value="">-- Select Zone ({activeCommissionerateZones.length}) --</option>
+                        {activeCommissionerateZones.map((z) => (
+                          <option key={z.id} value={z.name}>
+                            {z.name} ({z.dcpTitle})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  <div>
+                    <label htmlFor="create-posting" className="font-semibold text-slate-700 block mb-1">
+                      Police Station / Posting Unit *
+                      {formData.assignedUnitType && (
+                        <span className="ml-1 text-[10px] font-normal text-blue-700">
+                          ({ASSIGNED_UNIT_TYPE_OPTIONS.find((o) => o.value === formData.assignedUnitType)?.label})
+                        </span>
+                      )}
+                    </label>
+                    {formData.district && formData.assignedUnitType && (
+                      <input
+                        type="search"
+                        aria-label="Filter posting options"
+                        placeholder="Find a posting by name"
+                        value={postingQuery}
+                        onChange={(event) => setPostingQuery(event.target.value)}
+                        className="mb-2 w-full rounded-lg border border-slate-200 px-2 py-2"
+                      />
                     )}
-                  </label>
-                  <select
-                    disabled={!formData.district || !formData.assignedUnitType}
-                    value={formData.policeStation}
-                    onChange={(e) => handlePostingLocationChange(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold focus:ring-1 focus:ring-blue-500 disabled:opacity-60 disabled:bg-slate-100 disabled:cursor-not-allowed"
-                  >
-                    {!formData.district ? (
-                      <option value="">-- Select District First --</option>
-                    ) : !formData.assignedUnitType ? (
-                      <option value="">-- Select Assigned Unit Type in Section 3 First --</option>
-                    ) : formData.assignedUnitType === "POLICE_STATION" ? (
-                      <>
-                        <option value="">-- Select Police Station ({filteredStations.length}) --</option>
-                        {filteredStations.map((ps) => (
-                          <option key={ps.id} value={ps.name}>
-                            {ps.name} ({ps.stationType})
+                    <select id="create-posting"
+                      disabled={!formData.district || !formData.assignedUnitType}
+                      value={formData.policeStation}
+                      onChange={(e) => handlePostingLocationChange(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold focus:ring-1 focus:ring-blue-500 disabled:opacity-60 disabled:bg-slate-100 disabled:cursor-not-allowed"
+                    >
+                      {!formData.district ? (
+                        <option value="">-- Select District First --</option>
+                      ) : !formData.assignedUnitType ? (
+                        <option value="">Select a unit type above</option>
+                      ) : formData.assignedUnitType === "POLICE_STATION" ? (
+                        <>
+                          <option value="">-- Select Police Station ({filteredStations.length}) --</option>
+                          {filteredStations.map((ps) => (
+                            <option key={ps.id} value={ps.name} hidden={!matchesPostingQuery(ps.name)}>
+                              {ps.name} ({ps.stationType})
+                            </option>
+                          ))}
+                          {filteredStations.length === 0 && (
+                            <option value={`${formData.district} Police Station`}>
+                              {formData.district} Police Station
+                            </option>
+                          )}
+                        </>
+                      ) : formData.assignedUnitType === "DISTRICT_OFFICE" ? (
+                        <>
+                          <option value="">-- Select Administrative Office ({filteredOffices.length}) --</option>
+                          {filteredOffices.map((off) => (
+                            <option key={off.id} value={off.name} hidden={!matchesPostingQuery(off.name)}>
+                              {off.name} ({off.officeType})
+                            </option>
+                          ))}
+                          {filteredOffices.length === 0 && (
+                            <option value={`District Police Office (SP Office) ${formData.district}`}>
+                              District Police Office (SP Office) {formData.district}
+                            </option>
+                          )}
+                        </>
+                      ) : formData.assignedUnitType === "SPECIALIZED_UNIT" || formData.assignedUnitType === "INVESTIGATION_UNIT" ? (
+                        <>
+                          <option value="">-- Select Specialized Unit ({filteredUnits.length}) --</option>
+                          {filteredUnits.map((unt) => (
+                            <option key={unt.id} value={unt.name} hidden={!matchesPostingQuery(unt.name)}>
+                              {unt.name} ({unt.unitType})
+                            </option>
+                          ))}
+                          {filteredUnits.length === 0 && (
+                            <option value={`Special Investigation Unit (CIA) ${formData.district}`}>
+                              Special Investigation Unit (CIA) {formData.district}
+                            </option>
+                          )}
+                        </>
+                      ) : formData.assignedUnitType === "MHC_STORE" ? (
+                        <>
+                          <option value="">-- Select Malkhana Store --</option>
+                          {filteredUnits
+                            .filter((u) => u.unitType === "MHC_STORE" || u.name.toLowerCase().includes("malkhana") || u.name.toLowerCase().includes("mhc"))
+                            .map((unt) => (
+                              <option key={unt.id} value={unt.name} hidden={!matchesPostingQuery(unt.name)}>
+                                {unt.name}
+                              </option>
+                            ))}
+                          <option value={`Central District Malkhana (MHC Store) ${formData.district}`}>
+                            Central District Malkhana (MHC Store) {formData.district}
                           </option>
-                        ))}
-                        {filteredStations.length === 0 && (
-                          <option value={`${formData.district} Police Station`}>
-                            {formData.district} Police Station
+                          {filteredStations.map((ps) => (
+                            <option key={ps.id} value={`MHC Store - ${ps.name}`}>
+                              MHC Store - {ps.name}
+                            </option>
+                          ))}
+                        </>
+                      ) : formData.assignedUnitType === "RANGE_OFFICE" ? (
+                        <>
+                          <option value="">-- Select Range Office --</option>
+                          {locationOffices
+                            .filter((off) => off.officeType === "IG_OFFICE" || off.officeType === "DIG_OFFICE" || off.rangeName === formData.range)
+                            .map((off) => (
+                              <option key={off.id} value={off.name} hidden={!matchesPostingQuery(off.name)}>
+                                {off.name}
+                              </option>
+                            ))}
+                          <option value={`Office of Inspector General of Police, ${formData.range || "Range"}`}>
+                            Office of Inspector General of Police, {formData.range || "Range"}
                           </option>
-                        )}
-                      </>
-                    ) : formData.assignedUnitType === "DISTRICT_OFFICE" ? (
-                      <>
-                        <option value="">-- Select Administrative Office ({filteredOffices.length}) --</option>
-                        {filteredOffices.map((off) => (
-                          <option key={off.id} value={off.name}>
-                            {off.name} ({off.officeType})
+                        </>
+                      ) : formData.assignedUnitType === "COMMISSIONERATE_HQ" ? (
+                        <>
+                          <option value="">-- Select Commissionerate Headquarters / Zone --</option>
+                          {locationOffices
+                            .filter((off) => off.districtName === formData.district || off.officeType === "COMMISSIONERATE_HQ")
+                            .map((off) => (
+                              <option key={off.id} value={off.name} hidden={!matchesPostingQuery(off.name)}>
+                                {off.name}
+                              </option>
+                            ))}
+                          <option value={`Office of Commissioner of Police, ${formData.district}`}>
+                            Office of Commissioner of Police, {formData.district}
                           </option>
-                        ))}
-                        {filteredOffices.length === 0 && (
-                          <option value={`District Police Office (SP Office) ${formData.district}`}>
-                            District Police Office (SP Office) {formData.district}
+                          <option value={`DCP Headquarters, ${formData.district}`}>
+                            DCP Headquarters, {formData.district}
                           </option>
-                        )}
-                      </>
-                    ) : formData.assignedUnitType === "SPECIALIZED_UNIT" || formData.assignedUnitType === "INVESTIGATION_UNIT" ? (
-                      <>
-                        <option value="">-- Select Specialized Unit ({filteredUnits.length}) --</option>
-                        {filteredUnits.map((unt) => (
-                          <option key={unt.id} value={unt.name}>
-                            {unt.name} ({unt.unitType})
+                          <option value={`DCP Crime Branch, ${formData.district}`}>
+                            DCP Crime Branch, {formData.district}
                           </option>
-                        ))}
-                        {filteredUnits.length === 0 && (
-                          <option value={`Special Investigation Unit (CIA) ${formData.district}`}>
-                            Special Investigation Unit (CIA) {formData.district}
+                          <option value={`DCP Traffic, ${formData.district}`}>
+                            DCP Traffic, {formData.district}
                           </option>
-                        )}
-                      </>
-                    ) : formData.assignedUnitType === "MHC_STORE" ? (
-                      <>
-                        <option value="">-- Select Malkhana Store --</option>
-                        {filteredUnits
-                          .filter((u) => u.unitType === "MHC_STORE" || u.name.toLowerCase().includes("malkhana") || u.name.toLowerCase().includes("mhc"))
-                          .map((unt) => (
-                            <option key={unt.id} value={unt.name}>
+                        </>
+                      ) : formData.assignedUnitType === "ARMED_BATTALION" ? (
+                        <>
+                          <option value="">-- Select Armed Police Battalion --</option>
+                          {ARMED_BATTALIONS.map((bn) => (
+                            <option key={bn.id} value={bn.name} hidden={!matchesPostingQuery(bn.name)}>
+                              {bn.name}
+                            </option>
+                          ))}
+                        </>
+                      ) : formData.assignedUnitType === "GRP_STATION" ? (
+                        <>
+                          <option value="">-- Select GRP Railway Police Station --</option>
+                          {GRP_STATIONS_LIST.map((grp) => (
+                            <option key={grp.id} value={grp.name} hidden={!matchesPostingQuery(grp.name)}>
+                              {grp.name}
+                            </option>
+                          ))}
+                        </>
+                      ) : formData.assignedUnitType === "TRAINING_CENTRE" ? (
+                        <>
+                          <option value="">-- Select Training Academy / College --</option>
+                          {TRAINING_CENTRES.map((trg) => (
+                            <option key={trg.id} value={trg.name} hidden={!matchesPostingQuery(trg.name)}>
+                              {trg.name}
+                            </option>
+                          ))}
+                        </>
+                      ) : formData.assignedUnitType === "FORENSIC_LAB" ? (
+                        <>
+                          <option value="">-- Select Forensic Science Laboratory --</option>
+                          {FORENSIC_LABS.map((fsl) => (
+                            <option key={fsl.id} value={fsl.name} hidden={!matchesPostingQuery(fsl.name)}>
+                              {fsl.name}
+                            </option>
+                          ))}
+                        </>
+                      ) : formData.assignedUnitType === "DEPUTATION_UNIT" ? (
+                        <>
+                          <option value="">-- Select Deputation Unit --</option>
+                          {DEPUTATION_UNITS.map((dep) => (
+                            <option key={dep.id} value={dep.name} hidden={!matchesPostingQuery(dep.name)}>
+                              {dep.name}
+                            </option>
+                          ))}
+                        </>
+                      ) : formData.assignedUnitType === "PHQ" ? (
+                        <>
+                          <option value="">-- Select PHQ Directorate --</option>
+                          {PHQ_DIRECTORATES.map((phq) => (
+                            <option key={phq.id} value={phq.name} hidden={!matchesPostingQuery(phq.name)}>
+                              {phq.name}
+                            </option>
+                          ))}
+                        </>
+                      ) : (
+                        <>
+                          <option value="">-- Select Unit / Office --</option>
+                          {filteredOffices.map((off) => (
+                            <option key={off.id} value={off.name} hidden={!matchesPostingQuery(off.name)}>
+                              {off.name}
+                            </option>
+                          ))}
+                          {filteredUnits.map((unt) => (
+                            <option key={unt.id} value={unt.name} hidden={!matchesPostingQuery(unt.name)}>
                               {unt.name}
                             </option>
                           ))}
-                        <option value={`Central District Malkhana (MHC Store) ${formData.district}`}>
-                          Central District Malkhana (MHC Store) {formData.district}
+                        </>
+                      )}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Jurisdiction Scope Selection */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1">
+                  <div>
+                    <label htmlFor="create-jurisdiction-scope-policy" className="font-semibold text-slate-700 block mb-1">Jurisdiction Scope Policy *</label>
+                    <select id="create-jurisdiction-scope-policy"
+                      value={formData.jurisdictionType}
+                      onChange={(e) => setFormData({ ...formData, jurisdictionType: e.target.value as JurisdictionType })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold focus:ring-1 focus:ring-blue-500"
+                    >
+                      <option value="">-- Select Jurisdiction Scope --</option>
+                      {JURISDICTION_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
                         </option>
-                        {filteredStations.map((ps) => (
-                          <option key={ps.id} value={`MHC Store - ${ps.name}`}>
-                            MHC Store - {ps.name}
-                          </option>
-                        ))}
-                      </>
-                    ) : formData.assignedUnitType === "RANGE_OFFICE" ? (
-                      <>
-                        <option value="">-- Select Range Office --</option>
-                        {locationOffices
-                          .filter((off) => off.officeType === "IG_OFFICE" || off.officeType === "DIG_OFFICE" || off.rangeName === formData.range)
-                          .map((off) => (
-                            <option key={off.id} value={off.name}>
-                              {off.name}
-                            </option>
-                          ))}
-                        <option value={`Office of Inspector General of Police, ${formData.range || "Range"}`}>
-                          Office of Inspector General of Police, {formData.range || "Range"}
-                        </option>
-                      </>
-                    ) : formData.assignedUnitType === "COMMISSIONERATE_HQ" ? (
-                      <>
-                        <option value="">-- Select Commissionerate Headquarters / Zone --</option>
-                        {locationOffices
-                          .filter((off) => off.districtName === formData.district || off.officeType === "COMMISSIONERATE_HQ")
-                          .map((off) => (
-                            <option key={off.id} value={off.name}>
-                              {off.name}
-                            </option>
-                          ))}
-                        <option value={`Office of Commissioner of Police, ${formData.district}`}>
-                          Office of Commissioner of Police, {formData.district}
-                        </option>
-                        <option value={`DCP Headquarters, ${formData.district}`}>
-                          DCP Headquarters, {formData.district}
-                        </option>
-                        <option value={`DCP Crime Branch, ${formData.district}`}>
-                          DCP Crime Branch, {formData.district}
-                        </option>
-                        <option value={`DCP Traffic, ${formData.district}`}>
-                          DCP Traffic, {formData.district}
-                        </option>
-                      </>
-                    ) : formData.assignedUnitType === "ARMED_BATTALION" ? (
-                      <>
-                        <option value="">-- Select Armed Police Battalion --</option>
-                        {ARMED_BATTALIONS.map((bn) => (
-                          <option key={bn.id} value={bn.name}>
-                            {bn.name}
-                          </option>
-                        ))}
-                      </>
-                    ) : formData.assignedUnitType === "GRP_STATION" ? (
-                      <>
-                        <option value="">-- Select GRP Railway Police Station --</option>
-                        {GRP_STATIONS_LIST.map((grp) => (
-                          <option key={grp.id} value={grp.name}>
-                            {grp.name}
-                          </option>
-                        ))}
-                      </>
-                    ) : formData.assignedUnitType === "TRAINING_CENTRE" ? (
-                      <>
-                        <option value="">-- Select Training Academy / College --</option>
-                        {TRAINING_CENTRES.map((trg) => (
-                          <option key={trg.id} value={trg.name}>
-                            {trg.name}
-                          </option>
-                        ))}
-                      </>
-                    ) : formData.assignedUnitType === "FORENSIC_LAB" ? (
-                      <>
-                        <option value="">-- Select Forensic Science Laboratory --</option>
-                        {FORENSIC_LABS.map((fsl) => (
-                          <option key={fsl.id} value={fsl.name}>
-                            {fsl.name}
-                          </option>
-                        ))}
-                      </>
-                    ) : formData.assignedUnitType === "DEPUTATION_UNIT" ? (
-                      <>
-                        <option value="">-- Select Deputation Unit --</option>
-                        {DEPUTATION_UNITS.map((dep) => (
-                          <option key={dep.id} value={dep.name}>
-                            {dep.name}
-                          </option>
-                        ))}
-                      </>
-                    ) : formData.assignedUnitType === "PHQ" ? (
-                      <>
-                        <option value="">-- Select PHQ Directorate --</option>
-                        {PHQ_DIRECTORATES.map((phq) => (
-                          <option key={phq.id} value={phq.name}>
-                            {phq.name}
-                          </option>
-                        ))}
-                      </>
-                    ) : (
-                      <>
-                        <option value="">-- Select Unit / Office --</option>
-                        {filteredOffices.map((off) => (
-                          <option key={off.id} value={off.name}>
-                            {off.name}
-                          </option>
-                        ))}
-                        {filteredUnits.map((unt) => (
-                          <option key={unt.id} value={unt.name}>
-                            {unt.name}
-                          </option>
-                        ))}
-                      </>
-                    )}
-                  </select>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor="create-official-designation-title" className="font-semibold text-slate-700 block mb-1">Official Designation Title</label>
+                    <input id="create-official-designation-title"
+                      type="text"
+                      placeholder="e.g. Station House Officer, Panipat"
+                      value={formData.designation}
+                      onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-medium focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Multi-Station Allocation Checkboxes (if DSP / Sub-Division / Special selected) */}
+                {(formData.jurisdictionType === "SUBDIVISION_MULTI_STATION" ||
+                  formData.jurisdictionType === "SPECIAL_MULTI_STATION") && (
+                  <div className="p-3 bg-purple-50/70 border border-purple-200 rounded-lg space-y-2 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-purple-950 uppercase text-[10px] tracking-wider">
+                        Multi-Station Jurisdiction Allocation ({formData.authorizedPoliceStations.length} selected)
+                      </span>
+                      <span className="text-[10px] text-purple-700 font-medium">Select all police stations under this officer's command</span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-44 overflow-y-auto p-1 bg-white rounded border border-purple-100">
+                      {locationStations
+                        .filter((s) => !formData.district || formData.district === "State Level / All Districts" || s.districtName === formData.district)
+                        .map((s) => {
+                          const isChecked = formData.authorizedPoliceStations.includes(s.name);
+                          return (
+                            <label
+                              key={s.id}
+                              className={`flex items-center gap-1.5 p-1.5 rounded border text-[11px] cursor-pointer transition-colors ${
+                                isChecked
+                                  ? "bg-purple-100 border-purple-300 font-bold text-purple-950"
+                                  : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => {
+                                  setFormData((prev) => {
+                                    const current = prev.authorizedPoliceStations || [];
+                                    const next = current.includes(s.name)
+                                      ? current.filter((x) => x !== s.name)
+                                      : [...current, s.name];
+                                    return { ...prev, authorizedPoliceStations: next };
+                                  });
+                                }}
+                                className="rounded text-purple-600 focus:ring-purple-500"
+                              />
+                              <span className="truncate">{s.name}</span>
+                            </label>
+                          );
+                        })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Jurisdiction Regulation Info Box */}
+                <div className="p-3 bg-blue-50/60 border border-blue-200 rounded-lg text-xs space-y-1">
+                  <span className="font-bold text-[#1e3a8a] uppercase text-[10px]">Active Jurisdiction Policy:</span>
+                  <p className="text-slate-700 font-medium">
+                    {!formData.role && "Please select a System Role to view active jurisdiction policy and regulatory scope."}
+                    {formData.role === "DGP" && "State-wide jurisdiction across all Haryana police districts and units."}
+                    {formData.role === "SP_DISTRICT" && `Full administrative and operational jurisdiction over entire ${formData.district || "assigned"} District.`}
+                    {formData.role === "DSP_SUBDIV" && `Sub-Divisional jurisdiction across multiple selected police stations in ${formData.district || "District"}.`}
+                    {formData.role === "SHO" && `Single station command: Authorized for registration, FIR approval and investigation review at ${formData.policeStation || "selected police station"}.`}
+                    {formData.role === "MHC_GD_INCHARGE" && `Dedicated MHC Malkhana & General Diary control for ${formData.policeStation || "selected station"}.`}
+                    {formData.role === "ENQUIRY_OFFICER" && `Investigating officer assigned to cases in ${formData.policeStation || "selected unit/station"}${formData.district ? `, ${formData.district}` : ""}.`}
+
+                  </p>
                 </div>
               </div>
 
-              {/* Jurisdiction Scope Selection */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1">
-                <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Jurisdiction Scope Policy *</label>
-                  <select
-                    value={formData.jurisdictionType}
-                    onChange={(e) => setFormData({ ...formData, jurisdictionType: e.target.value as JurisdictionType })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold focus:ring-1 focus:ring-blue-500"
-                  >
-                    <option value="">-- Select Jurisdiction Scope --</option>
-                    {JURISDICTION_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
+            </fieldset>
+
+            {createStep === 2 && (
+              <div className="space-y-5">
+                <section className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">
+                  <h3 className="font-semibold">Review account</h3>
+                  <dl className="mt-3 grid gap-3 sm:grid-cols-2">
+                    {[
+                      ["Officer", `${formData.fullName} · ${formData.pno}`],
+                      ["Rank", formData.rankDisplay || formData.rank],
+                      ["System role", formData.roleDisplay || formData.role],
+                      ["Posting", [...new Set([formData.assignedUnitName || formData.policeStation, formData.zone, formData.district, formData.range].filter(Boolean))].join(" · ")],
+                      ["Access scope", JURISDICTION_OPTIONS.find((option) => option.value === formData.jurisdictionType)?.label || "Single station / unit"],
+                      ["Selected stations", formData.authorizedPoliceStations.join(", ")],
+                    ].filter(([, value]) => value).map(([label, value]) => (
+                      <div key={label}>
+                        <dt className="text-xs text-slate-500">{label}</dt>
+                        <dd className="font-medium">{value}</dd>
+                      </div>
                     ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Official Designation Title</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Station House Officer, Panipat"
-                    value={formData.designation}
-                    onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-medium focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-
-              {/* Multi-Station Allocation Checkboxes (if DSP / Sub-Division / Special selected) */}
-              {(formData.jurisdictionType === "SUBDIVISION_MULTI_STATION" ||
-                formData.jurisdictionType === "SPECIAL_MULTI_STATION") && (
-                <div className="p-3 bg-purple-50/70 border border-purple-200 rounded-lg space-y-2 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-purple-950 uppercase text-[10px] tracking-wider">
-                      Multi-Station Jurisdiction Allocation ({formData.authorizedPoliceStations.length} selected)
-                    </span>
-                    <span className="text-[10px] text-purple-700 font-medium">Select all police stations under this officer's command</span>
+                  </dl>
+                </section>
+                {/* Section 2: Login Credentials & Temporary PIN Generation */}
+                <div className="space-y-4">
+                  <div className="border-b border-slate-100 pb-2 flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900">Set login PIN</h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleGeneratePin}
+                      className="px-2.5 py-1 rounded bg-amber-50 text-amber-800 border border-amber-200 text-xs font-semibold hover:bg-amber-100 cursor-pointer"
+                    >
+                      Generate 6-digit PIN
+                    </button>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-44 overflow-y-auto p-1 bg-white rounded border border-purple-100">
-                    {locationStations
-                      .filter((s) => !formData.district || formData.district === "State Level / All Districts" || s.districtName === formData.district)
-                      .map((s) => {
-                        const isChecked = formData.authorizedPoliceStations.includes(s.name);
-                        return (
-                          <label
-                            key={s.id}
-                            className={`flex items-center gap-1.5 p-1.5 rounded border text-[11px] cursor-pointer transition-colors ${
-                              isChecked
-                                ? "bg-purple-100 border-purple-300 font-bold text-purple-950"
-                                : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={() => {
-                                setFormData((prev) => {
-                                  const current = prev.authorizedPoliceStations || [];
-                                  const next = current.includes(s.name)
-                                    ? current.filter((x) => x !== s.name)
-                                    : [...current, s.name];
-                                  return { ...prev, authorizedPoliceStations: next };
-                                });
-                              }}
-                              className="rounded text-purple-600 focus:ring-purple-500"
-                            />
-                            <span className="truncate">{s.name}</span>
-                          </label>
-                        );
-                      })}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <label htmlFor="create-login-pin-password" className="font-semibold text-slate-700 block mb-1">Login PIN / Password *</label>
+                      <input id="create-login-pin-password"
+                        type="text"
+                        required
+                        placeholder="e.g. 123456"
+                        value={formData.pin}
+                        onChange={(e) => setFormData({ ...formData, pin: e.target.value })}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-mono text-center tracking-widest font-bold focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="create-confirm-pin" className="font-semibold text-slate-700 block mb-1">Confirm PIN *</label>
+                      <input id="create-confirm-pin"
+                        type="text"
+                        required
+                        placeholder="Re-enter PIN"
+                        value={formData.confirmPin}
+                        onChange={(e) => setFormData({ ...formData, confirmPin: e.target.value })}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-mono text-center tracking-widest font-bold focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
                   </div>
                 </div>
-              )}
-
-              {/* Jurisdiction Regulation Info Box */}
-              <div className="p-3 bg-blue-50/60 border border-blue-200 rounded-lg text-xs space-y-1">
-                <span className="font-bold text-[#1e3a8a] uppercase text-[10px]">Active Jurisdiction Policy:</span>
-                <p className="text-slate-700 font-medium">
-                  {!formData.role && "Please select a System Role to view active jurisdiction policy and regulatory scope."}
-                  {formData.role === "DGP" && "State-wide jurisdiction across all Haryana police districts and units."}
-                  {formData.role === "SP_DISTRICT" && `Full administrative and operational jurisdiction over entire ${formData.district || "assigned"} District.`}
-                  {formData.role === "DSP_SUBDIV" && `Sub-Divisional jurisdiction across multiple selected police stations in ${formData.district || "District"}.`}
-                  {formData.role === "SHO" && `Single station command: Authorized for registration, FIR approval and investigation review at ${formData.policeStation || "selected police station"}.`}
-                  {formData.role === "MHC_GD_INCHARGE" && `Dedicated MHC Malkhana & General Diary control for ${formData.policeStation || "selected station"}.`}
-                  {formData.role === "ENQUIRY_OFFICER" && `Investigating officer assigned to cases in ${formData.policeStation || "selected unit/station"}${formData.district ? `, ${formData.district}` : ""}.`}
-
-                </p>
               </div>
-            </div>
+            )}
 
-            {/* Action Buttons */}
+            {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}
             <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
               <button
                 type="button"
-                onClick={() => setTab("directory")}
+                disabled={submittingAccount}
+                onClick={() => {
+                  setError(null);
+                  if (createStep > 0) setCreateStep(createStep - 1);
+                  else setTab("directory");
+                }}
                 className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
               >
-                Cancel
+                {createStep > 0 ? "Back" : "Cancel"}
               </button>
               <button
                 type="submit"
                 disabled={submittingAccount}
                 className="px-5 py-2 bg-[#1e3a8a] text-white rounded-xl text-xs font-bold hover:bg-[#152865] shadow-xs disabled:opacity-50 cursor-pointer"
               >
-                {submittingAccount ? "Provisioning..." : "Generate & Authorize Account"}
+                {submittingAccount ? "Creating account…" : createStep === 2 ? "Create account" : "Continue"}
               </button>
             </div>
           </div>
@@ -3309,20 +3399,20 @@ export default function AccountManagementPage() {
       )}
 
       {/* EDIT / SHIFT OFFICER MODAL */}
-      {showEditModal && selectedAccount && (
+      {editMode && selectedAccount && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
                 <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
                   <ArrowRightLeft className="w-4 h-4 text-blue-700" />
-                  Edit Details & Shift Posting
+                  {editMode === "posting" ? "Change posting" : "Edit officer"}
                 </h3>
                 <p className="text-[11px] text-slate-500">{selectedAccount.fullName} ({selectedAccount.pno})</p>
               </div>
               <button
                 type="button"
-                onClick={() => setShowEditModal(false)}
+                onClick={() => setEditMode(null)}
                 className="text-slate-400 hover:text-slate-700 font-bold"
               >
                 ✕
@@ -3330,170 +3420,186 @@ export default function AccountManagementPage() {
             </div>
 
             <form onSubmit={handleSaveAccountEdit} className="space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Full Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={editFormData.fullName || ""}
-                    onChange={(e) => setEditFormData({ ...editFormData, fullName: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2"
-                  />
-                </div>
-                <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Mobile *</label>
-                  <input
-                    type="tel"
-                    required
-                    value={editFormData.mobileNumber || ""}
-                    onChange={(e) => setEditFormData({ ...editFormData, mobileNumber: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Belt Number</label>
-                  <input
-                    type="text"
-                    value={editFormData.beltNumber || ""}
-                    onChange={(e) => setEditFormData({ ...editFormData, beltNumber: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2"
-                  />
-                </div>
-                <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Police Rank</label>
-                  <select
-                    value={editFormData.rank || ""}
-                    onChange={(e) => {
-                      const selected = POLICE_RANKS_OPTIONS.find((r) => r.rank === e.target.value);
-                      setEditFormData({
-                        ...editFormData,
-                        rank: e.target.value,
-                        rankDisplay: selected ? selected.display : e.target.value,
-                      });
-                    }}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-medium"
-                  >
-                    {POLICE_RANKS_OPTIONS.map((opt) => (
-                      <option key={opt.rank} value={opt.rank}>
-                        {opt.display}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="font-semibold text-slate-700 block mb-1">Email</label>
-                <input
-                  type="email"
-                  value={editFormData.email || ""}
-                  onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2"
-                />
-              </div>
-
-              <div className="p-3 bg-blue-50/60 border border-blue-200 rounded-xl space-y-3">
-                <span className="text-[10px] font-bold text-blue-900 uppercase tracking-wider block">
-                  Transfer & Shift Police Jurisdiction
-                </span>
-                <div className={cn(
-                  "grid gap-3",
-                  COMMISSIONERATES_LIST.some(
-                    (c) =>
-                      c.district.toLowerCase() === (editFormData.district || "").toLowerCase() ||
-                      c.name.toLowerCase() === (editFormData.range || "").toLowerCase()
-                  )
-                    ? "grid-cols-1 sm:grid-cols-3"
-                    : "grid-cols-2"
-                )}>
+              <fieldset hidden={editMode !== "details"} disabled={editMode !== "details"} className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="font-semibold text-blue-900 block mb-1">Shift District *</label>
+                    <label className="font-semibold text-slate-700 block mb-1">Full Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={editFormData.fullName || ""}
+                      onChange={(e) => setEditFormData({ ...editFormData, fullName: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-semibold text-slate-700 block mb-1">Mobile *</label>
+                    <input
+                      type="tel"
+                      required
+                      value={editFormData.mobileNumber || ""}
+                      onChange={(e) => setEditFormData({ ...editFormData, mobileNumber: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-semibold text-slate-700 block mb-1">Belt Number</label>
+                    <input
+                      type="text"
+                      value={editFormData.beltNumber || ""}
+                      onChange={(e) => setEditFormData({ ...editFormData, beltNumber: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-semibold text-slate-700 block mb-1">Police Rank</label>
                     <select
-                      value={editFormData.district || ""}
+                      value={editFormData.rank || ""}
                       onChange={(e) => {
-                        const newDst = e.target.value;
-                        const dstObj = locationDistricts.find((d) => d.name === newDst);
-                        const stationsInDst = locationStations.filter((ps) => ps.districtName === newDst);
-                        const firstPs = stationsInDst[0]?.name || `${newDst} Central PS`;
+                        const selected = POLICE_RANKS_OPTIONS.find((r) => r.rank === e.target.value);
                         setEditFormData({
                           ...editFormData,
-                          district: newDst,
-                          range: dstObj?.rangeName || editFormData.range || "",
-                          zone: "",
-                          policeStation: firstPs,
-                          assignedUnitName: firstPs,
+                          rank: e.target.value,
+                          rankDisplay: selected ? selected.display : e.target.value,
                         });
                       }}
-                      className="w-full bg-white border border-blue-300 font-bold text-blue-950 rounded-lg p-2"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-medium"
                     >
-                      {locationDistricts.map((d) => (
-                        <option key={d.id} value={d.name}>
-                          {d.name}
+                      {POLICE_RANKS_OPTIONS.map((opt) => (
+                        <option key={opt.rank} value={opt.rank}>
+                          {opt.display}
                         </option>
                       ))}
                     </select>
                   </div>
+                </div>
 
-                  {COMMISSIONERATES_LIST.some(
-                    (c) =>
-                      c.district.toLowerCase() === (editFormData.district || "").toLowerCase() ||
-                      c.name.toLowerCase() === (editFormData.range || "").toLowerCase()
-                  ) && (
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={editFormData.email || ""}
+                    onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2"
+                  />
+                </div>
+
+              </fieldset>
+
+              <fieldset hidden={editMode !== "posting"} disabled={editMode !== "posting"} className="space-y-4">
+                <div className="p-3 bg-blue-50/60 border border-blue-200 rounded-xl space-y-3">
+                  <span className="text-[10px] font-bold text-blue-900 uppercase tracking-wider block">
+                    Posting details
+                  </span>
+                  <div className={cn(
+                    "grid gap-3",
+                    COMMISSIONERATES_LIST.some(
+                      (c) =>
+                        c.district.toLowerCase() === (editFormData.district || "").toLowerCase() ||
+                        c.name.toLowerCase() === (editFormData.range || "").toLowerCase()
+                    )
+                      ? "grid-cols-1 sm:grid-cols-3"
+                      : "grid-cols-2"
+                  )}>
                     <div>
-                      <label className="font-semibold text-blue-900 block mb-1">Shift Zone (DCP)</label>
+                      <label className="font-semibold text-blue-900 block mb-1">Shift District *</label>
                       <select
-                        value={editFormData.zone || ""}
-                        onChange={(e) => setEditFormData({ ...editFormData, zone: e.target.value })}
+                        value={editFormData.district || ""}
+                        onChange={(e) => {
+                          const newDst = e.target.value;
+                          const dstObj = locationDistricts.find((d) => d.name === newDst);
+                          const stationsInDst = locationStations.filter((ps) => ps.districtName === newDst);
+                          const firstPs = stationsInDst[0]?.name || `${newDst} Central PS`;
+                          setEditFormData({
+                            ...editFormData,
+                            district: newDst,
+                            range: dstObj?.rangeName || editFormData.range || "",
+                            zone: "",
+                            policeStation: firstPs,
+                            assignedUnitName: firstPs,
+                          });
+                        }}
                         className="w-full bg-white border border-blue-300 font-bold text-blue-950 rounded-lg p-2"
                       >
-                        <option value="">-- Select Zone --</option>
-                        {COMMISSIONERATE_ZONES.filter((z) =>
-                          z.district.toLowerCase() === (editFormData.district || "").toLowerCase()
-                        ).map((z) => (
-                          <option key={z.id} value={z.name}>
-                            {z.name} ({z.dcpTitle})
+                        {locationDistricts.map((d) => (
+                          <option key={d.id} value={d.name}>
+                            {d.name}
                           </option>
                         ))}
                       </select>
                     </div>
-                  )}
 
-                  <div>
-                    <label className="font-semibold text-blue-900 block mb-1">Shift Police Station *</label>
-                    <select
-                      value={editFormData.policeStation || ""}
-                      onChange={(e) => {
-                        const stName = e.target.value;
-                        const matched = locationStations.find((s) => s.name === stName);
-                        setEditFormData({
-                          ...editFormData,
-                          policeStation: stName,
-                          assignedUnitName: stName,
-                          assignedUnitId: matched?.code || "HAR-PS-GEN",
-                        });
-                      }}
-                      className="w-full bg-white border border-blue-300 font-bold text-blue-950 rounded-lg p-2"
-                    >
-                      {locationStations
-                        .filter((ps) => ps.districtName === editFormData.district)
-                        .map((ps) => (
-                          <option key={ps.id} value={ps.name}>
-                            {ps.name} ({ps.stationType})
-                          </option>
-                        ))}
-                    </select>
+                    {COMMISSIONERATES_LIST.some(
+                      (c) =>
+                        c.district.toLowerCase() === (editFormData.district || "").toLowerCase() ||
+                        c.name.toLowerCase() === (editFormData.range || "").toLowerCase()
+                    ) && (
+                      <div>
+                        <label className="font-semibold text-blue-900 block mb-1">Shift Zone (DCP)</label>
+                        <select
+                          value={editFormData.zone || ""}
+                          onChange={(e) => setEditFormData({ ...editFormData, zone: e.target.value })}
+                          className="w-full bg-white border border-blue-300 font-bold text-blue-950 rounded-lg p-2"
+                        >
+                          <option value="">-- Select Zone --</option>
+                          {COMMISSIONERATE_ZONES.filter((z) =>
+                            z.district.toLowerCase() === (editFormData.district || "").toLowerCase()
+                          ).map((z) => (
+                            <option key={z.id} value={z.name}>
+                              {z.name} ({z.dcpTitle})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="font-semibold text-blue-900 block mb-1">Shift Police Station *</label>
+                      <select
+                        value={editFormData.policeStation || ""}
+                        onChange={(e) => {
+                          const stName = e.target.value;
+                          const matched = locationStations.find((s) => s.name === stName);
+                          setEditFormData({
+                            ...editFormData,
+                            policeStation: stName,
+                            assignedUnitName: stName,
+                            assignedUnitId: matched?.code || "HAR-PS-GEN",
+                          });
+                        }}
+                        className="w-full bg-white border border-blue-300 font-bold text-blue-950 rounded-lg p-2"
+                      >
+                        {locationStations
+                          .filter((ps) => ps.districtName === editFormData.district)
+                          .map((ps) => (
+                            <option key={ps.id} value={ps.name}>
+                              {ps.name} ({ps.stationType})
+                            </option>
+                          ))}
+                      </select>
+                    </div>
                   </div>
                 </div>
-              </div>
+
+                {["policeStation", "district", "range", "zone"].some((key) => {
+                  const field = key as "policeStation" | "district" | "range" | "zone";
+                  return (selectedAccount[field] || "") !== (editFormData[field] || "");
+                }) && (
+                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 space-y-1">
+                    <p><strong>Current posting</strong> · {[selectedAccount.policeStation, selectedAccount.zone, selectedAccount.district, selectedAccount.range].filter(Boolean).join(" · ")}</p>
+                    <p><strong>New posting</strong> · {[editFormData.policeStation, editFormData.zone, editFormData.district, editFormData.range].filter(Boolean).join(" · ")}</p>
+                  </div>
+                )}
+
+              </fieldset>
 
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => setShowEditModal(false)}
+                  onClick={() => setEditMode(null)}
                   className="px-3.5 py-1.5 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-50"
                 >
                   Cancel
@@ -3503,7 +3609,7 @@ export default function AccountManagementPage() {
                   disabled={savingEdit}
                   className="px-4 py-1.5 bg-[#1e3a8a] text-white rounded-xl text-xs font-bold hover:bg-[#152865] disabled:opacity-50"
                 >
-                  {savingEdit ? "Updating Posting..." : "Save Changes / Shift"}
+                  {savingEdit ? "Saving…" : editMode === "posting" ? "Save posting" : "Save details"}
                 </button>
               </div>
             </form>

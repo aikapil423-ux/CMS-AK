@@ -30,18 +30,12 @@ import {
   FileBarChart,
   Radio,
   Pencil,
-  MapPin,
   UserPlus,
   FolderTree,
   BadgeCheck,
-  Building,
   Clock,
   Layers,
   Landmark,
-  ShieldAlert,
-  Train,
-  FlaskConical,
-  Briefcase,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -320,27 +314,16 @@ export function Sidebar() {
 
   // DEVELOPER ONLY: LOCATION & ORGANIZATION MANAGEMENT
   const locationNavItems: NavItem[] = [
-    { name: "Location Dashboard", href: "/admin/locations", icon: Layers },
-    { name: "State Management", href: "/admin/locations?tab=states", icon: MapPin },
-    { name: "Range Management", href: "/admin/locations?tab=ranges", icon: Radio },
-    { name: "Commissionerate & Zones", href: "/admin/locations?tab=commissionerates", icon: Landmark, badge: "Zones", badgeColor: "bg-blue-100 text-blue-800 border-blue-200" },
-    { name: "District Management", href: "/admin/locations?tab=districts", icon: Building2 },
-    { name: "Armed Police (HAP/IRB)", href: "/admin/locations?tab=armed-police", icon: ShieldAlert, badge: "Bn", badgeColor: "bg-purple-100 text-purple-800 border-purple-200" },
-    { name: "GRP Haryana (Railways)", href: "/admin/locations?tab=grp", icon: Train },
-    { name: "Forensic Labs & Training", href: "/admin/locations?tab=forensic-labs", icon: FlaskConical },
-    { name: "Deputation & Special Wings", href: "/admin/locations?tab=deputation-units", icon: Briefcase },
-    { name: "Office Management", href: "/admin/locations?tab=offices", icon: Building },
-    { name: "Police Station Management", href: "/admin/locations?tab=stations", icon: Shield },
-    { name: "Unit Management", href: "/admin/locations?tab=units", icon: Radio },
-    { name: "Organizational Hierarchy", href: "/admin/locations?tab=hierarchy", icon: FolderTree },
+    { name: "Locations", href: "/admin/locations", icon: Layers },
+    { name: "View Hierarchy", href: "/admin/locations?tab=hierarchy", icon: FolderTree },
   ];
 
   // DEVELOPER ONLY: ACCOUNT MANAGEMENT & USER GENERATION
   const accountNavItems: NavItem[] = [
     { name: "Account Directory", href: "/admin/accounts", icon: Users },
-    { name: "Generate Account", href: "/admin/accounts?tab=new", icon: UserPlus, badge: "New", badgeColor: "bg-emerald-100 text-emerald-800 border-emerald-200" },
-    { name: "Special Allocations", href: "/admin/accounts?tab=special-allocations", icon: BadgeCheck },
-    { name: "Jurisdiction Policies", href: "/admin/accounts?tab=policies", icon: Shield },
+    { name: "Create Account", href: "/admin/accounts?tab=new", icon: UserPlus },
+    { name: "Extra Station Access", href: "/admin/accounts?tab=special-allocations", icon: BadgeCheck },
+    { name: "Role Guide", href: "/admin/accounts?tab=policies", icon: Shield },
     { name: "Audit Logs", href: "/admin/accounts?tab=audits", icon: Clock },
   ];
 
@@ -515,7 +498,7 @@ export function Sidebar() {
               <nav className="space-y-0.5 pt-0.5 animate-in fade-in-50 duration-150">
                 {locationNavItems.map((item) => {
                   const Icon = item.icon;
-                  const isActive = pathname === item.href || (item.href === "/admin/locations" && pathname === "/admin/locations" && !searchParams.get("tab"));
+                  const isActive = isLocationsPath && (searchParams.get("tab") || "locations") === (item.href.endsWith("hierarchy") ? "hierarchy" : "locations");
                   return (
                     <Link
                       key={item.name}
