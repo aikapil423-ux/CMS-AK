@@ -12,15 +12,14 @@ import {
   FileDown,
   Scale,
   Lock,
-  Sparkles,
-  FileText,
   History,
   Loader2,
 } from "lucide-react";
 import { GeneralDiaryRecord } from "@/types/generalDiary";
 import { Button } from "@/components/ui/button";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
-import { formatDateTime } from "@/lib/utils";
+import { useLanguage } from "@/context/LanguageContext";
+import { formatDate, formatDateTime } from "@/lib/utils";
 import { cleanGdNarrative } from "@/services/generalDiaryService";
 import { printA4Element, downloadA4ElementAsPdf } from "@/utils/printElement";
 import { stationStaffService } from "@/services/stationStaffService";
@@ -45,6 +44,7 @@ export function GDRecordModal({
 }: GDRecordModalProps) {
   const printRef = useRef<HTMLDivElement>(null);
   const [isDownloading, setIsDownloading] = React.useState(false);
+  const { isHindi } = useLanguage();
 
   useEscapeKey(isOpen, onClose);
 
@@ -120,6 +120,34 @@ export function GDRecordModal({
   const isSuggested = record.status === "SUGGESTED";
   const isDraft = record.status === "DRAFT";
 
+  // Format short GD Rapat number (e.g. "01", "02", "03") from sequencePerDay or gdNumber suffix
+  const displayGdNumber = React.useMemo(() => {
+    if (record.sequencePerDay) {
+      return String(record.sequencePerDay).padStart(2, "0");
+    }
+    const match = (record.gdNumber || "").match(/-(\d+)$/);
+    if (match && match[1]) {
+      const num = parseInt(match[1], 10);
+      return !isNaN(num) ? String(num).padStart(2, "0") : match[1];
+    }
+    return record.gdNumber || "";
+  }, [record.sequencePerDay, record.gdNumber]);
+
+  // Extract separate date and time for activity
+  const activityDateDisplay = React.useMemo(() => {
+    return formatDate(record.activityDateTime);
+  }, [record.activityDateTime]);
+
+  const activityTimeDisplay = React.useMemo(() => {
+    const full = formatDateTime(record.activityDateTime);
+    // formatDateTime returns "DD/MM/YYYY HH:mm AM/PM"
+    const parts = full.split(" ");
+    if (parts.length >= 2) {
+      return parts.slice(1).join(" ");
+    }
+    return full;
+  }, [record.activityDateTime]);
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/80 backdrop-blur-xs overflow-y-auto animate-in fade-in-50"
@@ -135,20 +163,16 @@ export function GDRecordModal({
         {/* Modal Control Bar */}
         <div className="no-print flex items-center justify-between px-5 py-3 bg-[#0b192c] text-white border-b border-slate-700">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded bg-amber-500/20 border border-amber-400/40 flex items-center justify-center">
-              {isLocked ? (
-                <Lock className="w-3.5 h-3.5 text-amber-400" />
-              ) : isSuggested ? (
-                <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-              ) : (
-                <FileText className="w-3.5 h-3.5 text-blue-400" />
-              )}
-            </div>
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-bold text-sm leading-tight text-white">
-                  {record.gdNumber || "Roznamcha Record"}
+                  {isLocked ? `GD No. ${displayGdNumber || "Record"}` : (record.gdNumber || "Record")}
                 </h3>
+                {isLocked && displayGdNumber !== record.gdNumber && (
+                  <span className="text-[11px] text-slate-300 font-mono">
+                    ({record.gdNumber})
+                  </span>
+                )}
                 {isSuggested && (
                   <span className="text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/40 px-2 py-0.5 rounded font-mono font-bold">
                     SUGGESTION
@@ -213,41 +237,89 @@ export function GDRecordModal({
             style={{ lineHeight: "1.6" }}
           >
             {/* Haryana Police Official Header */}
-            <div className="text-center pb-3 border-b-2 border-slate-900">
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <Shield className="w-7 h-7 text-[#0b192c]" />
-                <span className="text-xs font-bold tracking-widest uppercase text-[#0b192c]">
-                  हरियाणा पुलिस
-                </span>
-              </div>
-              <h1 className="text-xl sm:text-2xl font-bold uppercase tracking-wide text-slate-950">
-                रोजनामचा रजिस्टर नंबर  II
+            <div className="text-center pb-2 border-b-2 border-slate-900">
+              <h1 className="text-sm sm:text-base font-bold uppercase tracking-wide text-slate-950">
+                {isHindi ? "रोजनामचा रजिस्टर नंबर II" : "General Diary Register No. II"}
               </h1>
-              <p className="text-xs font-semibold uppercase text-slate-800 tracking-wider mt-0.5">
-                {record.policeStation}, District {record.district}
+              <p className="text-xs sm:text-sm font-semibold uppercase text-slate-800 tracking-wider mt-0.5">
+                {record.policeStation}, {isHindi ? `जिला ${record.district}` : `District ${record.district}`}
               </p>
             </div>
 
-            {/* GD Number & Timestamp Bar */}
-            <div className="border border-slate-400 p-3 bg-white flex flex-row items-center justify-between gap-2 text-xs sm:text-sm font-sans">
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-slate-900">रपट नंबर (GD No):</span>
-                <span className="font-mono font-bold text-slate-950 border border-slate-400 px-2 py-0.5 bg-slate-50">
-                  {record.gdNumber}
-                </span>
-              </div>
-              <div className="flex flex-col items-end text-[11px] sm:text-xs text-right">
-                <div>
-                  <span className="font-bold text-slate-800">कार्यवाही समय: </span>
-                  <span className="font-mono text-slate-950 font-semibold">
-                    {formatDateTime(record.activityDateTime)}
+            {/* GD Number & Timestamp Bar - 3 Columns */}
+            <div className="border border-slate-400 p-3 bg-white grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs sm:text-sm font-sans">
+              {/* Column 1: GD Number */}
+              <div className="flex flex-col sm:items-start justify-start">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-slate-900 shrink-0">
+                    {isHindi ? "रपट नंबर:" : "GD Number:"}
+                  </span>
+                  <span className="font-mono font-bold text-slate-950 border border-slate-400 px-2.5 py-0.5 bg-slate-50 text-sm">
+                    {displayGdNumber}
                   </span>
                 </div>
-                <div className="text-slate-600 text-[10px]">
-                  <span>Server Recorded: </span>
+                {isLocked && displayGdNumber !== record.gdNumber && (
+                  <div className="text-slate-500 text-[10px] font-mono mt-0.5">
+                    ({record.gdNumber})
+                  </div>
+                )}
+              </div>
+
+              {/* Column 2: Date */}
+              <div className="flex flex-col sm:items-center justify-start">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-slate-800 shrink-0">
+                    {isHindi ? "दिनांक:" : "Date:"}
+                  </span>
+                  <span className="font-mono text-slate-950 font-semibold bg-slate-50 border border-slate-300 px-2.5 py-0.5 text-sm">
+                    {activityDateDisplay}
+                  </span>
+                </div>
+              </div>
+
+              {/* Column 3: Time */}
+              <div className="flex flex-col sm:items-end justify-start">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-bold text-slate-800">
+                    {isHindi ? "समय:" : "Time:"}
+                  </span>
+                  <span className="font-mono text-slate-950 font-semibold bg-slate-50 border border-slate-300 px-2.5 py-0.5 text-sm">
+                    {activityTimeDisplay}
+                  </span>
+                </div>
+                <div className="text-slate-500 text-[10px] mt-0.5">
+                  <span>{isHindi ? "सर्वर: " : "Server: "}</span>
                   <span className="font-mono">
                     {formatDateTime(record.officialCreationTimestamp)}
                   </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Officer Details - Single Row Bar */}
+            <div className="border border-slate-400 p-3 bg-white text-xs sm:text-sm font-sans">
+              <div className="flex flex-row items-center gap-6">
+                <div className="flex items-center gap-1.5 shrink-0 min-w-[150px]">
+                  <User className="w-3.5 h-3.5 text-slate-700" />
+                  <span className="font-bold text-slate-800 uppercase tracking-wide text-xs">
+                    {isHindi ? "इंद्राज अधिकारी:" : "Entry For Officer:"}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-xs text-slate-900">
+                  <div>
+                    <span className="font-semibold text-slate-700">{isHindi ? "पद: " : "Rank: "}</span>
+                    <span className="text-slate-950 font-medium">{record.entryForOfficer.rank}</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-slate-700">{isHindi ? "नाम: " : "Name: "}</span>
+                    <span className="font-bold text-slate-950">{record.entryForOfficer.name}</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-slate-700">{isHindi ? "बेल्ट/PNO: " : "Belt/PNO: "}</span>
+                    <span className="font-mono text-slate-950 font-semibold">
+                      {record.entryForOfficer.beltNumber || record.entryForOfficer.pno}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -256,86 +328,22 @@ export function GDRecordModal({
             <div className="border border-slate-400 p-3 bg-white space-y-2 text-xs sm:text-sm font-sans">
               <div className="flex flex-row items-center gap-2">
                 <span className="font-bold text-slate-800 min-w-[150px] shrink-0">
-                  इंद्राज का प्रकार (Type):
+                  {isHindi ? "इंद्राज का प्रकार:" : "Entry Type:"}
                 </span>
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-bold text-slate-950">
-                    {record.typeDisplayHi}
+                    {isHindi ? record.typeDisplayHi : record.typeDisplay}
                   </span>
                 </div>
               </div>
 
               <div className="flex flex-row items-start gap-2 pt-2 border-t border-slate-300">
                 <span className="font-bold text-slate-800 min-w-[150px] shrink-0 uppercase tracking-wide">
-                  विषय (SUBJECT):
+                  {isHindi ? "विषय:" : "Subject:"}
                 </span>
                 <span className="font-bold text-slate-950 flex-1 min-w-0 leading-snug break-words [overflow-wrap:anywhere]">
                   {record.subject}
                 </span>
-              </div>
-            </div>
-
-            {/* Officer Details Grid */}
-            <div className="grid grid-cols-2 gap-3 font-sans">
-              {/* Entry-For Officer */}
-              <div className="border border-slate-400 p-3 bg-white space-y-1.5 text-xs">
-                <div className="flex items-center gap-1.5 pb-1 border-b border-slate-300">
-                  <User className="w-3.5 h-3.5 text-slate-700" />
-                  <h4 className="font-bold text-slate-950 uppercase tracking-wider text-[11px]">
-                    ENTRY FOR OFFICER
-                  </h4>
-                </div>
-                <div className="space-y-0.5 text-slate-900">
-                  <p>
-                    <span className="font-semibold text-slate-700">Rank:</span>{" "}
-                    <span className="text-slate-950">{record.entryForOfficer.rank}</span>
-                  </p>
-                  <p>
-                    <span className="font-semibold text-slate-700">Name:</span>{" "}
-                    <span className="font-bold text-slate-950">{record.entryForOfficer.name}</span>
-                  </p>
-                  <p>
-                    <span className="font-semibold text-slate-700">Belt Number:</span>{" "}
-                    <span className="font-mono text-slate-950">{record.entryForOfficer.beltNumber}</span>
-                  </p>
-                  <p>
-                    <span className="font-semibold text-slate-700">PNO Number:</span>{" "}
-                    <span className="font-mono text-slate-950">{record.entryForOfficer.pno}</span>
-                  </p>
-                </div>
-              </div>
-
-              {/* Actual Author */}
-              <div className="border border-slate-400 p-3 bg-white space-y-1.5 text-xs">
-                <div className="flex items-center justify-between pb-1 border-b border-slate-300">
-                  <div className="flex items-center gap-1.5">
-                    <FileCheck2 className="w-3.5 h-3.5 text-slate-700" />
-                    <h4 className="font-bold text-slate-950 uppercase tracking-wider text-[11px]">
-                      मुहर्रिर / लेखक
-                    </h4>
-                  </div>
-                  <span className="text-[10px] text-slate-700 border border-slate-300 px-1 py-0.2">
-                    MHC Desk
-                  </span>
-                </div>
-                <div className="space-y-0.5 text-slate-900">
-                  <p>
-                    <span className="font-semibold text-slate-700">Rank:</span>{" "}
-                    <span className="text-slate-950">{record.actualAuthor.rank}</span>
-                  </p>
-                  <p>
-                    <span className="font-semibold text-slate-700">Name:</span>{" "}
-                    <span className="font-bold text-slate-950">{record.actualAuthor.name}</span>
-                  </p>
-                  <p>
-                    <span className="font-semibold text-slate-700">Belt Number:</span>{" "}
-                    <span className="font-mono text-slate-950">{record.actualAuthor.beltNumber}</span>
-                  </p>
-                  <p>
-                    <span className="font-semibold text-slate-700">PNO Number:</span>{" "}
-                    <span className="font-mono text-slate-950">{record.actualAuthor.pno}</span>
-                  </p>
-                </div>
               </div>
             </div>
 
@@ -345,7 +353,9 @@ export function GDRecordModal({
                 <div className="flex items-center justify-between border-b border-red-200 pb-1.5">
                   <h5 className="font-bold text-red-950 uppercase text-[11px] flex items-center gap-1.5">
                     <Scale className="w-3.5 h-3.5 text-red-600" />
-                    <span>आपराधिक मामला विवरण (Criminal Case &amp; FIR Specification):</span>
+                    <span>
+                      {isHindi ? "आपराधिक मामला विवरण:" : "Criminal Case & FIR Specification:"}
+                    </span>
                   </h5>
                   <span className="text-[10px] bg-red-100 text-red-800 font-bold px-2 py-0.5 rounded border border-red-200">
                     BNSS Sec 173 / BNS
@@ -353,18 +363,24 @@ export function GDRecordModal({
                 </div>
                 <div className="grid grid-cols-2 gap-3 pt-0.5">
                   <div className="p-2 bg-white rounded border border-red-200">
-                    <span className="text-slate-600 block text-[10px] font-semibold uppercase">1. Case Type (केस प्रकार):</span>
+                    <span className="text-slate-600 block text-[10px] font-semibold uppercase">
+                      {isHindi ? "1. केस प्रकार:" : "1. Case Type:"}
+                    </span>
                     <strong className="text-red-950 text-xs tracking-wide">
                       {record.caseType || record.relatedRecords?.caseType || "ADULT"}
                     </strong>
                   </div>
                   <div className="p-2 bg-white rounded border border-red-200">
-                    <span className="text-slate-600 block text-[10px] font-semibold uppercase">2. Acts &amp; Sections (अधिनियम व धाराएं):</span>
+                    <span className="text-slate-600 block text-[10px] font-semibold uppercase">
+                      {isHindi ? "2. अधिनियम व धाराएं:" : "2. Acts & Sections:"}
+                    </span>
                     <strong className="text-slate-900 font-mono text-xs">
                       {record.actsAndSections || record.relatedRecords?.actsAndSections || "Not Specified"}
                     </strong>
                     {record.majorAct && (
-                      <span className="text-[10px] text-slate-500 block mt-0.5">Major Act: {record.majorAct}</span>
+                      <span className="text-[10px] text-slate-500 block mt-0.5">
+                        {isHindi ? `मुख्य अधिनियम: ${record.majorAct}` : `Major Act: ${record.majorAct}`}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -376,36 +392,48 @@ export function GDRecordModal({
               <div className="border border-slate-400 p-3 bg-white space-y-1.5 text-xs font-sans">
                 <h5 className="font-bold text-slate-800 uppercase text-[11px] flex items-center gap-1.5 border-b border-slate-300 pb-1">
                   <Layers className="w-3.5 h-3.5 text-slate-700" />
-                  <span>संबंधित रिकॉर्ड्स व क्रॉस रेफरेंस (Linked Records):</span>
+                  <span>
+                    {isHindi ? "संबंधित रिकॉर्ड्स व क्रॉस संदर्भ:" : "Linked Records & Cross References:"}
+                  </span>
                 </h5>
                 <div className="grid grid-cols-4 gap-2 pt-1 font-mono text-[11px]">
                   {record.relatedRecords.complaintNumber && (
                     <div className="p-1.5 border border-slate-300">
-                      <span className="text-slate-600 block text-[9px] font-sans">Complaint No:</span>
+                      <span className="text-slate-600 block text-[9px] font-sans">
+                        {isHindi ? "शिकायत सं:" : "Complaint No:"}
+                      </span>
                       <strong className="text-slate-950">{record.relatedRecords.complaintNumber}</strong>
                     </div>
                   )}
                   {record.relatedRecords.firNumber && (
                     <div className="p-1.5 border border-slate-300">
-                      <span className="text-slate-600 block text-[9px] font-sans">FIR No:</span>
+                      <span className="text-slate-600 block text-[9px] font-sans">
+                        {isHindi ? "FIR सं:" : "FIR No:"}
+                      </span>
                       <strong className="text-slate-950">{record.relatedRecords.firNumber}</strong>
                     </div>
                   )}
                   {record.relatedRecords.vehicleNumber && (
                     <div className="p-1.5 border border-slate-300">
-                      <span className="text-slate-600 block text-[9px] font-sans">Vehicle:</span>
+                      <span className="text-slate-600 block text-[9px] font-sans">
+                        {isHindi ? "वाहन सं:" : "Vehicle No:"}
+                      </span>
                       <strong className="text-slate-950">{record.relatedRecords.vehicleNumber}</strong>
                     </div>
                   )}
                   {record.relatedRecords.personName && (
                     <div className="p-1.5 border border-slate-300">
-                      <span className="text-slate-600 block text-[9px] font-sans">Person / Accused:</span>
+                      <span className="text-slate-600 block text-[9px] font-sans">
+                        {isHindi ? "व्यक्ति / अभियुक्त:" : "Person / Accused:"}
+                      </span>
                       <strong className="text-slate-950">{record.relatedRecords.personName}</strong>
                     </div>
                   )}
                   {record.relatedRecords.destinationLocation && (
                     <div className="p-1.5 border border-slate-300 col-span-2">
-                      <span className="text-slate-600 block text-[9px] font-sans">Destination / Location:</span>
+                      <span className="text-slate-600 block text-[9px] font-sans">
+                        {isHindi ? "गंतव्य / स्थान:" : "Destination / Location:"}
+                      </span>
                       <strong className="text-slate-950">{record.relatedRecords.destinationLocation}</strong>
                     </div>
                   )}
@@ -416,7 +444,7 @@ export function GDRecordModal({
             {/* Official Narrative / विवरण */}
             <div className="space-y-1.5 font-sans">
               <h4 className="font-bold text-slate-900 text-xs sm:text-sm uppercase tracking-wide border-b border-slate-400 pb-1">
-                इंद्राज का विस्तृत विवरण :
+                {isHindi ? "विवरण:" : "Brief:"}
               </h4>
               <div className="border border-slate-400 p-4 bg-white text-xs sm:text-sm text-slate-950 leading-relaxed font-sans whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
                 {cleanGdNarrative(record.narrative)}
@@ -435,7 +463,9 @@ export function GDRecordModal({
                 <div className="space-y-1.5 font-sans">
                   <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wide border-b border-slate-400 pb-1 flex items-center gap-1.5">
                     <Paperclip className="w-3.5 h-3.5 text-slate-700" />
-                    <span>संलग्न दस्तावेज / Uploaded Documents ({docs.length}):</span>
+                    <span>
+                      {isHindi ? `संलग्न दस्तावेज (${docs.length}):` : `Uploaded Documents (${docs.length}):`}
+                    </span>
                   </h4>
                   <div className="grid grid-cols-2 gap-2">
                     {docs.map((doc, idx) => (
@@ -457,7 +487,7 @@ export function GDRecordModal({
                             download={doc.name}
                             className="no-print text-[11px] font-bold text-blue-700 hover:underline shrink-0"
                           >
-                            Download
+                            {isHindi ? "डाउनलोड" : "Download"}
                           </a>
                         )}
                       </div>
@@ -475,9 +505,8 @@ export function GDRecordModal({
                 <div className="pt-4 border-t-2 border-slate-900 flex flex-row items-end justify-between text-xs font-sans">
                   <div className="text-center w-36">
                     <div className="h-12 border border-dashed border-slate-400 flex items-center justify-center text-[10px] text-slate-500">
-                      Station Seal
+                      {isHindi ? "थाना मोहर" : "Station Seal"}
                     </div>
-                    <p className="mt-1 font-bold text-slate-800">POLICE STATION SEAL</p>
                   </div>
 
                   <div className="text-right space-y-0.5">
@@ -486,10 +515,10 @@ export function GDRecordModal({
                       {signatory.name}
                     </p>
                     <p className="text-slate-700 text-[11px] font-medium">
-                      {signatory.rank || "Officer / Duty Writer"}
+                      {signatory.rank || (isHindi ? "अधिकारी / रोजनामचा लेखक" : "Officer / Duty Writer")}
                     </p>
                     <p className="text-slate-600 font-mono text-[11px]">
-                      Belt/PNO: {beltVal} • {record.policeStation}
+                      {isHindi ? "बेल्ट/PNO:" : "Belt/PNO:"} {beltVal} • {record.policeStation}
                     </p>
                   </div>
                 </div>

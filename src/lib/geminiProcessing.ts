@@ -48,27 +48,44 @@ export async function processWithAI(parts: ProcessingPart[], options: {
       ...(options.json ? { responseMimeType: 'application/json' } : {}),
     },
   };
-  try {
-    response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(PROCESSING_MODEL) + ':generateContent', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY!.trim() },
-      cache: 'no-store',
-      signal,
-      body: JSON.stringify(requestPayload),
-    });
-    if ((response.status === 503 || response.status === 404) && PROCESSING_MODEL.includes('3.8')) {
-      response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY!.trim() },
-        cache: 'no-store',
-        signal,
-        body: JSON.stringify(requestPayload),
-      });
+  const fallbackModels = [
+    PROCESSING_MODEL,
+    'gemini-3.5-flash-lite',
+    'gemini-3.5-flash',
+    'gemini-flash-latest'
+  ].filter((v, idx, arr) => arr.indexOf(v) === idx);
+
+  let lastStatus = 0;
+  for (const modelCandidate of fallbackModels) {
+    try {
+      response = await fetch(
+        'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(modelCandidate) + ':generateContent',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY!.trim() },
+          cache: 'no-store',
+          signal,
+          body: JSON.stringify(requestPayload),
+        }
+      );
+      lastStatus = response.status;
+      if (response.ok) {
+        break;
+      }
+      // If overloaded (503/429) or not found (404), try next candidate
+      if (response.status === 503 || response.status === 404 || response.status === 429) {
+        continue;
+      }
+      break;
+    } catch (err: any) {
+      if (signal?.aborted) throw new Error('AI service timed out.');
+      continue;
     }
-  } catch {
-    throw new Error(signal?.aborted ? 'AI service timed out.' : 'Gemini connection failed.');
   }
-  if (!response.ok) throw new Error('Gemini processing failed (HTTP ' + response.status + ').');
+
+  if (!response! || !response.ok) {
+    throw new Error('Gemini processing failed (HTTP ' + (lastStatus || 500) + ').');
+  }
   const body = await response.json();
   const candidate = body.candidates?.[0];
   if (candidate?.finishReason === 'MAX_TOKENS') throw new Error('Gemini output was truncated.');

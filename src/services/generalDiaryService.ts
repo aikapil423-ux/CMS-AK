@@ -953,6 +953,8 @@ export const GeneralDiaryService = {
       totalPages,
       todayCount,
       lockedCount,
+      registerCount: lockedCount,
+      suggestionsCount: suggestedCount + draftCount,
       verifiedCount,
       draftCount,
       suggestedCount,

@@ -312,7 +312,7 @@ async function createLockedEntry(
   const { policeStation, district } = locations.location({
     policeStation: String(body.policeStation || DEFAULT_STATION),
     district: String(body.district || DEFAULT_DISTRICT),
-  }, "id");
+  }, "name");
 
   // Enforce policy: Automated GD entries must NEVER be auto-submitted as locked records.
   // They must route as suggestions so only human users can review and lock them.
@@ -489,7 +489,7 @@ async function saveDraftEntry(body: Record<string, unknown>, locations: MasterLo
       ...locations.location({
         policeStation: String(body.policeStation || DEFAULT_STATION),
         district: String(body.district || DEFAULT_DISTRICT),
-      }, "id"),
+      }, "name"),
       typeCode,
       category: String(body.category || "ROUTINE_ADMINISTRATION"),
       typeDisplay: String(body.typeDisplay || typeCode),
@@ -711,7 +711,7 @@ async function createSystemSuggestion(body: Record<string, unknown>, locations: 
       ...locations.location({
         policeStation: String(event.policeStation || DEFAULT_STATION),
         district: String(event.district || DEFAULT_DISTRICT),
-      }, "id"),
+      }, "name"),
       typeCode,
       category: String(
         event.category ||
@@ -861,9 +861,14 @@ export async function GET(req: NextRequest) {
     }
 
     const todayKey = formatGDDateKey(new Date());
+    const targetDate = filter.startDate || todayKey;
+    const registerCount = list.filter((r) => r.isLocked && (r._sortGdDate === targetDate || (!r._sortGdDate && String(r.activityDateTime || "").startsWith(targetDate)))).length;
+    const suggestionsCount = list.filter((r) => r.status === "SUGGESTED" || r.status === "DRAFT").length;
     const counts = {
       todayCount: list.filter((r) => r.isLocked && r._sortGdDate === todayKey).length,
       lockedCount: list.filter((r) => r.status === "LOCKED").length,
+      registerCount: registerCount > 0 ? registerCount : list.filter((r) => r.isLocked && r._sortGdDate === todayKey).length,
+      suggestionsCount,
       verifiedCount: list.filter((r) => r.status === "VERIFIED").length,
       draftCount: list.filter((r) => r.status === "DRAFT").length,
       suggestedCount: list.filter((r) => r.status === "SUGGESTED").length,
@@ -888,10 +893,10 @@ export async function GET(req: NextRequest) {
       list = list.filter((r) => r.isLocked === wantLocked);
     }
     // Date range — yyyy-mm-dd keys compare lexicographically
-    if (filter.startDate) {
+    if (filter.startDate && filter.status !== "SUGGESTED,DRAFT") {
       list = list.filter((r) => (r._sortGdDate || "") >= filter.startDate);
     }
-    if (filter.endDate) {
+    if (filter.endDate && filter.status !== "SUGGESTED,DRAFT") {
       list = list.filter((r) => (r._sortGdDate || "") <= filter.endDate);
     }
 

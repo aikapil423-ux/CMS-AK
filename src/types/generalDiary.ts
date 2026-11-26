@@ -190,6 +190,8 @@ export interface GDPaginatedResponse {
   totalPages: number;
   todayCount: number;
   lockedCount: number;
+  registerCount?: number;
+  suggestionsCount?: number;
   verifiedCount: number;
   draftCount: number;
   suggestedCount: number;

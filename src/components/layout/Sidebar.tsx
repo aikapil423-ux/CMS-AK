@@ -340,19 +340,19 @@ export function Sidebar() {
       )}
     >
       {/* Insignia / Brand Header - Clean Minimalist */}
-      <div className="cms-sidebar-brand p-3 border-b border-slate-200/80 flex items-center justify-between overflow-hidden">
-        <div className="flex items-center gap-2.5 min-w-0">
+      <div className={cn(
+        "cms-sidebar-brand border-b border-slate-200/80 flex items-center overflow-hidden transition-all",
+        isExpanded ? "justify-between p-3" : "justify-center p-2"
+      )}>
+        <div className={cn("flex items-center min-w-0", isExpanded ? "gap-2.5" : "justify-center w-full")}>
           <div
-            className="relative w-10 h-12 overflow-hidden shrink-0"
+            className="flex items-center justify-center w-8 h-9 shrink-0 overflow-hidden"
             title="Haryana Police CMS"
           >
             <img
-              src="/haryana-police-sidebar-reference.png"
+              src="/haryana-police-emblem.png"
               alt="Haryana Police"
-              width={104}
-              height={66}
-              className="absolute max-w-none"
-              style={{ width: 104, height: 66, left: -47, top: -10 }}
+              className="w-full h-full object-contain"
             />
           </div>
           {isExpanded && (

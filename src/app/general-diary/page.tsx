@@ -172,7 +172,7 @@ function GeneralDiaryContent() {
   };
 
   const GD_COLUMN_WIDTHS: Record<string, string> = {
-    gdNumber: "w-40 min-w-[155px]",
+    gdNumber: "w-24 min-w-[85px]",
     officer: "w-48 min-w-[180px]",
     gdType: "w-36 min-w-[140px]",
     subject: "w-56 min-w-[180px] max-w-[220px]",
@@ -263,6 +263,8 @@ function GeneralDiaryContent() {
 
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [persistentRegisterCount, setPersistentRegisterCount] = useState<number | null>(null);
+  const [persistentSuggestionsCount, setPersistentSuggestionsCount] = useState<number | null>(null);
 
   // Modals State
   const [selectedRecord, setSelectedRecord] = useState<GeneralDiaryRecord | null>(null);
@@ -302,8 +304,8 @@ function GeneralDiaryContent() {
     const filter: GDSearchFilter = {
       keyword: debouncedKeyword.trim() || undefined,
       typeCode: typeFilter !== "ALL" ? typeFilter : undefined,
-      startDate: activeTab === "REGISTER" ? (selectedDate || undefined) : undefined,
-      endDate: activeTab === "REGISTER" ? (selectedDate || undefined) : undefined,
+      startDate: selectedDate || undefined,
+      endDate: selectedDate || undefined,
       officerQuery: debouncedOfficerQuery.trim() || undefined,
       policeStation: (currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'SP_DISTRICT' || currentUser?.role === 'DSP_SUBDIV') ? undefined : (currentUser?.stationName || undefined),
     };
@@ -318,6 +320,21 @@ function GeneralDiaryContent() {
     try {
       const res = await GeneralDiaryService.getPaginatedEntries(filter, page, pageSize, controller.signal);
       setPaginatedData(res);
+      if (activeTab === "REGISTER") {
+        setPersistentRegisterCount(res.total);
+        if (res.suggestionsCount !== undefined) {
+          setPersistentSuggestionsCount(res.suggestionsCount);
+        } else if (res.suggestedCount !== undefined || res.draftCount !== undefined) {
+          setPersistentSuggestionsCount((res.suggestedCount || 0) + (res.draftCount || 0));
+        }
+      } else {
+        setPersistentSuggestionsCount(res.total);
+        if (res.registerCount !== undefined) {
+          setPersistentRegisterCount(res.registerCount);
+        } else if (res.todayCount !== undefined && persistentRegisterCount === null) {
+          setPersistentRegisterCount(res.todayCount);
+        }
+      }
     } catch (e: any) {
       if (e?.name === "AbortError") return;
       console.error(e);
@@ -475,6 +492,11 @@ function GeneralDiaryContent() {
     }
   };
 
+  const hasColumnFilters = useMemo(
+    () => Object.values(columnSearch).some((term) => term && term.trim().length > 0),
+    [columnSearch]
+  );
+
   const displayedRecords = useMemo(() => {
     let list = paginatedData.records.filter((rec) => rec.isLocked || !isGdRecordExpired(rec));
 
@@ -484,9 +506,11 @@ function GeneralDiaryContent() {
       const q = term.toLowerCase().trim();
       list = list.filter((rec) => {
         if (col === "gdNumber") {
+          const seq2Digit = rec.sequencePerDay ? String(rec.sequencePerDay).padStart(2, "0") : "";
           return (
             rec.gdNumber.toLowerCase().includes(q) ||
-            String(rec.sequencePerDay || "").includes(q)
+            String(rec.sequencePerDay || "").includes(q) ||
+            seq2Digit.includes(q)
           );
         } else if (col === "officer") {
           return (
@@ -570,10 +594,11 @@ function GeneralDiaryContent() {
     const isSearching = activeSearchCol === field;
     const filterValue = columnSearch[field] || "";
     const isSorted = sortField === field;
+    const isGdNum = field === "gdNumber";
 
     return (
-      <div className="space-y-1 relative" data-column-search-box="true">
-        <div className="flex items-center justify-between gap-1">
+      <div className={`space-y-1 relative ${isGdNum ? "text-center" : ""}`} data-column-search-box="true">
+        <div className={`flex items-center ${isGdNum ? "justify-center" : "justify-between"} gap-1`}>
           {/* Grab Handle + Column Name */}
           <div className="flex items-center gap-1 min-w-0">
             <span
@@ -700,26 +725,30 @@ function GeneralDiaryContent() {
     switch (col) {
       case "gdNumber": {
         const remTime = !rec.isLocked ? getGdRecordRemainingTime(rec) : null;
+        let seqNum = "—";
+        if (rec.isLocked) {
+          if (rec.sequencePerDay) {
+            seqNum = String(rec.sequencePerDay).padStart(2, "0");
+          } else {
+            const m = (rec.gdNumber || "").match(/-(\d+)$/);
+            seqNum = m && m[1] ? String(parseInt(m[1], 10)).padStart(2, "0") : (rec.gdNumber || "—");
+          }
+        }
         return (
-          <td key="gdNumber" className="py-3 px-2.5 align-top w-40 min-w-[155px]">
-            <div className="flex flex-col gap-0.5 font-mono text-left leading-tight">
-              {/* Daily GD Rapat Sequence */}
-              <span className="font-black text-xs text-blue-950 block whitespace-nowrap">
-                {rec.isLocked ? `GD #${rec.sequencePerDay}` : "—"}
-              </span>
-
-              {/* Unique GD Number */}
+          <td key="gdNumber" className="py-3 px-2 align-top w-24 min-w-[85px] text-center">
+            <div className="flex flex-col items-center justify-center gap-0.5 font-mono text-center leading-tight">
+              {/* Daily GD Rapat Sequence: 01, 02, 03... 10... 100 */}
               <span
-                className="text-[10px] text-slate-600 font-semibold block whitespace-nowrap"
+                className="font-black text-xs text-blue-950 block whitespace-nowrap text-center"
                 title={rec.isLocked ? rec.gdNumber : "No GD No. (not added)"}
               >
-                {rec.isLocked ? rec.gdNumber : "No GD"}
+                {seqNum}
               </span>
 
               {/* 24-Hour Expiration Indicator for Unlocked Entries */}
               {remTime && (
                 <span
-                  className="inline-flex items-center gap-1 text-[9px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-1 py-0.5 rounded mt-0.5 whitespace-nowrap"
+                  className="inline-flex items-center justify-center gap-1 text-[9px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-1 py-0.5 rounded mt-0.5 whitespace-nowrap"
                   title="Auto-deletes if no action is taken within 24 hours of creation/edit"
                 >
                   <Clock className="w-2.5 h-2.5 text-amber-600 shrink-0" />
@@ -886,7 +915,9 @@ function GeneralDiaryContent() {
             >
               <span>General Diary Register</span>
               <span className="text-[11px] font-mono bg-blue-100 text-blue-900 px-2 py-0.5 rounded-full font-bold">
-                {activeTab === "REGISTER" ? paginatedData.total : paginatedData.lockedCount}
+                {activeTab === "REGISTER"
+                  ? paginatedData.total
+                  : (persistentRegisterCount ?? paginatedData.registerCount ?? paginatedData.todayCount ?? paginatedData.lockedCount)}
               </span>
             </button>
 
@@ -903,11 +934,11 @@ function GeneralDiaryContent() {
               }`}
             >
               <span>Auto-Suggestions &amp; Drafts</span>
-              {(paginatedData.suggestedCount > 0 || paginatedData.draftCount > 0) && (
-                <span className="text-[11px] font-mono bg-purple-200 text-purple-900 px-2 py-0.5 rounded-full font-bold">
-                  {paginatedData.suggestedCount + paginatedData.draftCount}
-                </span>
-              )}
+              <span className="text-[11px] font-mono bg-purple-200 text-purple-900 px-2 py-0.5 rounded-full font-bold">
+                {activeTab === "SUGGESTIONS_DRAFTS"
+                  ? paginatedData.total
+                  : (persistentSuggestionsCount ?? paginatedData.suggestionsCount ?? (paginatedData.suggestedCount + paginatedData.draftCount))}
+              </span>
             </button>
           </div>
         </div>
@@ -1062,10 +1093,10 @@ function GeneralDiaryContent() {
         </div>
       ) : loading ? (
         <LoadingSkeleton count={5} />
-      ) : displayedRecords.length === 0 ? (
+      ) : paginatedData.total === 0 && !hasColumnFilters && !keyword.trim() && typeFilter === "ALL" ? (
         <EmptyState
-          title="No General Diary entries match the criteria"
-          description="Try broadening your search or filter."
+          title={t("कोई रोजनामचा प्रविष्टि नहीं मिली", "No General Diary entries match the criteria")}
+          description={t("प्रविष्टियां देखने हेतु दिनांक या फ़िल्टर बदलें।", "Try broadening your search or filter.")}
         />
       ) : (
         <div className="space-y-4">
@@ -1108,7 +1139,7 @@ function GeneralDiaryContent() {
                           setDraggedCol(null);
                           setDragOverCol(null);
                         }}
-                        className={`py-3 ${col === "gdNumber" ? "px-2.5" : "px-3.5"} align-top transition-all select-none cursor-grab active:cursor-grabbing ${
+                        className={`py-3 ${col === "gdNumber" ? "px-2 text-center" : "px-3.5"} align-top transition-all select-none cursor-grab active:cursor-grabbing ${
                           GD_COLUMN_WIDTHS[col] || ""
                         } ${
                           isDragging ? "opacity-30 bg-slate-800" : ""
@@ -1128,19 +1159,30 @@ function GeneralDiaryContent() {
               <tbody className="divide-y divide-slate-200">
                 {displayedRecords.length === 0 ? (
                   <tr>
-                    <td colSpan={columnOrder.length + (activeTab === "SUGGESTIONS_DRAFTS" ? 1 : 0)} className="text-center py-10 text-slate-500">
-                      <div className="flex flex-col items-center justify-center gap-2">
-                        <Filter className="w-7 h-7 text-slate-300" />
-                        <p className="font-semibold text-slate-700">{t("कोई रिकॉर्ड नहीं मिला (No records match the column filter)", "No records match the column filter")}</p>
+                    <td colSpan={columnOrder.length + (activeTab === "SUGGESTIONS_DRAFTS" ? 1 : 0)} className="text-center py-12 text-slate-500 bg-slate-50/50">
+                      <div className="flex flex-col items-center justify-center gap-2.5 max-w-md mx-auto">
+                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                          <Filter className="w-5 h-5" />
+                        </div>
+                        <div className="space-y-0.5">
+                          <p className="font-bold text-slate-800 text-sm">
+                            {t("कोई रिकॉर्ड नहीं मिला (No matching records)", "No matching GD entries found")}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {t("खोजे गए शब्द या कॉलम फ़िल्टर को साफ़ करने हेतु नीचे क्लिक करें।", "Clear your search or column filter to view all entries.")}
+                          </p>
+                        </div>
                         <button
                           type="button"
                           onClick={() => {
                             setColumnSearch({});
                             setActiveSearchCol(null);
+                            setKeyword("");
                           }}
-                          className="text-xs text-blue-600 hover:underline font-semibold cursor-pointer"
+                          className="mt-1 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-semibold cursor-pointer transition-colors"
                         >
-                          Clear Column Filters
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          <span>{t("फ़िल्टर साफ़ करें (Clear Filter)", "Clear Filter & Show All")}</span>
                         </button>
                       </div>
                     </td>
@@ -1293,7 +1335,7 @@ function GeneralDiaryContent() {
                   <div className="flex items-center gap-2">
                     <h3 className="font-bold text-sm leading-tight text-white">
                       {briefModalRecord.isLocked
-                        ? `GD #${briefModalRecord.sequencePerDay || briefModalRecord.gdNumber}`
+                        ? `GD ${briefModalRecord.sequencePerDay ? String(briefModalRecord.sequencePerDay).padStart(2, "0") : briefModalRecord.gdNumber}`
                         : briefModalRecord.status === "SUGGESTED"
                         ? "Auto-Suggestion"
                         : "Draft Record"}
