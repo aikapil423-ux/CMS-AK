@@ -83,48 +83,48 @@ export default function TADAPage() {
     setAvailableMonths(getRecentMonthsList(6));
   }, []);
 
-  // Load user bills strictly isolated to active user
-  const loadUserBills = () => {
-    if (currentUser) {
-      const records = tadaService.getByUser(currentUser.id, currentUser.pno, currentUser.name);
-      setSavedBills(records);
-      return records;
-    }
-    return [];
-  };
-
-  // Auto 01-date extraction from Roznamcha GD for last month on mount / user change
   useEffect(() => {
-    if (currentUser && currentUser.id) {
-      const records = tadaService.getByUser(currentUser.id, currentUser.pno, currentUser.name);
+    setSavedBills([]);
+    setBill(createBlankTADABill(userId, userName));
+    setAutoSyncBanner(null);
+    if (!currentUser) return;
+    let cancelled = false;
+
+    async function load() {
+      if (!currentUser) return;
+      const { bills: records, archivedIds } = await tadaService.getHistory();
+      if (cancelled) return;
       setSavedBills(records);
-      if (records.length > 0) {
-        setBill(records[0]);
-      } else {
-        setBill(createBlankTADABill(currentUser.id, currentUser.name));
+      if (records.length) setBill(records[0]);
+      const storedIds = new Set([...records.map(record => record.id), ...archivedIds]);
+      const pending = tadaService.getLegacyBills(currentUser.id).filter(record => !storedIds.has(record.id));
+      if (pending.length) {
+        const preview = pending.map(record => record.claimPeriod || record.id).join("\n");
+        if (!confirm(`Import ${pending.length} TA/DA bill(s) from this browser?\n\n${preview}`)) return;
+        const failed = await tadaService.importLegacyBills(pending);
+        if (cancelled) return;
+        const imported = await tadaService.getByUser();
+        if (cancelled) return;
+        setSavedBills(imported);
+        if (imported.length) setBill(imported[0]);
+        if (failed) {
+          setAutoSyncBanner(`${failed} browser bill(s) could not be imported and are still in this browser.`);
+          return;
+        }
       }
 
-      void tadaAutoFillService.autoSyncLastMonthBill(currentUser).then((res) => {
-        if (res.generated && res.bill) {
-          setBill(res.bill);
-          setSavedBills((prev) => {
-            const exists = prev.some((b) => b.id === res.bill.id);
-            return exists ? prev.map((b) => (b.id === res.bill.id ? res.bill : b)) : [res.bill, ...prev];
-          });
-          setAutoSyncBanner(res.message);
-        }
-      }).catch(error=>setAutoSyncBanner(error instanceof Error?error.message:"TA/DA sync failed. Please retry."));
+      const result = await tadaAutoFillService.autoSyncLastMonthBill(currentUser);
+      if (cancelled || !result.generated) return;
+      setBill(result.bill);
+      setSavedBills(prev => [result.bill, ...prev.filter(b => b.id !== result.bill.id)]);
+      setAutoSyncBanner(result.message);
     }
 
-    const handleBillsChanged = () => {
-      if (currentUser) {
-        const records = tadaService.getByUser(currentUser.id, currentUser.pno, currentUser.name);
-        setSavedBills(records);
-      }
-    };
-    window.addEventListener("cms_tada_bills_changed", handleBillsChanged);
-    return () => window.removeEventListener("cms_tada_bills_changed", handleBillsChanged);
-  }, [currentUser]);
+    void load().catch(error => {
+      if (!cancelled) setAutoSyncBanner(error instanceof Error ? error.message : "TA/DA history could not be loaded.");
+    });
+    return () => { cancelled = true; };
+  }, [currentUser, userId, userName]);
 
   const handleOpenPreview = (b: TADABillRecord) => {
     setPreviewModalBill(b);
@@ -151,7 +151,7 @@ export default function TADAPage() {
           return exists ? prev.map((b) => (b.id === res.bill.id ? res.bill : b)) : [res.bill, ...prev];
         });
       }
-      loadUserBills();
+      setSavedBills(await tadaService.getByUser());
       setAutoSyncBanner(res.message);
       setActiveTab("HISTORY");
     } catch (err: any) {
@@ -414,7 +414,7 @@ export default function TADAPage() {
   };
 
   // Save current bill to user history
-  const handleSaveBill = (status: "DRAFT" | "SUBMITTED" = "DRAFT") => {
+  const handleSaveBill = async (status: "DRAFT" | "SUBMITTED" = "DRAFT") => {
     const toSave: TADABillRecord = {
       ...bill,
       status,
@@ -422,13 +422,12 @@ export default function TADAPage() {
       userName: bill.form1TourProgramme.employeeName || userName,
     };
     try {
-    const saved = tadaService.save(toSave, currentUser?.id || userId);
+    const saved = await tadaService.save(toSave, currentUser?.id || userId);
     setBill(saved);
     setSavedBills((prev) => {
       const exists = prev.some((b) => b.id === saved.id);
       return exists ? prev.map((b) => (b.id === saved.id ? saved : b)) : [saved, ...prev];
     });
-    loadUserBills();
     setSaveSuccessMsg(`सफलतापूर्वक सुरक्षित (Saved)! ID: ${saved.id}`);
     setTimeout(() => setSaveSuccessMsg(""), 4000);
     } catch(error) {alert(error instanceof Error?error.message:"TA/DA save failed.");}
@@ -444,13 +443,15 @@ export default function TADAPage() {
   };
 
   // Delete bill from history
-  const handleDeleteBill = (id: string) => {
-    if (confirm("क्या आप इस बिल रिकॉर्ड को हटाना चाहते हैं?")) {
-      if (!tadaService.delete(id, userId)) {alert("Bill could not be deleted. Check ownership and browser storage.");return;}
-      loadUserBills();
-      if (bill.id === id) {
-        setBill(createBlankTADABill(userId, userName));
-      }
+  const handleDeleteBill = async (id: string) => {
+    const saved = savedBills.find(item => item.id === id);
+    if (!saved || !confirm("क्या आप इस बिल रिकॉर्ड को हटाना चाहते हैं?")) return;
+    try {
+      await tadaService.delete(saved);
+      setSavedBills(list => list.filter(item => item.id !== id));
+      if (bill.id === id) setBill(createBlankTADABill(userId, userName));
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "TA/DA bill could not be deleted.");
     }
   };
 

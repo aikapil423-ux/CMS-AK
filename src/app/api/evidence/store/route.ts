@@ -1,14 +1,12 @@
+import { readEvidenceStore, writeEvidenceStore } from "@/services/processedEvidenceStore";
 import { canAccessEvidenceCase, canReadCaseEvidence } from "@/services/evidenceCaseAccess";
 import {evidenceOwner} from "@/lib/evidenceOwnership";
 import { apiAccess } from "@/lib/apiSecurity";
 import { after, NextRequest, NextResponse } from "next/server";
 import { authorizedAnalysisFir, refreshCaseAnalysis } from "@/services/caseAnalysisService";
 import type { UserSession } from "@/types";
-import fs from "fs";
-import path from "path";
 import { UniversalEvidenceRecord } from "@/types/evidence";
 
-const EVIDENCE_STORE_PATH = path.join(process.cwd(), "prisma", "processed-evidence-store.json");
 export const maxDuration = 180;
 
 function scheduleCaseComparisons(records: UniversalEvidenceRecord[], user: UserSession) {
@@ -22,33 +20,7 @@ function scheduleCaseComparisons(records: UniversalEvidenceRecord[], user: UserS
   });
 }
 
-function readEvidenceStore(): UniversalEvidenceRecord[] {
-  try {
-    if (fs.existsSync(EVIDENCE_STORE_PATH)) {
-      const data = fs.readFileSync(EVIDENCE_STORE_PATH, "utf-8");
-      const parsed = JSON.parse(data);
-      if (Array.isArray(parsed)) {
-        return parsed;
-      }
-    }
-  } catch (err) {
-    console.error("Error reading processed-evidence-store.json:", err);
-  }
-  return [];
-}
 
-function writeEvidenceStore(records: UniversalEvidenceRecord[]): void {
-  try {
-    const dir = path.dirname(EVIDENCE_STORE_PATH);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    fs.writeFileSync(EVIDENCE_STORE_PATH, JSON.stringify(records, null, 2), "utf-8");
-  } catch (err) {
-    console.error("Error writing processed-evidence-store.json:", err);
-    throw err;
-  }
-}
 
 export async function GET(req: NextRequest) {
   const apiUser = await apiAccess(req); if (apiUser instanceof Response) return apiUser;
@@ -64,7 +36,7 @@ export async function GET(req: NextRequest) {
 
     const fileName = searchParams.get("fileName");
 
-    const store = (await Promise.all(readEvidenceStore().map(async record =>
+    const store = (await Promise.all((await readEvidenceStore()).map(async record =>
       await canReadCaseEvidence(apiUser, record) ? record : null
     ))).filter(record => record !== null);
 
@@ -126,7 +98,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const store = readEvidenceStore();
+    const store = await readEvidenceStore();
 
     if (Array.isArray(body.records)) {
       const incomingList: UniversalEvidenceRecord[] = body.records;
@@ -168,7 +140,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      writeEvidenceStore(updatedStore);
+      await writeEvidenceStore(updatedStore);
       scheduleCaseComparisons(incomingList, apiUser);
       return NextResponse.json({ success: true, count: incomingList.length });
     }
@@ -209,7 +181,7 @@ export async function POST(req: NextRequest) {
         updatedStore.unshift(inc);
       }
 
-      writeEvidenceStore(updatedStore);
+      await writeEvidenceStore(updatedStore);
       scheduleCaseComparisons([inc], apiUser);
       return NextResponse.json({ success: true, record: inc });
     }
@@ -231,7 +203,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ success: false, error: "id or fileId required" }, { status: 400 });
     }
 
-    const store = readEvidenceStore();
+    const store = await readEvidenceStore();
     const idx = store.findIndex((r) => (!!id && r.id === id) || (!!fileId && r.fileId === fileId));
 
     if (idx === -1) {
@@ -251,7 +223,7 @@ export async function PUT(req: NextRequest) {
     };
 
     store[idx] = updated;
-    writeEvidenceStore(store);
+    await writeEvidenceStore(store);
 
     scheduleCaseComparisons([updated], apiUser);
 
@@ -274,7 +246,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ success: false, error: "id, fileId, or caseId is required" }, { status: 400 });
     }
 
-    let store = readEvidenceStore();
+    let store = await readEvidenceStore();
     const originalStore = store;
     const initialCount = store.length;
 
@@ -289,7 +261,7 @@ export async function DELETE(req: NextRequest) {
     const removed = new Set(matches);
     store = store.filter(record => !removed.has(record));
 
-    writeEvidenceStore(store);
+    await writeEvidenceStore(store);
     scheduleCaseComparisons(originalStore.filter(r => !store.some(next => next.id === r.id)), apiUser);
     return NextResponse.json({ success: true, deletedCount: initialCount - store.length });
   } catch (err: any) {

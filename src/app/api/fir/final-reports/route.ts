@@ -53,7 +53,10 @@ export async function POST(req: NextRequest) {
     if (!Array.isArray(body.data?.accused) || body.data.accused.some((accused: { accusedId: string }) => !accusedIds.has(accused.accusedId))) return NextResponse.json({ error: 'An accused is not linked to this FIR or its processed evidence. Reload the form.' }, { status: 400 });
     body.fir=canonical;
     const existing=await prisma.firFinalReport.findUnique({where:{id:body.id}});
-    if (existing && (existing.createdBy !== apiUser.id || !scopeAllowed(apiUser,existing))) return forbidden();
+    if (existing) {
+      const locations = await readMasterLocationReferences();
+      if (existing.createdBy !== apiUser.id || !scopeAllowed(apiUser, locations.location(existing, 'name'))) return forbidden();
+    }
     body.author={id:apiUser.id,name:apiUser.name};
     return NextResponse.json({ report: await finalReportDbService.save(body) });
   }
@@ -78,3 +81,4 @@ export async function PATCH(req: NextRequest) {
     return synced(await finalReportDbService.sendToSho(body.id, body.firId, body.expectedVersion, body.authorId));
   } catch (error) { return failed(error); }
 }
+import { readMasterLocationReferences } from '@/services/masterLocationReferences';

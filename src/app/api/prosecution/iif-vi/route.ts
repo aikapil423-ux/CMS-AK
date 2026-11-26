@@ -1,3 +1,4 @@
+import { writeRuntimeJson } from "@/lib/runtimeJsonStore";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -194,7 +195,6 @@ export async function POST(req: Request) {
       throw error;
     });
     if (!lock) return Response.json({ error: "A save is in progress. Please retry." }, { status: 409 });
-    const temp = file + "." + randomUUID() + ".tmp";
     try {
       const previous = await readRecord(file);
       if (previous?.revision !== revision) return Response.json({ error: "This FIR was updated. Reload it before saving." }, { status: 409 });
@@ -218,11 +218,9 @@ export async function POST(req: Request) {
         ...previous, revision: randomUUID(),
         [stage]: { entries: validated, attachments: savedAttachments, updatedAt: new Date().toISOString(), updatedBy: user.name },
       };
-      await fs.writeFile(temp, JSON.stringify(record), { mode: 0o600 });
-      await fs.rename(temp, file);
+      await writeRuntimeJson(file, record);
       return Response.json({ record: withoutFileContents(record) });
     } finally {
-      await fs.rm(temp, { force: true });
       await lock.close();
       await fs.unlink(file + ".lock");
     }

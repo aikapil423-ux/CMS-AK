@@ -1,3 +1,4 @@
+import { readRuntimeJson, writeRuntimeJson } from "../lib/runtimeJsonStore";
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { randomBytes, scryptSync, randomUUID } from 'node:crypto';
@@ -9,6 +10,7 @@ import type {
   AccountAuditLog,
 } from '../types/adminMaster';
 import { DEMO_USERS } from '../lib/mockData';
+import { readMasterLocationReferences } from './masterLocationReferences';
 
 const STORE_PATH = path.join(process.cwd(), 'prisma', 'accounts-master-store.json');
 const AUDIT_STORE_PATH = path.join(process.cwd(), 'prisma', 'accounts-audit-store.json');
@@ -111,15 +113,30 @@ async function withStoreLock<T>(fn: () => Promise<T>): Promise<T> {
   }
 }
 
-// Read raw accounts data
+async function mapAccountLocationReferences(data: AccountsStoreData, direction: 'id' | 'name'): Promise<AccountsStoreData> {
+  const locations = await readMasterLocationReferences();
+  return {
+    ...data,
+    accounts: data.accounts.map(account => ({
+      ...locations.location(account, direction),
+      state: locations.state(account.state, direction),
+      range: locations.range(account.range, direction),
+      authorizedDistricts: account.authorizedDistricts?.map(value => locations.district(value, direction)),
+      authorizedPoliceStations: account.authorizedPoliceStations?.map(value =>
+        locations.station(value, account.district, direction)
+      ),
+    })),
+  };
+}
+
+// Read accounts with the location labels expected by the session and UI.
 export async function readAccountsStore(): Promise<AccountsStoreData> {
   try {
-    const raw = await fs.readFile(STORE_PATH, 'utf8');
-    const parsed = JSON.parse(raw);
+    const parsed = await readRuntimeJson<AccountsStoreData>(STORE_PATH);
     if (!parsed || !Array.isArray(parsed.accounts)) {
       throw new Error('Invalid account store');
     }
-    return parsed as AccountsStoreData;
+    return await mapAccountLocationReferences(parsed as AccountsStoreData, 'name');
   } catch (e) {
     if ((e as NodeJS.ErrnoException).code === 'ENOENT') {
       const initial: AccountsStoreData = {
@@ -137,17 +154,14 @@ export async function readAccountsStore(): Promise<AccountsStoreData> {
 export async function writeAccountsStore(data: AccountsStoreData): Promise<void> {
   await withStoreLock(async () => {
     data.updatedAt = new Date().toISOString();
-    const tempFile = STORE_PATH + '.tmp.' + randomUUID();
-    await fs.writeFile(tempFile, JSON.stringify(data, null, 2), 'utf8');
-    await fs.rename(tempFile, STORE_PATH);
+    await writeRuntimeJson(STORE_PATH, await mapAccountLocationReferences(data, 'id'));
   });
 }
 
 // Read Audit Logs
 export async function readAccountAuditLogs(): Promise<AccountAuditLog[]> {
   try {
-    const raw = await fs.readFile(AUDIT_STORE_PATH, 'utf8');
-    const parsed = JSON.parse(raw);
+    const parsed = await readRuntimeJson<AccountAuditLog[]>(AUDIT_STORE_PATH);
     return Array.isArray(parsed) ? parsed : [];
   } catch (e) {
     if ((e as NodeJS.ErrnoException).code === 'ENOENT') return [];
@@ -166,9 +180,7 @@ export async function recordAccountAudit(log: Omit<AccountAuditLog, 'id' | 'time
     });
     // Keep last 1000 logs
     const trimmed = logs.slice(0, 1000);
-    const temp = AUDIT_STORE_PATH + '.tmp.' + randomUUID();
-    await fs.writeFile(temp, JSON.stringify(trimmed, null, 2), 'utf8');
-    await fs.rename(temp, AUDIT_STORE_PATH);
+    await writeRuntimeJson(AUDIT_STORE_PATH, trimmed);
   } catch (err) {
     console.error('Failed to write account audit log:', err);
   }

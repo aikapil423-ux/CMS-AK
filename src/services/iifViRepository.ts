@@ -1,5 +1,5 @@
+import { readRuntimeJson } from "@/lib/runtimeJsonStore";
 import { createHash } from "node:crypto";
-import fs from "node:fs/promises";
 import path from "node:path";
 import type { IifViRecord } from "@/lib/iifVi";
 
@@ -10,7 +10,7 @@ export const iifViRecordPath = (id: string) => path.join(
 
 export async function readIifViRecord(file: string): Promise<IifViRecord | null> {
   try {
-    return JSON.parse(await fs.readFile(/* turbopackIgnore: true */ file, "utf8"));
+    return await readRuntimeJson<IifViRecord>(file);
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
     throw error;

@@ -188,6 +188,14 @@ function syncComplaintsToServer(_items:ComplaintItem[]){
  // Public async mutations await one version-checked backend commit below.
 }
 
+function isActiveForEnquiryOfficer(complaint: ComplaintItem): boolean {
+  if (complaint.workflowState === "RE_ENQUIRY" || complaint.workflowState === "CORRECTION_REQUIRED") {
+    return true;
+  }
+
+  return complaint.shoDecision !== "APPROVE" && !complaint.isFirApprovedBySho;
+}
+
 // Initialize stores
 complaintsStore = loadComplaintsFromStorage();
 officerNotificationsStore = loadNotificationsFromStorage();
@@ -264,16 +272,7 @@ export const ComplaintService = {
       list = list.filter((c) => {
         if(!isUserAssignedEo(viewer||{id:filter.assignedEo,pno:filter.assignedEo,name:filter.assignedEo},c))return false;
 
-        // Active queue rule:
-        // When EO sends a complaint to SHO, it leaves EO's active work queue.
-        // It reappears if SHO orders Re-Enquiry (workflowState === "RE_ENQUIRY" && !c.isSentToSho).
-        if (filter?.activeQueueOnly !== false && !filter?.showSentToSho) {
-          if (c.isSentToSho && !c.isFirApprovedBySho && c.workflowState !== "RE_ENQUIRY") {
-            return false;
-          }
-        }
-
-        return true;
+        return filter.activeQueueOnly === false || filter.showSentToSho || isActiveForEnquiryOfficer(c);
       });
     }
 
@@ -546,18 +545,7 @@ export const ComplaintService = {
       baseList = baseList.filter((c) => {
         if(!isUserAssignedEo(viewer||{id:assignedEoFilter,pno:assignedEoFilter,name:assignedEoFilter},c))return false;
 
-        // Active queue rule: when sent to SHO, it leaves EO active queue unless re-enquiry or correction required
-        if (
-          c.isSentToSho &&
-          !c.isFirApprovedBySho &&
-          c.workflowState !== "RE_ENQUIRY" &&
-          c.workflowState !== "CORRECTION_REQUIRED" &&
-          c.shoDecision !== "REJECT"
-        ) {
-          return false;
-        }
-
-        return true;
+        return isActiveForEnquiryOfficer(c);
       });
     }
 

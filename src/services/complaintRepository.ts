@@ -1,7 +1,9 @@
+import { readCaseRecords, usesPostgresStore, withCaseRecordTransaction, writeCaseRecords } from "../lib/runtimeJsonStore";
+import type { Prisma } from "@prisma/client";
+import { readMasterLocationReferences } from "@/services/masterLocationReferences";
 import {readFirRecords} from "@/services/firRepository";
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import {randomUUID} from 'node:crypto';
 import {z} from 'zod';
 import type {ComplaintItem,UserSession} from '@/types';
 import {canViewComplaint,isShoOrSuperior,canDeleteDocument,canEditDocument,isUserAssignedEo,isComplaintAssignedToEo} from '@/utils/complaintPermissions';
@@ -15,8 +17,8 @@ const item=z.object({id:z.string().min(1).max(200),complaintNumber:z.string().mi
 const row=z.object({id:z.string().min(1).max(200)}).passthrough();
 const complaintInput=item.extend({attachments:z.array(row.extend({name:z.string(),dataUrl:z.string().optional()})).optional(),documents:z.array(row.extend({fileName:z.string()})).optional(),reports:z.array(row.extend({title:z.string()})).optional(),enquiryNotes:z.array(row).optional(),timeline:z.array(row).optional(),auditTrail:z.array(row).optional(),accusedList:z.array(z.object({id:z.string().optional(),name:z.string()}).passthrough()).optional()});
 const request=z.object({operation:z.string().min(1),changes:z.array(z.object({complaint:complaintInput,expectedVersion:z.number().int().nonnegative()})).min(1).max(100)});
-export async function readComplaints():Promise<ComplaintItem[]>{
- try{const parsed=JSON.parse(await fs.readFile(file,'utf8'));if(!Array.isArray(parsed))throw new Error('Invalid complaint store');return parsed.map(c=>stabilizeComplaint(c));}
+export async function readComplaints(db?: Prisma.TransactionClient):Promise<ComplaintItem[]>{
+ try{const parsed=await readCaseRecords<ComplaintItem>('complaints',file,db);if(!Array.isArray(parsed))throw new Error('Invalid complaint store');const locations = await readMasterLocationReferences(db); return parsed.map(c=>stabilizeComplaint(locations.caseRecord(c, 'name')));}
  catch(e){if((e as NodeJS.ErrnoException).code==='ENOENT')return [];throw e;}
 }
 function authorize(user:UserSession,next:ComplaintItem,old?:ComplaintItem,registeredFir=false){
@@ -43,7 +45,8 @@ function authorize(user:UserSession,next:ComplaintItem,old?:ComplaintItem,regist
  }
  for(const field of ['documents','reports'] as const){for(const doc of old[field]||[]){const updated=(next[field]||[]).find(d=>d.id===doc.id);if(!updated&&!canDeleteDocument(user,doc,old).allowed)throw new ComplaintAccessError('Only the original creator may delete this document/report.');if(updated&&JSON.stringify(doc)!==JSON.stringify(updated)&&!canEditDocument(user,doc,old).allowed){const before={...doc} as Record<string,unknown>,after={...updated} as Record<string,unknown>;for(const k of ['sentToSho','sentToShoAt','sentToShoBy','status']){delete before[k];delete after[k];}if(JSON.stringify(before)!==JSON.stringify(after))throw new ComplaintAccessError('Only the original creator may edit this document/report.');}}}
 }
-async function withLock<T>(fn:()=>Promise<T>):Promise<T>{
+async function withLock<T>(fn:(db?: Prisma.TransactionClient)=>Promise<T>):Promise<T>{
+ if (usesPostgresStore()) return withCaseRecordTransaction('complaints', fn);
  await fs.mkdir(path.dirname(file),{recursive:true});const lock=file+'.lock';let handle;
  for(let i=0;i<100;i++){try{handle=await fs.open(lock,'wx');break;}catch(e){if((e as NodeJS.ErrnoException).code!=='EEXIST')throw e;await new Promise(r=>setTimeout(r,25));}}
  if(!handle)throw new ComplaintConflict('Another save is in progress. Retry shortly.');
@@ -52,10 +55,10 @@ async function withLock<T>(fn:()=>Promise<T>):Promise<T>{
 export async function saveComplaintChanges(input:unknown,user:UserSession){
  const body=request.parse(input);
  if(new Set(body.changes.map(c=>c.complaint.id)).size!==body.changes.length)throw new ComplaintConflict('Duplicate complaint IDs in save request.');
- return withLock(async()=>{
- const list=await readComplaints(),saved:ComplaintItem[]=[];
+ return withLock(async db=>{
+ const list=await readComplaints(db),saved:ComplaintItem[]=[];
  for(const change of body.changes){let next=change.complaint as unknown as ComplaintItem;const index=list.findIndex(c=>c.id===next.id),old=list[index];
- const registeredFir=body.operation==='registerFir' && old ? (await readFirRecords()).some(f=>f.sourceComplaintId===old.id&&f.firNumber===next.firNumber&&f.policeStation===old.policeStation&&f.district===old.district) : false;
+ const registeredFir=body.operation==='registerFir' && old ? (await readFirRecords(db)).some(f=>f.sourceComplaintId===old.id&&f.firNumber===next.firNumber&&f.policeStation===old.policeStation&&f.district===old.district) : false;
  next={...next,custodyUnit:old?.custodyUnit,recordTransfers:old?.recordTransfers};
  authorize(user,next,old,registeredFir);
  if((old?.persistenceVersion||0)!==change.expectedVersion)throw new ComplaintConflict('Complaint changed on another device. Reload and retry.');
@@ -69,30 +72,28 @@ export async function saveComplaintChanges(input:unknown,user:UserSession){
  const auditIds=new Set(old?.auditTrail?.map(a=>a.id)||[]),timelineIds=new Set(old?.timeline?.map(t=>t.id)||[]);
  next={...next,auditTrail:next.auditTrail?.map(a=>auditIds.has(a.id)?a:{...a,performedBy:user.name,userPno:user.pno,userRole:user.role}),timeline:next.timeline?.map(t=>timelineIds.has(t.id)?t:{...t,officerName:user.name})};
  // Intake/OCR references and recommendations are not proof of FIR registration.
- const linkedFir=(await readFirRecords()).find(f=>f.sourceComplaintId===next.id && f.policeStation===next.policeStation && f.district===next.district);
+ const linkedFir=(await readFirRecords(db)).find(f=>f.sourceComplaintId===next.id && f.policeStation===next.policeStation && f.district===next.district);
  next={...next,isFirRegistered:Boolean(linkedFir)};
  if(linkedFir)next={...next,firNumber:linkedFir.firNumber};
  next=stabilizeComplaint({...next,persistenceVersion:(old?.persistenceVersion||0)+1},old);next.daysPending=computeDaysPending(next);
  if(index<0)list.unshift(next);else list[index]=next;saved.push(next);
  }
- const temp=file+'.'+randomUUID()+'.tmp';try{await fs.writeFile(temp,JSON.stringify(list,null,2),'utf8');await fs.rename(temp,file);}finally{await fs.unlink(temp).catch(()=>{});}
+ const locations = await readMasterLocationReferences(db);
+ await writeCaseRecords('complaints', file, list.map(record => locations.caseRecord(record, 'id')), db);
  return saved;
  });
 }
 
 export async function updateComplaintTransfer(id: string, update: (record: ComplaintItem) => ComplaintItem) {
-  return withLock(async () => {
-    const records = await readComplaints();
+  return withLock(async db => {
+    const records = await readComplaints(db);
     const index = records.findIndex(record => record.id === id);
     if (index < 0) return null;
     const current = records[index];
     const saved = { ...update(current), persistenceVersion: (current.persistenceVersion || 0) + 1 };
     records[index] = saved;
-    const temp = file + '.' + randomUUID() + '.tmp';
-    try {
-      await fs.writeFile(temp, JSON.stringify(records, null, 2), 'utf8');
-      await fs.rename(temp, file);
-    } finally { await fs.unlink(temp).catch(() => {}); }
+    const locations = await readMasterLocationReferences(db);
+    await writeCaseRecords('complaints', file, records.map(record => locations.caseRecord(record, 'id')), db);
     return saved;
   });
 }

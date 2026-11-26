@@ -1,23 +1,17 @@
+import { readEvidenceStore } from "@/services/processedEvidenceStore";
 import { apiAccess } from "@/lib/apiSecurity";
 import { canReadCaseEvidence } from "@/services/evidenceCaseAccess";
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
 import { UniversalEvidenceRecord } from "@/types/evidence";
 import { extractVocabulary } from "@/lib/vocabularyExtractor";
 
-const EVIDENCE_STORE_PATH = path.join(process.cwd(), "prisma", "processed-evidence-store.json");
 
 
 
 export async function GET(req: Request) {
  const apiUser=await apiAccess(req);if(apiUser instanceof Response)return apiUser;
   try {
-    let records: UniversalEvidenceRecord[] = [];
-    if (fs.existsSync(EVIDENCE_STORE_PATH)) {
-      const data = fs.readFileSync(EVIDENCE_STORE_PATH, "utf-8");
-      records = JSON.parse(data);
-    }
+    const records = await readEvidenceStore();
 
     const visibleRecords: UniversalEvidenceRecord[] = [];
     for (const r of records) {

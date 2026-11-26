@@ -1,5 +1,4 @@
-import { readFile } from 'node:fs/promises';
-import path from 'node:path';
+import { readEvidenceStore } from "@/services/processedEvidenceStore";
 import { canReadCaseEvidence } from '@/services/evidenceCaseAccess';
 import type { UserSession } from '@/types';
 import type { UniversalEvidenceRecord } from '@/types/evidence';
@@ -7,11 +6,7 @@ import { readComplaints } from '@/services/complaintRepository';
 import { canViewComplaint } from '@/utils/complaintPermissions';
 
 export async function savedCaseEvidence(caseIds: string[], user: UserSession) {
-  const file = path.join(process.cwd(), 'prisma', 'processed-evidence-store.json');
-  const saved: UniversalEvidenceRecord[] = JSON.parse(await readFile(file, 'utf8').catch(error => {
-    if (error.code === 'ENOENT') return '[]';
-    throw error;
-  }));
+  const saved = await readEvidenceStore();
   const matching = saved.filter(record => record.processingStatus === 'COMPLETED' && record.caseId && caseIds.includes(record.caseId));
   const allowed = await Promise.all(matching.map(record => canReadCaseEvidence(user, record)));
   const documents = matching.filter((_, index) => allowed[index]).map(record => ({

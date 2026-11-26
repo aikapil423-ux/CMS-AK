@@ -158,7 +158,16 @@ export function getMainComplaintStatus(
     return "FIR Register";
   }
 
-  // 3. SHO Approved FIR Recommend (remains in FIR registration workflow, NOT marked Complete)
+  if (
+    !complaint.shoDecision &&
+    (complaint.workflowState === "SENT_TO_SHO" ||
+      complaint.workflowState === "FIR_RECOMMENDED" ||
+      complaint.status === "PENDING_SHO_REVIEW")
+  ) {
+    return "Pending";
+  }
+
+  // 3. SHO-approved FIR recommendation awaiting registration
   if (
     complaint.finalCategory === "FIR Recommend" ||
     complaint.finalCategory === "FIR_RECOMMEND" ||

@@ -1,3 +1,4 @@
+import { readEvidenceStore, writeEvidenceStore } from "./processedEvidenceStore";
 // src/services/losslessCompressionService.ts
 // Enterprise Lossless Compression & Cryptographic Integrity Verification Engine
 // Compliant with Strict Legal Evidence Retention Standards (Haryana Police CMS)
@@ -18,7 +19,6 @@ import {
 const STORAGE_ROOT = path.join(process.cwd(), "prisma", "storage", "evidence");
 const ORIGINAL_STORAGE_DIR = path.join(STORAGE_ROOT, "original");
 const COMPRESSED_STORAGE_DIR = path.join(STORAGE_ROOT, "compressed");
-const EVIDENCE_STORE_PATH = path.join(process.cwd(), "prisma", "processed-evidence-store.json");
 
 // Ensure persistent storage directories exist
 function ensureStorageDirectories(): void {
@@ -295,9 +295,8 @@ export const losslessCompressionService = {
    */
   async compressEvidenceRecord(recordIdOrFileId: string): Promise<UniversalEvidenceRecord | null> {
     try {
-      if (!fs.existsSync(EVIDENCE_STORE_PATH)) return null;
-      const rawStore = fs.readFileSync(EVIDENCE_STORE_PATH, "utf-8");
-      const records: UniversalEvidenceRecord[] = JSON.parse(rawStore);
+
+      const records = await readEvidenceStore();
       const idx = records.findIndex(
         (r) => r.id === recordIdOrFileId || r.fileId === recordIdOrFileId
       );
@@ -348,7 +347,7 @@ export const losslessCompressionService = {
       ];
 
       records[idx] = record;
-      fs.writeFileSync(EVIDENCE_STORE_PATH, JSON.stringify(records, null, 2), "utf-8");
+      await writeEvidenceStore(records);
       return record;
     } catch (err) {
       console.error("[LosslessCompression] Failed to compress evidence record:", err);
@@ -374,11 +373,9 @@ export const losslessCompressionService = {
       totalSavedBytes: 0,
     };
 
-    if (!fs.existsSync(EVIDENCE_STORE_PATH)) return stats;
 
     try {
-      const rawStore = fs.readFileSync(EVIDENCE_STORE_PATH, "utf-8");
-      const records: UniversalEvidenceRecord[] = JSON.parse(rawStore);
+      const records = await readEvidenceStore();
 
       for (let i = 0; i < records.length; i++) {
         const record = records[i];
@@ -418,7 +415,7 @@ export const losslessCompressionService = {
         }
       }
 
-      fs.writeFileSync(EVIDENCE_STORE_PATH, JSON.stringify(records, null, 2), "utf-8");
+      await writeEvidenceStore(records);
     } catch (err) {
       console.error("[LosslessCompression] Batch process error:", err);
     }
@@ -429,7 +426,7 @@ export const losslessCompressionService = {
   /**
    * Returns complete storage optimization analytics across the CMS.
    */
-  getStorageOptimizationStats(): {
+  async getStorageOptimizationStats(): Promise<{
     totalOriginalBytes: number;
     totalCompressedBytes: number;
     totalSavedBytes: number;
@@ -446,7 +443,7 @@ export const losslessCompressionService = {
       savedBytes: number;
       count: number;
     }[];
-  } {
+  }> {
     const emptyResult = {
       totalOriginalBytes: 0,
       totalCompressedBytes: 0,
@@ -460,11 +457,9 @@ export const losslessCompressionService = {
       categoryBreakdown: [],
     };
 
-    if (!fs.existsSync(EVIDENCE_STORE_PATH)) return emptyResult;
 
     try {
-      const rawStore = fs.readFileSync(EVIDENCE_STORE_PATH, "utf-8");
-      const records: UniversalEvidenceRecord[] = JSON.parse(rawStore);
+      const records = await readEvidenceStore();
 
       let totalOrig = 0;
       let totalComp = 0;

@@ -1,0 +1,615 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model LocationState {
+  id      String          @id
+  code    String          @unique
+  name    String
+  status  String
+  details Json
+  ranges  LocationRange[]
+}
+
+model LocationRange {
+  id        String        @id
+  code      String
+  name      String
+  status    String
+  stateId   String
+  state     LocationState @relation(fields: [stateId], references: [id])
+  details   Json
+  districts District[]
+
+  @@unique([stateId, code])
+}
+
+model District {
+  id       String                  @id
+  code     String
+  name     String
+  status   String
+  rangeId  String
+  range    LocationRange           @relation(fields: [rangeId], references: [id])
+  details  Json
+  stations LocationPoliceStation[]
+
+  @@unique([rangeId, code])
+}
+
+model LocationPoliceStation {
+  id         String   @id
+  code       String
+  name       String
+  status     String
+  districtId String
+  district   District @relation(fields: [districtId], references: [id])
+  details    Json
+
+  @@unique([districtId, code])
+}
+
+// Original documents are retained during import so fields without a relational
+// model can be migrated without dropping information.
+model ImportedJsonDocument {
+  path    String @id
+  payload Json
+}
+
+model ComplaintRecord {
+  id       String @id
+  position BigInt
+  payload  Json
+  district           String? @default(dbgenerated())
+  policeStation      String? @default(dbgenerated())
+  registrationNumber String? @default(dbgenerated())
+  registrationDate   String? @default(dbgenerated())
+  registrationYear   String? @default(dbgenerated())
+  status             String? @default(dbgenerated())
+
+  @@index([district, policeStation, registrationDate])
+  @@index([status])
+  @@unique([district, policeStation, registrationYear, registrationNumber], map: "ComplaintRecord_registration_identity_key")
+}
+
+model FirRecord {
+  id       String @id
+  position BigInt
+  payload  Json
+  district           String? @default(dbgenerated())
+  policeStation      String? @default(dbgenerated())
+  registrationNumber String? @default(dbgenerated())
+  registrationDate   String? @default(dbgenerated())
+  registrationYear   String? @default(dbgenerated())
+  status             String? @default(dbgenerated())
+  caseDiaries        FirCaseDiary[]
+  caseDiaryEvents    FirCaseDiaryEvent[]
+  scrutinyRecords    ScrutinyRecord[]
+
+  @@index([district, policeStation, registrationDate])
+  @@index([status])
+  @@unique([district, policeStation, registrationYear, registrationNumber], map: "FirRecord_registration_identity_key")
+}
+
+model FirCaseDiary {
+  firId    String
+  id       String
+  position BigInt
+  payload  Json
+  fir      FirRecord @relation(fields: [firId], references: [id])
+
+  @@id([firId, id])
+}
+
+model FirCaseDiaryEvent {
+  id        BigInt @id @default(autoincrement())
+  firId     String
+  diaryId   String
+  officerId String?
+  action    String
+  timestamp DateTime @default(now()) @db.Timestamptz
+  fir       FirRecord @relation(fields: [firId], references: [id])
+}
+
+model WeeklyDiaryRecord {
+  key      String @id
+  ownerId  String?
+  station  String
+  fromDate String
+  toDate   String
+  revision String?
+  payload  Json
+}
+
+model ScrutinyRecord {
+  id        String @id
+  firId     String
+  ownerId   String
+  revision  String
+  updatedAt String
+  payload   Json
+  fir       FirRecord @relation(fields: [firId], references: [id])
+
+  @@index([firId])
+  @@index([ownerId, updatedAt])
+}
+
+model CaseDocumentEvent {
+  id        BigInt @id @default(autoincrement())
+  kind      String
+  recordId  String
+  officerId String
+  action    String
+  timestamp DateTime @default(now()) @db.Timestamptz
+
+  @@index([kind, recordId])
+}
+
+model KalandraRecord {
+  id                 String @id
+  ownerId            String
+  district           String
+  policeStation      String
+  registrationDate   String
+  registrationYear   String
+  registrationNumber String
+  sequence           Int
+  status             String
+  updatedAt          String
+  archived           Boolean @default(false)
+  payload            Json
+
+  @@unique([district, policeStation, registrationYear, sequence], map: "KalandraRecord_station_year_sequence_key")
+  @@unique([district, policeStation, registrationNumber], map: "KalandraRecord_station_number_key")
+  @@index([district, policeStation, registrationDate], map: "KalandraRecord_station_date_idx")
+}
+
+model PoliceUnit {
+  id           String              @id @default(cuid())
+  code         String              @unique
+  name         String
+  type         String
+  district     String
+  range        String
+  contactPhone String?
+  email        String?
+  address      String?
+  parentId     String?
+  parent       PoliceUnit?         @relation("UnitHierarchy", fields: [parentId], references: [id])
+  subUnits     PoliceUnit[]        @relation("UnitHierarchy")
+  officers     User[]
+  complaints   Complaint[]
+  gdEntries    GeneralDiaryEntry[]
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@index([district])
+  @@index([type])
+}
+
+model User {
+  id                   String              @id @default(cuid())
+  pno                  String              @unique
+  beltNumber           String?
+  fullName             String
+  rank                 String
+  role                 String
+  status               String              @default("ACTIVE")
+  mobileNumber         String              @unique
+  email                String?             @unique
+  passwordHash         String
+  unitId               String
+  unit                 PoliceUnit          @relation(fields: [unitId], references: [id])
+  assignedComplaints   Complaint[]         @relation("AssignedEO")
+  registeredComplaints Complaint[]         @relation("RegisteredBy")
+  assignedByMe         Complaint[]         @relation("AssignedBy")
+  enquiryActions       EnquiryActionLog[]
+  submittedReports     EnquiryReport[]
+  approvalDecisions    ApprovalHistory[]
+  gdEntriesLogged      GeneralDiaryEntry[] @relation("GDLogger")
+  auditLogs            AuditLog[]
+  lastLoginAt          DateTime?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  @@index([unitId])
+  @@index([role])
+}
+
+model Complaint {
+  id                      String                       @id @default(cuid())
+  complaintNumber         String                       @unique
+  source                  String                       @default("WALK_IN_STATION")
+  category                String
+  subCategory             String?
+  priority                String                       @default("ROUTINE")
+  status                  String                       @default("REGISTERED")
+  incidentDate            DateTime?
+  incidentPlace           String
+  incidentLandmark        String?
+  incidentDetails         String
+  complainantName         String
+  complainantFatherSpouse String?
+  complainantGender       String
+  complainantAge          Int?
+  complainantMobile       String
+  complainantAltPhone     String?
+  complainantAadhaar      String?
+  complainantAddress      String
+  complainantCity         String
+  complainantDistrict     String
+  complainantState        String                       @default("Haryana")
+  accusedDetails          String?
+  policeStationId         String
+  policeStation           PoliceUnit                   @relation(fields: [policeStationId], references: [id])
+  registeredById          String
+  registeredBy            User                         @relation("RegisteredBy", fields: [registeredById], references: [id])
+  assignedEoId            String?
+  assignedEo              User?                        @relation("AssignedEO", fields: [assignedEoId], references: [id])
+  assignedById            String?
+  assignedBy              User?                        @relation("AssignedBy", fields: [assignedById], references: [id])
+  assignedAt              DateTime?
+  targetResolutionDate    DateTime?
+  assignmentHistory       ComplaintAssignmentHistory[]
+  enquiryActions          EnquiryActionLog[]
+  evidences               ComplaintEvidence[]
+  enquiryReports          EnquiryReport[]
+  approvals               ApprovalHistory[]
+  relatedGdEntries        GeneralDiaryEntry[]
+  isSensitive             Boolean                      @default(false)
+  isFIRRecommended        Boolean                      @default(false)
+  recommendedFIRNumber    String?
+  directSendToFir         Boolean                      @default(false)
+  shoDecision             String?
+  rejectionReason         String?
+  rejectionAt             DateTime?
+  rejectionBy             String?
+  rejectionCount          Int                          @default(0)
+  createdAt               DateTime                     @default(now())
+  updatedAt               DateTime                     @updatedAt
+
+  @@index([policeStationId])
+  @@index([status])
+  @@index([assignedEoId])
+  @@index([complaintNumber])
+}
+
+model ComplaintAssignmentHistory {
+  id               String    @id @default(cuid())
+  complaintId      String
+  complaint        Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  previousEoId     String?
+  newEoId          String
+  assignedById     String
+  assignmentReason String?
+  assignedAt       DateTime  @default(now())
+
+  @@index([complaintId])
+}
+
+model EnquiryActionLog {
+  id              String    @id @default(cuid())
+  complaintId     String
+  complaint       Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  officerId       String
+  officer         User      @relation(fields: [officerId], references: [id])
+  actionType      String
+  actionDate      DateTime  @default(now())
+  locationVisited String?
+  personsExamined String?
+  summaryOfAction String
+  nextActionPlan  String?
+  attachments     String?
+  createdAt       DateTime  @default(now())
+
+  @@index([complaintId])
+  @@index([officerId])
+}
+
+model ComplaintEvidence {
+  id             String    @id @default(cuid())
+  complaintId    String
+  complaint      Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  title          String
+  evidenceType   String
+  fileUrl        String
+  fileName       String
+  fileSize       Int
+  fileMimeType   String
+  sha256Hash     String
+  collectedAt    DateTime  @default(now())
+  collectedPlace String?
+  description    String?
+  chainOfCustody String?
+  uploadedById   String
+  uploadedAt     DateTime  @default(now())
+
+  @@index([complaintId])
+  @@index([sha256Hash])
+}
+
+model EnquiryReport {
+  id                    String            @id @default(cuid())
+  complaintId           String
+  complaint             Complaint         @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  submittedById         String
+  submittedBy           User              @relation(fields: [submittedById], references: [id])
+  briefFacts            String
+  enquiryConductSummary String
+  keyFindings           String
+  recommendation        String
+  proposedLegalSections String?
+  detailedRemarks       String?
+  isDraft               Boolean           @default(true)
+  isApproved            Boolean           @default(false)
+  submittedAt           DateTime          @default(now())
+  approvals             ApprovalHistory[]
+
+  @@index([complaintId])
+}
+
+model ApprovalHistory {
+  id              String        @id @default(cuid())
+  reportId        String
+  report          EnquiryReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  complaintId     String
+  complaint       Complaint     @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  approverId      String
+  approver        User          @relation(fields: [approverId], references: [id])
+  approverRole    String
+  decision        String
+  officialRemarks String
+  decisionDate    DateTime      @default(now())
+
+  @@index([complaintId])
+  @@index([reportId])
+}
+
+model GeneralDiaryEntry {
+  id                 String              @id @default(cuid())
+  gdNumber           String
+  sequencePerDay     Int
+  gdDate             DateTime
+  entryTime          DateTime            @default(now())
+  entryType          String
+  subject            String
+  narrative          String
+  policeStationId    String
+  policeStation      PoliceUnit          @relation(fields: [policeStationId], references: [id])
+  loggedById         String
+  loggedBy           User                @relation("GDLogger", fields: [loggedById], references: [id])
+  relatedComplaintId String?
+  relatedComplaint   Complaint?          @relation(fields: [relatedComplaintId], references: [id])
+  isLocked           Boolean             @default(true)
+  isAddendum         Boolean             @default(false)
+  parentGdEntryId    String?
+  parentGdEntry      GeneralDiaryEntry?  @relation("GDAddendum", fields: [parentGdEntryId], references: [id])
+  childAddendums     GeneralDiaryEntry[] @relation("GDAddendum")
+  createdAt          DateTime            @default(now())
+
+  @@unique([policeStationId, gdDate, sequencePerDay])
+  @@index([policeStationId, gdDate])
+  @@index([entryType])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  timestamp  DateTime @default(now())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  userPno    String?
+  userRole   String?
+  action     String
+  entityName String
+  entityId   String
+  ipAddress  String?
+  userAgent  String?
+  details    String?
+
+  @@index([entityName, entityId])
+  @@index([userId])
+  @@index([timestamp])
+}
+
+model BuilderTemplate {
+  id                String   @id @default(cuid())
+  name              String
+  description       String?
+  content           String
+  documentStructure String?
+  customFields      String?
+  createdBy         String
+  createdByName     String?
+  createdByRank     String?
+  status            String   @default("ACTIVE")
+  version           Int      @default(1)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  drafts BuilderDraft[]
+
+  @@index([createdBy])
+  @@index([status])
+}
+
+model BuilderDraft {
+  id                String           @id @default(cuid())
+  name              String
+  description       String?
+  content           String
+  documentStructure String?
+  customFields      String?
+  caseId            String?
+  complaintNumber   String?
+  templateId        String?
+  template          BuilderTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  createdBy         String
+  createdByName     String?
+  createdByRank     String?
+  status            String           @default("DRAFT")
+  version           Int              @default(1)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([createdBy])
+  @@index([caseId])
+  @@index([templateId])
+  @@index([status])
+}
+
+// CCTNS-style General Diary (Roznamcha) register — server-owned numbering & timestamps.
+// gdNumber embeds date + daily sequence (GD-YYYY-MM-DD-001); unique per event per day.
+model GDRecord {
+  id                    String    @id @default(cuid())
+  gdNumber              String    @unique
+  sequencePerDay        Int
+  gdDate                DateTime
+  entryDateTime         DateTime
+  policeStation         String    @default("PS City Thanesar")
+  district              String    @default("Kurukshetra")
+  typeCode              String
+  category              String
+  typeDisplay           String
+  typeDisplayHi         String
+  subject               String
+  narrative             String
+  entryForOfficerJson   String
+  actualAuthorJson      String
+  status                String    @default("LOCKED")
+  source                String    @default("MANUAL_ENTRY")
+  isLocked              Boolean   @default(true)
+  isDraft               Boolean   @default(false)
+  relatedRecordsJson    String?
+  auditTrailJson        String?
+  verificationAuditId   String?
+  verifiedByJson        String?
+  verificationTimestamp DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([gdDate])
+  @@index([typeCode])
+  @@index([status])
+  @@index([isDraft])
+  @@index([subject])
+}
+
+// Structured IIF-V records; saving a report does not mark it filed in court.
+model FirFinalReport {
+  id                  String                  @id
+  firId               String
+  firNumber           String
+  policeStation       String
+  district            String
+  reportNumber        String
+  reportType          String
+  reportCategory      String
+  finalReportReason   String
+  investigationStatus String
+  chargeSheetType     String
+  version             Int                     @default(1)
+  state               String                  @default("SAVED")
+  formDataJson        String
+  firSnapshotJson     String
+  reportJson          String
+  createdBy           String
+  updatedBy           String
+  sentToShoAt         DateTime?
+  sentToShoBy         String?
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+  accused             FirFinalReportAccused[]
+  events              FirFinalReportEvent[]
+
+  @@index([firId])
+  @@index([reportType, chargeSheetType])
+  @@index([policeStation, state])
+}
+
+model FirFinalReportAccused {
+  id          String         @id @default(cuid())
+  reportId    String
+  report      FirFinalReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  accusedId   String
+  name        String
+  action      String
+  status      String
+  detailsJson String
+
+  @@index([accusedId, action])
+  @@index([reportId])
+}
+
+model FirFinalReportEvent {
+  id           String         @id @default(cuid())
+  reportId     String
+  report       FirFinalReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  firId        String
+  action       String
+  version      Int
+  actorId      String
+  snapshotJson String
+  createdAt    DateTime       @default(now())
+
+  @@index([firId, createdAt])
+  @@index([reportId, version])
+}
+
+model TaDaBill {
+  id        String @id
+  ownerId   String
+  status    String
+  updatedAt String
+  deleted   Boolean @default(false)
+  payload   String
+  lines     TaDaBillLine[]
+  events    TaDaBillEvent[]
+  policeStation String?
+  district String?
+  registrationNumber String?
+  registrationDate String?
+
+  @@index([ownerId, updatedAt])
+  @@index([district, policeStation, registrationDate], map: "TaDaBill_station_date_idx")
+}
+
+model TaDaBillLine {
+  billId   String
+  form     String
+  position Int
+  payload  String
+  bill     TaDaBill @relation(fields: [billId], references: [id])
+
+  @@id([billId, form, position])
+}
+
+model TaDaBillEvent {
+  id        String @id
+  billId    String
+  officerId String
+  action    String
+  timestamp String
+  bill      TaDaBill @relation(fields: [billId], references: [id])
+}
+
+model FirBailDetail {
+  id              String   @id
+  firId           String
+  accusedId       String
+  policeStation   String
+  district        String
+  version         Int      @default(1)
+  firSnapshotJson String
+  dataJson        String
+  createdBy       String
+  updatedBy       String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([firId, accusedId])
+}

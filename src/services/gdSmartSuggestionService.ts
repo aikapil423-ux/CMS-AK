@@ -1,4 +1,4 @@
-import fs from "fs";
+import { readRuntimeJson, writeRuntimeJson } from "@/lib/runtimeJsonStore";
 import path from "path";
 import {
   GeneralDiaryRecord,
@@ -484,7 +484,7 @@ function parseDepartureTimeMs(dep: VerifiedDeparture): number {
  * Strictly adheres to the 24-hour rule: events older than 24 hours with no action
  * are auto-expired and not suggested.
  */
-export function getSmartVerifiedSuggestions(): GeneralDiaryRecord[] {
+export async function getSmartVerifiedSuggestions(): Promise<GeneralDiaryRecord[]> {
   const now = new Date();
   const nowMs = now.getTime();
   const yyyy = String(now.getFullYear()).padStart(4, "0");
@@ -654,51 +654,26 @@ export function getSmartVerifiedSuggestions(): GeneralDiaryRecord[] {
     });
   }
 
-  const dismissed = getDismissedSuggestionIds();
+  const dismissed = await getDismissedSuggestionIds();
   return suggestions.filter((s) => !dismissed.has(s.id) && !isGdRecordExpired(s));
 }
 
 const DISMISSED_FILE = path.join(process.cwd(), "prisma", "gd-dismissed-suggestions.json");
 const inMemoryDismissed = new Set<string>();
 
-export function getDismissedSuggestionIds(): Set<string> {
-  if (typeof window !== "undefined") {
-    try {
-      const raw = localStorage.getItem("cms_ak_dismissed_suggestions");
-      if (raw) {
-        const list = JSON.parse(raw);
-        if (Array.isArray(list)) return new Set(list);
-      }
-    } catch {}
+async function getDismissedSuggestionIds(): Promise<Set<string>> {
+  try {
+    const list = await readRuntimeJson<string[]>(DISMISSED_FILE);
+    return Array.isArray(list) ? new Set([...list, ...inMemoryDismissed]) : inMemoryDismissed;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
     return inMemoryDismissed;
   }
-  try {
-    if (fs.existsSync(DISMISSED_FILE)) {
-      const raw = fs.readFileSync(DISMISSED_FILE, "utf-8");
-      const list = JSON.parse(raw);
-      if (Array.isArray(list)) return new Set(list);
-    }
-  } catch (e) {
-    console.error("Error reading dismissed suggestions:", e);
-  }
-  return inMemoryDismissed;
 }
 
-export function dismissSuggestionId(id: string): void {
+export async function dismissSuggestionId(id: string): Promise<void> {
+  const dismissed = await getDismissedSuggestionIds();
+  dismissed.add(id);
+  await writeRuntimeJson(DISMISSED_FILE, [...dismissed]);
   inMemoryDismissed.add(id);
-  if (typeof window !== "undefined") {
-    try {
-      const set = getDismissedSuggestionIds();
-      set.add(id);
-      localStorage.setItem("cms_ak_dismissed_suggestions", JSON.stringify(Array.from(set)));
-    } catch {}
-    return;
-  }
-  try {
-    const set = getDismissedSuggestionIds();
-    set.add(id);
-    fs.writeFileSync(DISMISSED_FILE, JSON.stringify(Array.from(set), null, 2), "utf-8");
-  } catch (e) {
-    console.error("Error saving dismissed suggestions:", e);
-  }
 }

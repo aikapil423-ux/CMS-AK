@@ -99,6 +99,12 @@ export const PROPERTY_CATEGORIES = [
   "WILD LIFE",
 ];
 
+export const NATURE_OF_PROPERTY_OPTIONS = [
+  "select",
+  "INVOLVED IN A CASE/CRIME",
+  "STOLEN",
+];
+
 export const PROPERTY_TYPES_BY_CATEGORY: Record<string, string[]> = {
   "AGRICULTURE EQUIPMENT": [
     "Tractor",

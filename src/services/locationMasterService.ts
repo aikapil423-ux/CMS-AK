@@ -1,3 +1,6 @@
+import { readRuntimeJson, usesPostgresStore, writeRuntimeJson } from "../lib/runtimeJsonStore";
+import type { Prisma } from "@prisma/client";
+import { prisma } from "../lib/prisma";
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -727,15 +730,80 @@ async function withStoreLock<T>(fn: () => Promise<T>): Promise<T> {
   }
 }
 
-// Read raw data from store or initialize
-export async function readLocationStore(): Promise<LocationStoreData> {
+// Resolve linked names from their IDs for existing API and UI callers.
+function resolveLocationReferences(store: LocationStoreData, forStorage = false): LocationStoreData {
+  const lookup = (rows: { id: string; name: string }[]) =>
+    new Map(rows.map(({ id, name }) => [id, name]));
+  const states = lookup(store.states);
+  const ranges = lookup(store.ranges);
+  const districts = lookup(store.districts);
+  const offices = lookup(store.offices);
+  const stations = lookup(store.policeStations);
+
+  function resolve<T extends {
+    stateId: string;
+    stateName: string;
+    rangeId?: string;
+    rangeName?: string;
+    districtId?: string;
+    districtName?: string;
+    parentOfficeId?: string;
+    parentOfficeName?: string;
+    associatedPoliceStationId?: string;
+    associatedPoliceStationName?: string;
+  }>(row: T): T {
+    const result = { ...row };
+    const references = [
+      ['stateId', 'stateName', states],
+      ['rangeId', 'rangeName', ranges],
+      ['districtId', 'districtName', districts],
+      ['parentOfficeId', 'parentOfficeName', offices],
+      ['associatedPoliceStationId', 'associatedPoliceStationName', stations],
+    ] as const;
+    for (const [idKey, nameKey, names] of references) {
+      const id = row[idKey];
+      const name = id ? names.get(id) : undefined;
+      if (name === undefined) continue;
+      if (forStorage) delete result[nameKey];
+      else result[nameKey] = name;
+    }
+    return result;
+  }
+
+  return {
+    ...store,
+    ranges: store.ranges.map(resolve),
+    districts: store.districts.map(resolve),
+    offices: store.offices.map(resolve),
+    policeStations: store.policeStations.map(resolve),
+    specializedUnits: store.specializedUnits.map(resolve),
+  };
+}
+
+// Read stored IDs and populate display names, or initialize the store.
+export async function readLocationStore(db: Prisma.TransactionClient = prisma): Promise<LocationStoreData> {
   try {
-    const raw = await fs.readFile(STORE_PATH, 'utf8');
-    const parsed = JSON.parse(raw);
+    const parsed = await readRuntimeJson<LocationStoreData>(STORE_PATH, db);
     if (!parsed || !Array.isArray(parsed.states)) {
       throw new Error('Invalid location store');
     }
-    return parsed as LocationStoreData;
+    if (usesPostgresStore()) {
+      parsed.districts = await db.$queryRaw<MasterDistrict[]>`
+        SELECT COALESCE(d.details->>'createdAt', '') AS "createdAt",
+               COALESCE(d.details->>'updatedAt', '') AS "updatedAt",
+               d.id, d.code, d.name, d.status, d."rangeId", r."stateId",
+               '' AS "stateName", '' AS "rangeName",
+               COALESCE(d.details->>'districtHeadquarters', '') AS "districtHeadquarters",
+               COALESCE(d.details->>'spOffice', '') AS "spOffice",
+               COALESCE(d.details->>'spOfficeAddress', '') AS "spOfficeAddress",
+               COALESCE(d.details->>'contactPhone', '') AS "contactPhone",
+               COALESCE(d.details->>'email', '') AS email
+        FROM "District" d
+        JOIN "LocationRange" r ON r.id = d."rangeId"
+        ORDER BY "createdAt", d.id
+      `;
+    }
+    return resolveLocationReferences(parsed);
   } catch (e) {
     if ((e as NodeJS.ErrnoException).code === 'ENOENT') {
       const initial = getInitialMasterData();
@@ -750,9 +818,7 @@ export async function readLocationStore(): Promise<LocationStoreData> {
 export async function writeLocationStore(data: LocationStoreData): Promise<void> {
   await withStoreLock(async () => {
     data.updatedAt = new Date().toISOString();
-    const tempFile = STORE_PATH + '.tmp.' + randomUUID();
-    await fs.writeFile(tempFile, JSON.stringify(data, null, 2), 'utf8');
-    await fs.rename(tempFile, STORE_PATH);
+    await writeRuntimeJson(STORE_PATH, resolveLocationReferences(data, true));
   });
 }
 

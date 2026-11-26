@@ -1,6 +1,8 @@
+import { readCaseRecords, usesPostgresStore, withCaseRecordTransaction, writeCaseRecords } from "../lib/runtimeJsonStore";
+import type { Prisma } from "@prisma/client";
+import { readMasterLocationReferences } from "@/services/masterLocationReferences";
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { FIRItem, UserSession } from '@/types';
 import { isFirVisibleToUser, nextFirNumber } from '@/lib/firIntegrity';
@@ -10,25 +12,26 @@ export class FirRepositoryConflict extends Error {}
 export class FirRepositoryAccessError extends Error {}
 const recordSchema=z.object({id:z.string().min(1).max(200),firNumber:z.string().min(1).max(100),firYear:z.number().int().min(1900).max(2200),firDate:z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(value=>Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0,10)===value,'Invalid FIR date'),policeStation:z.string().min(1),district:z.string().min(1),status:z.string().min(1),complainantName:z.string(),createdAt:z.string().optional(),accusedList:z.array(z.object({id:z.string().optional(),name:z.string()}).passthrough()).max(1000).optional(),documents:z.array(z.object({id:z.string(),title:z.string(),fileName:z.string(),uploadedBy:z.string(),uploadedAt:z.string()}).passthrough()).max(5000).optional(),caseDiaries:z.array(z.object({id:z.string(),officer:z.string(),summary:z.string(),details:z.string()}).passthrough()).max(10000).optional(),reports:z.array(z.object({id:z.string(),title:z.string()}).passthrough()).max(5000).optional(),auditTrail:z.array(z.object({id:z.string(),action:z.string(),timestamp:z.string()}).passthrough()).max(10000).optional()}).passthrough();
 const changesSchema=z.array(z.object({record:recordSchema,expectedVersion:z.number().int().nonnegative(),preserveNumber:z.boolean().optional()})).min(1).max(500);
-export async function readFirRecords():Promise<FIRItem[]> {
+export async function readFirRecords(db?: Prisma.TransactionClient):Promise<FIRItem[]> {
   // This mutable runtime store is provisioned/backed up separately, never bundled as source.
-  try{const data=JSON.parse(await fs.readFile(/* turbopackIgnore: true */ file(),'utf8'));if(!Array.isArray(data))throw new Error('Invalid FIR store.');return data;}
+  try{const data=await readCaseRecords<FIRItem>('firs',file(),db);if(!Array.isArray(data))throw new Error('Invalid FIR store.');const locations = await readMasterLocationReferences(db); return data.map(record => locations.caseRecord(record, 'name'));}
   catch(error){if((error as NodeJS.ErrnoException).code==='ENOENT')return [];throw error;}
 }
-async function withFirStore<T>(update: (records: FIRItem[]) => T): Promise<T> {
+async function withFirStore<T>(update: (records: FIRItem[]) => T, officerId?: string): Promise<T> {
   const target=file();
+  const save = async (db?: Prisma.TransactionClient) => {
+    const records = await readFirRecords(db);
+    const result = update(records);
+    const locations = await readMasterLocationReferences(db);
+    await writeCaseRecords('firs', target, records.map(record => locations.caseRecord(record, 'id')), db, officerId);
+    return result;
+  };
+  if (usesPostgresStore()) return withCaseRecordTransaction('firs', save);
   await fs.mkdir(path.dirname(target),{recursive:true});
   let lock;
   for(let i=0;i<100;i++){try{lock=await fs.open(target+'.lock','wx');break;}catch(error){if((error as NodeJS.ErrnoException).code!=='EEXIST')throw error;await new Promise(resolve=>setTimeout(resolve,25));}}
   if(!lock)throw new FirRepositoryConflict('Another FIR save is in progress. Retry.');
-  const temp=target+'.'+randomUUID()+'.tmp';
-  try{
-    const records=await readFirRecords();
-    const result=update(records);
-    await fs.writeFile(temp,JSON.stringify(records,null,2),'utf8');
-    await fs.rename(temp,target);
-    return result;
-  }finally{await fs.unlink(temp).catch(()=>{});await lock.close();await fs.unlink(target+'.lock');}
+  try{return await save();}finally{await lock.close();await fs.unlink(target+'.lock');}
 }
 export async function updateFirTransfer(id: string, update: (record: FIRItem) => FIRItem) {
   return withFirStore(records => {
@@ -63,5 +66,5 @@ export async function saveFirRecords(input:unknown,user:UserSession):Promise<FIR
       saved.push(next);
     }
     return saved;
-  });
+  }, user.id);
 }

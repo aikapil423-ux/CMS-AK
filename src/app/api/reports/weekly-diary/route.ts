@@ -1,4 +1,4 @@
-import fs from 'node:fs/promises';
+import { readRuntimeJson } from "@/lib/runtimeJsonStore";
 import path from 'node:path';
 import { apiAccess } from '@/lib/apiSecurity';
 import { isFirVisibleToUser } from '@/lib/firIntegrity';
@@ -33,7 +33,7 @@ export async function POST(req:Request) {
     const old=await readDiary(user.id,body.from,body.to,body.station);
     if(body.action==='reset') {
       if(!old || old.revision!==body.revision)return Response.json({error:'Reload this diary before resetting.'},{status:409});
-      return Response.json({packet:await saveDiary(user.id,calculateDiary({...old,overrides:{},layout:emptyDiaryLayout()}),body.revision)});
+      return Response.json({packet:await saveDiary(user.id,calculateDiary({...old,overrides:{},layout:emptyDiaryLayout()}),body.revision,'RESET')});
     }
     if(body.action==='save') {
       if(!old || old.revision!==body.revision)return Response.json({error:'Reload this diary before saving.'},{status:409});
@@ -51,13 +51,13 @@ export async function POST(req:Request) {
           return Response.json({error:'Select a permitted dropdown value.'},{status:400});
         }
       }
-      const packet=await saveDiary(user.id,calculateDiary({...old,overrides,layout}),body.revision);return Response.json({packet});
+      const packet=await saveDiary(user.id,calculateDiary({...old,overrides,layout}),body.revision,'SAVE');return Response.json({packet});
     }
     if(body.action!=='build')return Response.json({error:'Invalid action.'},{status:400});
     const firs=scope.firs.filter(f=>f.policeStation===body.station),complaints=scope.complaints.filter(c=>c.policeStation===body.station);
     const caseIds=new Set([...firs.map(f=>f.id),...firs.map(f=>f.sourceComplaintId).filter(Boolean),...complaints.map(c=>c.id)]);
     let evidence:UniversalEvidenceRecord[]=[];
-    try{evidence=JSON.parse(await fs.readFile(path.join(process.cwd(),'prisma','processed-evidence-store.json'),'utf8'));}catch(e){if((e as NodeJS.ErrnoException).code!=='ENOENT')throw e;}
+    try{evidence=await readRuntimeJson(path.join(process.cwd(),'prisma','processed-evidence-store.json'));}catch(e){if((e as NodeJS.ErrnoException).code!=='ENOENT')throw e;}
     evidence=evidence.filter(e=>e.caseId&&caseIds.has(e.caseId)&&(user.role==='SUPER_ADMIN'||evidenceOwner(e)===user.id));
     const built=buildWeeklyDiary({from:body.from,to:body.to,station:body.station,district:user.district,firs,complaints,evidence});
     if(old){built.overrides=rebaseDiaryOverrides(old,built);built.layout=rebaseDiaryLayout(old,built);}

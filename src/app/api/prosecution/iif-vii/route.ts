@@ -1,3 +1,4 @@
+import { readRuntimeJson, writeRuntimeJson } from "@/lib/runtimeJsonStore";
 import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -42,7 +43,7 @@ const safeAppeal = (appeal: Appeal): Appeal => ({
 
 async function readAppeals(file: string): Promise<Appeal[]> {
   try {
-    return JSON.parse(await fs.readFile(/* turbopackIgnore: true */ file, "utf8"));
+    return await readRuntimeJson(file);
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
     throw error;
@@ -179,7 +180,6 @@ export async function POST(req: Request) {
       throw error;
     });
     if (!lock) return fail("A save is in progress. Please retry.", 409);
-    const temp = target + "." + randomUUID() + ".tmp";
     try {
       const records = await readAppeals(target);
       const previous = draft.id ? records.find(row => row.id === draft.id) : undefined;
@@ -223,11 +223,9 @@ export async function POST(req: Request) {
         return fail((error as Error).message, 400);
       }
       const next = previous ? records.map(item => item.id === id ? appeal : item) : [...records, appeal];
-      await fs.writeFile(temp, JSON.stringify(next), { mode: 0o600 });
-      await fs.rename(temp, target);
+      await writeRuntimeJson(target, next);
       return Response.json({ appeal: safeAppeal(appeal) }, { headers: noCache });
     } finally {
-      await fs.rm(temp, { force: true });
       await lock.close();
       await fs.unlink(target + ".lock");
     }

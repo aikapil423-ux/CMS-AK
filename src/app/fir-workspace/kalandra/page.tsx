@@ -159,17 +159,38 @@ function KalandraWorkspaceContent() {
     isApproved: true
   });
 
-  // Load initial data
   useEffect(() => {
-    refreshData();
-  }, []);
-
-  const refreshData = () => {
-    const tmpls = kalandraService.getAllTemplates();
-    setTemplates(tmpls);
-    const recs = kalandraService.getAllRecords();
-    setRecords(recs);
-  };
+    let active = true;
+    setRecords([]);
+    setTemplates(kalandraService.getAllTemplates());
+    if (!currentUser) return;
+    async function load() {
+      const register = await kalandraService.getRegister();
+      if (!active) return;
+      setRecords(register.records);
+      if (!currentUser || !["SUPER_ADMIN", "SP_DISTRICT", "DSP_SUBDIV", "SHO"].includes(currentUser.role)) return;
+      const ids = new Set([...register.archivedIds, ...register.records.map(record => record.id)]);
+      const pending = kalandraService.getLegacyRecords().filter(record =>
+        !ids.has(record.id) && (currentUser.role === "SUPER_ADMIN"
+          || (record.district === currentUser.district
+            && (currentUser.role === "SP_DISTRICT"
+              || record.policeStation === currentUser.stationName
+              || currentUser.jurisdictionUnits?.includes(record.policeStation)))));
+      if (!pending.length) return;
+      const preview = pending.map(record => record.kalandraNumber).join("\n");
+      if (!confirm(`Import ${pending.length} Kalandra record(s) from this browser?\n\n${preview}`)) return;
+      const failed = await kalandraService.importLegacyRecords(pending);
+      if (!active) return;
+      const updated = await kalandraService.getRegister();
+      if (!active) return;
+      setRecords(updated.records);
+      if (failed) alert(`${failed} record(s) could not be imported and are still in this browser.`);
+    }
+    void load().catch(error => {
+      if (active) alert(error instanceof Error ? error.message : "Kalandra register could not be loaded.");
+    });
+    return () => { active = false; };
+  }, [currentUser]);
 
   // If URL has linked firId, auto-select FIR source
   useEffect(() => {
@@ -215,7 +236,6 @@ function KalandraWorkspaceContent() {
     setSelectedTemplate(tmpl);
     setEditingRecordId(null);
 
-    const generatedNumber = kalandraService.generateKalandraNumber();
     const narrativeHi = kalandraService.populateNarrative(tmpl.defaultNarrativeTemplateHi, {
       district: formData.district,
       policeStation: formData.policeStation,
@@ -240,7 +260,7 @@ function KalandraWorkspaceContent() {
     setFormData((prev) => ({
       ...prev,
       id: "kal-" + Date.now(),
-      kalandraNumber: generatedNumber,
+      kalandraNumber: "",
       typeCode: tmpl.code,
       templateId: tmpl.id,
       templateTitle: isHi ? tmpl.titleHi : tmpl.titleEn,
@@ -272,15 +292,15 @@ function KalandraWorkspaceContent() {
     }
   };
 
-  const handleSaveDraft = () => {
+  const handleSaveDraft = async () => {
     if (!formData.respondentName) {
       alert(isHi ? "कृपया गैर-सायल / विपक्षी का नाम दर्ज करें।" : "Please enter the Respondent name.");
       return;
     }
 
     const recordToSave: KalandraRecord = {
-      id: formData.id || "kal-" + Date.now(),
-      kalandraNumber: formData.kalandraNumber || kalandraService.generateKalandraNumber(),
+      id: formData.id || crypto.randomUUID(),
+      kalandraNumber: formData.kalandraNumber || "",
       typeCode: formData.typeCode || selectedTemplate?.code || "107_151",
       templateId: formData.templateId || selectedTemplate?.id || "tmpl-107-151",
       templateTitle: formData.templateTitle || selectedTemplate?.titleHi || "Kalandra",
@@ -317,15 +337,21 @@ function KalandraWorkspaceContent() {
       status: "DRAFT",
       language: lang,
       createdAt: formData.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: formData.updatedAt || new Date().toISOString()
     };
 
-    kalandraService.saveRecord(recordToSave);
-    refreshData();
+    try {
+      const saved = await kalandraService.saveRecord(recordToSave);
+      setFormData(saved);
+      setRecords(list => [saved, ...list.filter(record => record.id !== saved.id)]);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Kalandra could not be saved.");
+      return;
+    }
     alert(isHi ? "कलंदरा ड्राफ्ट सफलतापूर्वक सहेज लिया गया है!" : "Kalandra draft saved successfully!");
   };
 
-  const handleFinalise = () => {
+  const handleFinalise = async () => {
     if (!formData.respondentName || !formData.incidentPlace || !formData.factsAndCircumstances) {
       alert(
         isHi
@@ -336,8 +362,8 @@ function KalandraWorkspaceContent() {
     }
 
     const recordToSave: KalandraRecord = {
-      id: formData.id || "kal-" + Date.now(),
-      kalandraNumber: formData.kalandraNumber || kalandraService.generateKalandraNumber(),
+      id: formData.id || crypto.randomUUID(),
+      kalandraNumber: formData.kalandraNumber || "",
       typeCode: formData.typeCode || selectedTemplate?.code || "107_151",
       templateId: formData.templateId || selectedTemplate?.id || "tmpl-107-151",
       templateTitle: formData.templateTitle || selectedTemplate?.titleHi || "Kalandra",
@@ -374,13 +400,18 @@ function KalandraWorkspaceContent() {
       status: "FINALISED",
       language: lang,
       createdAt: formData.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      updatedAt: formData.updatedAt || new Date().toISOString(),
       finalisedAt: new Date().toISOString()
     };
 
-    kalandraService.saveRecord(recordToSave);
-    refreshData();
-    handleOpenPackage(recordToSave);
+    try {
+      const saved = await kalandraService.saveRecord(recordToSave);
+      setFormData(saved);
+      setRecords(list => [saved, ...list.filter(record => record.id !== saved.id)]);
+      handleOpenPackage(saved);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Kalandra could not be finalised.");
+    }
   };
 
   const handleOpenPackage = (record: KalandraRecord) => {
@@ -473,10 +504,16 @@ function KalandraWorkspaceContent() {
     setActiveTab("create");
   };
 
-  const handleDeleteRecord = (id: string) => {
+  const handleDeleteRecord = async (id: string) => {
     if (confirm(isHi ? "क्या आप वाकई इस कलंदरा को हटाना चाहते हैं?" : "Are you sure you want to delete this Kalandra?")) {
-      kalandraService.deleteRecord(id);
-      refreshData();
+      const record = records.find(item => item.id === id);
+      if (!record) return;
+      try {
+        await kalandraService.deleteRecord(record);
+        setRecords(list => list.filter(item => item.id !== id));
+      } catch (error) {
+        alert(error instanceof Error ? error.message : "Kalandra could not be archived.");
+      }
     }
   };
 
@@ -951,7 +988,7 @@ function KalandraWorkspaceContent() {
             <div className="flex flex-wrap items-center justify-between pb-3 border-b border-slate-100 gap-2.5">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-mono text-xs font-bold bg-slate-100 text-slate-800 px-2 py-0.5 rounded border border-slate-200">
-                  {formData.kalandraNumber || "KAL/2026/..."}
+                  {formData.kalandraNumber || "Assigned on save"}
                 </span>
                 <h2 className="text-sm sm:text-base font-bold text-slate-900">
                   {formData.templateTitle || (isHi ? "कलंदरा प्रपत्र" : "Kalandra Dossier")}
@@ -1938,7 +1975,7 @@ function KalandraWorkspaceContent() {
                     isCustom: true
                   };
                   kalandraService.saveTemplate(toSave);
-                  refreshData();
+                  setTemplates(kalandraService.getAllTemplates());
                   setCustomTemplateModal(false);
                   alert(isHi ? "नया प्रारूप सफलतापूर्वक सहेज लिया गया!" : "Template saved successfully!");
                 }}
