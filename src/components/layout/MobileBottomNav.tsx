@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { canRegisterFir } from "@/lib/firIntegrity";
 import { usePathname } from "next/navigation";
 import {
   FileText,
@@ -49,13 +50,12 @@ export function MobileBottomNav() {
   const isSho = currentUser?.role === "SHO" || currentUser?.id === "usr_sho_1";
   const isSuperior = currentUser?.role === "DSP_SUBDIV" || currentUser?.role === "SP_DISTRICT" || currentUser?.role === "SUPER_ADMIN";
   const canRegisterComplaint = isMhc || isSho || isSuperior;
-  const canRegisterFir = isMhc || isSho || isSuperior;
 
   // 1. Navigation items strictly for FIR Module
   const firItems: MobileNavItem[] = [
     { name: "FIR Register", href: "/fir", icon: Scale },
     { name: "Part B", href: "/fir/part-b", icon: FileCheck2 },
-    ...(canRegisterFir
+    ...(canRegisterFir(currentUser?.role)
       ? [{ name: "Register", href: "/fir/register", icon: PlusCircle, isPrimaryAction: true }]
       : []),
     { name: "Complete", href: "/fir/complete-cases", icon: CheckCircle2 },

@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { canRegisterFir } from "@/lib/firIntegrity";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
   Shield,
@@ -298,7 +299,7 @@ export function Sidebar() {
   // FIR NAVIGATION ITEMS (Complete Parity with Complaints module)
   const firNavItems: NavItem[] = [
     { name: "FIR Register", href: "/fir", icon: Scale, badge: "Part A", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
-    { name: "Register FIR", href: "/fir/register", icon: FilePenLine, badge: "New", badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+    ...(canRegisterFir(currentUser?.role) ? [{ name: "Register FIR", href: "/fir/register", icon: FilePenLine, badge: "New", badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200" }] : []),
     { name: "FIR Part B", href: "/fir/part-b", icon: FileCheck2 },
     { name: "Complete cases", href: "/fir/complete-cases", icon: CheckCircle2 },
     { name: "Investigation Workspace", href: "/fir-workspace", icon: UserCheck },

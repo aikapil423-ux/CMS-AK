@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, Suspense, useMemo, useCallback } from "react";
 import Link from "next/link";
+import { canRegisterFir } from "@/lib/firIntegrity";
 import { useSearchParams } from "next/navigation";
 import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
 import {
@@ -186,7 +187,7 @@ function RegisterFIRForm() {
   const complaintIdParam = searchParams.get("complaintId");
   const gdNumberParam = searchParams.get("gdNumber");
 
-  const isMhc = currentUser ? (currentUser.role === "MHC_GD_INCHARGE" || currentUser.role === "DUTY_OFFICER") : false;
+  const isMhc = currentUser.role === "MHC_GD_INCHARGE";
   const isSuperior = currentUser ? (currentUser.role === "DSP_SUBDIV" || currentUser.role === "SP_DISTRICT" || currentUser.role === "SUPER_ADMIN") : false;
   const isSho = currentUser ? ((currentUser.role === "SHO" || currentUser.id === "usr_sho_1" || isSuperior) && !isMhc) : false;
 
@@ -6034,6 +6035,9 @@ function RegisterFIRForm() {
 
 export default function RegisterFIRPage() {
   const { currentUser, isAuthenticated } = useAuth();
+  if (isAuthenticated && !canRegisterFir(currentUser.role)) {
+    return <div className="mx-auto max-w-xl p-8 text-center"><p>Your account can work on assigned FIRs. FIR registration requires an intake role.</p><Link className="mt-3 inline-block underline" href="/fir">Open FIR Register</Link></div>;
+  }
   return (
     <Suspense
       fallback={

@@ -25,6 +25,7 @@ import {
   Home,
 } from "lucide-react";
 import Link from "next/link";
+import { canRegisterFir } from "@/lib/firIntegrity";
 import { Button } from "@/components/ui/button";
 import { DraggableAgentButton } from "@/components/agent/DraggableAgentButton";
 import { GlobalUploadCameraModal } from "@/components/ui/camera-capture-button";
@@ -69,7 +70,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isSho = currentUser?.role === "SHO" || currentUser?.id === "usr_sho_1";
   const isSuperior = currentUser?.role === "DSP_SUBDIV" || currentUser?.role === "SP_DISTRICT" || currentUser?.role === "SUPER_ADMIN";
   const canRegisterComplaint = isMhc || isSho || isSuperior;
-  const canRegisterFir = isMhc || isSho || isSuperior;
 
   return (
     <div className="cms-shell min-h-screen bg-white flex flex-col lg:flex-row antialiased text-slate-800">
@@ -134,7 +134,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <TopBarNotifications />
 
             {/* In FIR Module (e.g. /fir Register Page), Red Register FIR Button right after Bell icon */}
-            {isFir && pathname !== "/fir" && pathname !== "/fir/register" && canRegisterFir && (
+            {isFir && pathname !== "/fir" && pathname !== "/fir/register" && canRegisterFir(currentUser?.role) && (
               <Link href="/fir/register">
                 <Button size="sm" className="gap-1.5 text-xs bg-red-600 hover:bg-red-700 text-white font-bold shadow-xs">
                   <PlusCircle className="w-3.5 h-3.5" />

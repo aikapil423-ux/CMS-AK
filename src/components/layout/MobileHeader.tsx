@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { canRegisterFir } from "@/lib/firIntegrity";
 import { usePathname } from "next/navigation";
 import { Shield, Bell, Menu, X, UserCog, BookOpen, FileText, ChevronDown, ArrowLeft, LayoutGrid, PlusCircle, Scale, ClipboardList, FileBarChart, FileCheck2, BookmarkCheck, ReceiptText, Home } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -36,7 +37,6 @@ export function MobileHeader() {
   const isSho = currentUser?.role === "SHO" || currentUser?.id === "usr_sho_1";
   const isSuperior = currentUser?.role === "DSP_SUBDIV" || currentUser?.role === "SP_DISTRICT" || currentUser?.role === "SUPER_ADMIN";
   const canRegisterComplaint = isMhc || isSho || isSuperior;
-  const canRegisterFir = isMhc || isSho || isSuperior;
 
   return (
     <>
@@ -271,7 +271,7 @@ export function MobileHeader() {
                   >
                     {t("Complete cases")}
                   </Link>
-                  {canRegisterFir && (
+                  {canRegisterFir(currentUser?.role) && (
                     <Link
                       href="/fir/register"
                       onClick={() => setDrawerOpen(false)}

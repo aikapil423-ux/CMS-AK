@@ -5,7 +5,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { z } from 'zod';
 import type { FIRItem, UserSession } from '@/types';
-import { isFirVisibleToUser, nextFirNumber } from '@/lib/firIntegrity';
+import { canRegisterFir, isFirVisibleToUser, nextFirNumber } from '@/lib/firIntegrity';
 
 const file=()=>process.env.CMS_FIR_STORE_PATH || path.join(process.cwd(),'prisma','firs-store.json');
 export class FirRepositoryConflict extends Error {}
@@ -52,7 +52,7 @@ export async function saveFirRecords(input:unknown,user:UserSession):Promise<FIR
       proposed.recordTransfers=old?.recordTransfers;
       if(Number(proposed.firDate.slice(0,4))!==proposed.firYear)throw new Error("FIR year must match its registration date.");
       if(!isFirVisibleToUser(user,old || proposed))throw new FirRepositoryAccessError('FIR is outside your assignment or jurisdiction.');
-      if(!old && !['SHO','MHC_GD_INCHARGE','DUTY_OFFICER','SUPER_ADMIN','SP_DISTRICT','DSP_SUBDIV'].includes(user.role))throw new FirRepositoryAccessError('Only intake officers may register FIRs.');
+      if(!old && !canRegisterFir(user.role))throw new FirRepositoryAccessError('Only intake officers may register FIRs.');
       if(old && (old.firNumber!==proposed.firNumber || old.firYear!==proposed.firYear || old.policeStation!==proposed.policeStation || old.district!==proposed.district))throw new FirRepositoryAccessError('FIR identity and source jurisdiction cannot be overwritten.');
       if(old && change.expectedVersion===0 && old.persistenceVersion===1){const previous={...old} as Record<string,unknown>,incoming={...proposed} as Record<string,unknown>;for(const key of ['persistenceVersion','firNumber']){delete previous[key];delete incoming[key];}if(JSON.stringify(previous)===JSON.stringify(incoming)){saved.push(old);continue;}}
       if((old?.persistenceVersion || 0)!==change.expectedVersion)throw new FirRepositoryConflict('FIR changed on another device. Reload and retry.');

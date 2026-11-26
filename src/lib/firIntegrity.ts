@@ -2,6 +2,10 @@ import type { TransferableRecord } from './recordCustody';
 import type { FIRItem } from '@/types';
 import { MOCK_ENQUIRY_OFFICERS } from '@/lib/mockData';
 
+export function canRegisterFir(role?: string): boolean {
+  return role !== undefined && ['SHO', 'MHC_GD_INCHARGE', 'SUPER_ADMIN', 'SP_DISTRICT', 'DSP_SUBDIV'].includes(role);
+}
+
 export function nextFirNumber(
   firs: Pick<FIRItem, 'firNumber' | 'firYear' | 'policeStation'>[],
   year: number,

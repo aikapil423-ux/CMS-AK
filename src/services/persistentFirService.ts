@@ -1,7 +1,7 @@
 "use client";
 import { firService } from './firService';
 import type { FIRItem,UserSession } from '@/types';
-import { isFirVisibleToUser } from '@/lib/firIntegrity';
+import { canRegisterFir, isFirVisibleToUser } from '@/lib/firIntegrity';
 
 const writes=['registerFir','synchronizeSourceComplaint','updateFir','saveLegalAnalysis','saveCrimeDetails','issueChallan','recordCourtSubmission','reopenCompletedCase','assignIoWithCourtOrder','assignIo','addCaseDiary','deleteCaseDiary','addDocument','deleteDocument','addReport','deleteReport','submitFinalForm','addAuditRecord','transferMultipleFirsInterState','transferFirInterState','linkMultipleFirs','linkFirs','delinkFirs'] as const;
 type Write=typeof writes[number];
@@ -27,7 +27,7 @@ export const firPersistence={
   try{
    let records=await request();
    const pending=legacy.filter(f=>!records.some(r=>r.id===f.id));
-   if(pending.length && ['SHO','MHC_GD_INCHARGE','DUTY_OFFICER','SUPER_ADMIN','SP_DISTRICT','DSP_SUBDIV'].includes(user.role)){
+   if(pending.length && canRegisterFir(user.role)){
     for(let start=0;start<pending.length;start+=500){const imported=await request('POST',pending.slice(start,start+500).map(record=>({record,expectedVersion:0,preserveNumber:true})));records=[...records,...imported];}
    }
    firService.replaceServerRecords(records);
