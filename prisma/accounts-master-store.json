@@ -16,9 +16,9 @@
       "assignedUnitType": "DISTRICT_OFFICE",
       "assignedUnitId": "HAR-PNP-DPO-01",
       "assignedUnitName": "District Police Office Panipat",
-      "state": "Haryana",
-      "range": "Karnal Range",
-      "district": "Panipat",
+      "state": "st_hr_01",
+      "range": "rng_knl_01",
+      "district": "dst_pnp_01",
       "policeStation": "District Police Office Panipat",
       "authorizedPoliceStations": [
         "District Police Office Panipat"
@@ -46,9 +46,9 @@
       "assignedUnitType": "DISTRICT_OFFICE",
       "assignedUnitId": "HAR-PNP-ASP-01",
       "assignedUnitName": "District Police Headquarters Panipat",
-      "state": "Haryana",
-      "range": "Karnal Range",
-      "district": "Panipat",
+      "state": "st_hr_01",
+      "range": "rng_knl_01",
+      "district": "dst_pnp_01",
       "policeStation": "District Police Headquarters Panipat",
       "authorizedPoliceStations": [
         "District Police Headquarters Panipat"
@@ -76,9 +76,9 @@
       "assignedUnitType": "DISTRICT_OFFICE",
       "assignedUnitId": "HAR-PNP-SD-01",
       "assignedUnitName": "Sub-Divisional Police Office Panipat",
-      "state": "Haryana",
-      "range": "Karnal Range",
-      "district": "Panipat",
+      "state": "st_hr_01",
+      "range": "rng_knl_01",
+      "district": "dst_pnp_01",
       "policeStation": "Sub-Divisional Police Office Panipat",
       "authorizedPoliceStations": [
         "Sub-Divisional Police Office Panipat"
@@ -106,12 +106,12 @@
       "assignedUnitType": "POLICE_STATION",
       "assignedUnitId": "HAR-PNP-PS-01",
       "assignedUnitName": "PS City Panipat",
-      "state": "Haryana",
-      "range": "Karnal Range",
-      "district": "Panipat",
-      "policeStation": "PS City Panipat",
+      "state": "st_hr_01",
+      "range": "rng_knl_01",
+      "district": "dst_pnp_01",
+      "policeStation": "ps_pnp_city",
       "authorizedPoliceStations": [
-        "PS City Panipat"
+        "ps_pnp_city"
       ],
       "jurisdictionType": "SINGLE_STATION",
       "status": "ACTIVE",
@@ -136,12 +136,12 @@
       "assignedUnitType": "MHC_STORE",
       "assignedUnitId": "HAR-PNP-PS-01",
       "assignedUnitName": "PS City Panipat",
-      "state": "Haryana",
-      "range": "Karnal Range",
-      "district": "Panipat",
-      "policeStation": "PS City Panipat",
+      "state": "st_hr_01",
+      "range": "rng_knl_01",
+      "district": "dst_pnp_01",
+      "policeStation": "ps_pnp_city",
       "authorizedPoliceStations": [
-        "PS City Panipat"
+        "ps_pnp_city"
       ],
       "jurisdictionType": "SINGLE_STATION",
       "status": "ACTIVE",
@@ -166,12 +166,12 @@
       "assignedUnitType": "POLICE_STATION",
       "assignedUnitId": "HAR-PNP-PS-01",
       "assignedUnitName": "PS City Panipat",
-      "state": "Haryana",
-      "range": "Karnal Range",
-      "district": "Panipat",
-      "policeStation": "PS City Panipat",
+      "state": "st_hr_01",
+      "range": "rng_knl_01",
+      "district": "dst_pnp_01",
+      "policeStation": "ps_pnp_city",
       "authorizedPoliceStations": [
-        "PS City Panipat"
+        "ps_pnp_city"
       ],
       "jurisdictionType": "SINGLE_STATION",
       "status": "ACTIVE",
@@ -196,12 +196,12 @@
       "assignedUnitType": "POLICE_STATION",
       "assignedUnitId": "HAR-PNP-PS-01",
       "assignedUnitName": "PS City Panipat",
-      "state": "Haryana",
-      "range": "Karnal Range",
-      "district": "Panipat",
-      "policeStation": "PS City Panipat",
+      "state": "st_hr_01",
+      "range": "rng_knl_01",
+      "district": "dst_pnp_01",
+      "policeStation": "ps_pnp_city",
       "authorizedPoliceStations": [
-        "PS City Panipat"
+        "ps_pnp_city"
       ],
       "jurisdictionType": "SINGLE_STATION",
       "status": "ACTIVE",
@@ -226,12 +226,12 @@
       "assignedUnitType": "POLICE_STATION",
       "assignedUnitId": "HAR-PNP-PS-01",
       "assignedUnitName": "PS City Panipat",
-      "state": "Haryana",
-      "range": "Karnal Range",
-      "district": "Panipat",
-      "policeStation": "PS City Panipat",
+      "state": "st_hr_01",
+      "range": "rng_knl_01",
+      "district": "dst_pnp_01",
+      "policeStation": "ps_pnp_city",
       "authorizedPoliceStations": [
-        "PS City Panipat"
+        "ps_pnp_city"
       ],
       "jurisdictionType": "SINGLE_STATION",
       "status": "ACTIVE",
@@ -256,12 +256,12 @@
       "assignedUnitType": "POLICE_STATION",
       "assignedUnitId": "HAR-PNP-PS-01",
       "assignedUnitName": "PS City Panipat",
-      "state": "Haryana",
-      "range": "Karnal Range",
-      "district": "Panipat",
-      "policeStation": "PS City Panipat",
+      "state": "st_hr_01",
+      "range": "rng_knl_01",
+      "district": "dst_pnp_01",
+      "policeStation": "ps_pnp_city",
       "authorizedPoliceStations": [
-        "PS City Panipat"
+        "ps_pnp_city"
       ],
       "jurisdictionType": "SINGLE_STATION",
       "status": "ACTIVE",
@@ -286,12 +286,12 @@
       "assignedUnitType": "POLICE_STATION",
       "assignedUnitId": "HAR-PNP-PS-01",
       "assignedUnitName": "PS City Panipat",
-      "state": "Haryana",
-      "range": "Karnal Range",
-      "district": "Panipat",
-      "policeStation": "PS City Panipat",
+      "state": "st_hr_01",
+      "range": "rng_knl_01",
+      "district": "dst_pnp_01",
+      "policeStation": "ps_pnp_city",
       "authorizedPoliceStations": [
-        "PS City Panipat"
+        "ps_pnp_city"
       ],
       "jurisdictionType": "SINGLE_STATION",
       "status": "ACTIVE",
@@ -316,9 +316,9 @@
       "assignedUnitType": "DISTRICT_OFFICE",
       "assignedUnitId": "HAR-KNL-DPO-01",
       "assignedUnitName": "District Police Office Karnal",
-      "state": "Haryana",
-      "range": "Karnal Range",
-      "district": "Karnal",
+      "state": "st_hr_01",
+      "range": "rng_knl_01",
+      "district": "dst_knl_01",
       "policeStation": "District Police Office Karnal",
       "authorizedPoliceStations": [
         "District Police Office Karnal"
@@ -346,9 +346,9 @@
       "assignedUnitType": "DISTRICT_OFFICE",
       "assignedUnitId": "HAR-KNL-SD-01",
       "assignedUnitName": "Sub-Divisional Police Office Karnal",
-      "state": "Haryana",
-      "range": "Karnal Range",
-      "district": "Karnal",
+      "state": "st_hr_01",
+      "range": "rng_knl_01",
+      "district": "dst_knl_01",
       "policeStation": "Sub-Divisional Police Office Karnal",
       "authorizedPoliceStations": [
         "Sub-Divisional Police Office Karnal"
@@ -376,12 +376,12 @@
       "assignedUnitType": "POLICE_STATION",
       "assignedUnitId": "HAR-KNL-PS-01",
       "assignedUnitName": "PS City Karnal",
-      "state": "Haryana",
-      "range": "Karnal Range",
-      "district": "Karnal",
-      "policeStation": "PS City Karnal",
+      "state": "st_hr_01",
+      "range": "rng_knl_01",
+      "district": "dst_knl_01",
+      "policeStation": "ps_knl_city",
       "authorizedPoliceStations": [
-        "PS City Karnal"
+        "ps_knl_city"
       ],
       "jurisdictionType": "SINGLE_STATION",
       "status": "ACTIVE",
@@ -406,8 +406,8 @@
       "assignedUnitType": "DISTRICT_OFFICE",
       "assignedUnitId": "HAR-GGM-DPO-01",
       "assignedUnitName": "District Police Office Gurugram",
-      "state": "Haryana",
-      "range": "Ambala Range",
+      "state": "st_hr_01",
+      "range": "rng_amb_01",
       "district": "Gurugram",
       "policeStation": "District Police Office Gurugram",
       "authorizedPoliceStations": [
@@ -436,8 +436,8 @@
       "assignedUnitType": "DISTRICT_OFFICE",
       "assignedUnitId": "HAR-GGM-SD-01",
       "assignedUnitName": "Sub-Divisional Police Office Gurugram East",
-      "state": "Haryana",
-      "range": "Ambala Range",
+      "state": "st_hr_01",
+      "range": "rng_amb_01",
       "district": "Gurugram",
       "policeStation": "Sub-Divisional Police Office Gurugram East",
       "authorizedPoliceStations": [
@@ -466,8 +466,8 @@
       "assignedUnitType": "POLICE_STATION",
       "assignedUnitId": "HAR-GGM-PS-29",
       "assignedUnitName": "PS Sector 29 Gurugram",
-      "state": "Haryana",
-      "range": "Ambala Range",
+      "state": "st_hr_01",
+      "range": "rng_amb_01",
       "district": "Gurugram",
       "policeStation": "PS Sector 29 Gurugram",
       "authorizedPoliceStations": [
@@ -496,9 +496,9 @@
       "assignedUnitType": "DISTRICT_OFFICE",
       "assignedUnitId": "HAR-RTK-DPO-01",
       "assignedUnitName": "District Police Office Rohtak",
-      "state": "Haryana",
-      "range": "Ambala Range",
-      "district": "Rohtak",
+      "state": "st_hr_01",
+      "range": "rng_amb_01",
+      "district": "dst_rtk_01",
       "policeStation": "District Police Office Rohtak",
       "authorizedPoliceStations": [
         "District Police Office Rohtak"
@@ -526,9 +526,9 @@
       "assignedUnitType": "DISTRICT_OFFICE",
       "assignedUnitId": "HAR-RTK-SD-01",
       "assignedUnitName": "Sub-Divisional Police Office Rohtak",
-      "state": "Haryana",
-      "range": "Ambala Range",
-      "district": "Rohtak",
+      "state": "st_hr_01",
+      "range": "rng_amb_01",
+      "district": "dst_rtk_01",
       "policeStation": "Sub-Divisional Police Office Rohtak",
       "authorizedPoliceStations": [
         "Sub-Divisional Police Office Rohtak"
@@ -556,9 +556,9 @@
       "assignedUnitType": "POLICE_STATION",
       "assignedUnitId": "HAR-RTK-PS-01",
       "assignedUnitName": "PS City Rohtak",
-      "state": "Haryana",
-      "range": "Ambala Range",
-      "district": "Rohtak",
+      "state": "st_hr_01",
+      "range": "rng_amb_01",
+      "district": "dst_rtk_01",
       "policeStation": "PS City Rohtak",
       "authorizedPoliceStations": [
         "PS City Rohtak"
@@ -586,9 +586,9 @@
       "assignedUnitType": "DISTRICT_OFFICE",
       "assignedUnitId": "HAR-SNP-DPO-01",
       "assignedUnitName": "District Police Office Sonipat",
-      "state": "Haryana",
-      "range": "Ambala Range",
-      "district": "Sonipat",
+      "state": "st_hr_01",
+      "range": "rng_amb_01",
+      "district": "dst_snp_01",
       "policeStation": "District Police Office Sonipat",
       "authorizedPoliceStations": [
         "District Police Office Sonipat"
@@ -616,9 +616,9 @@
       "assignedUnitType": "DISTRICT_OFFICE",
       "assignedUnitId": "HAR-SNP-SD-01",
       "assignedUnitName": "Sub-Divisional Police Office Sonipat",
-      "state": "Haryana",
-      "range": "Ambala Range",
-      "district": "Sonipat",
+      "state": "st_hr_01",
+      "range": "rng_amb_01",
+      "district": "dst_snp_01",
       "policeStation": "Sub-Divisional Police Office Sonipat",
       "authorizedPoliceStations": [
         "Sub-Divisional Police Office Sonipat"
@@ -646,9 +646,9 @@
       "assignedUnitType": "POLICE_STATION",
       "assignedUnitId": "HAR-SNP-PS-01",
       "assignedUnitName": "PS City Sonipat",
-      "state": "Haryana",
-      "range": "Ambala Range",
-      "district": "Sonipat",
+      "state": "st_hr_01",
+      "range": "rng_amb_01",
+      "district": "dst_snp_01",
       "policeStation": "PS City Sonipat",
       "authorizedPoliceStations": [
         "PS City Sonipat"
@@ -676,8 +676,8 @@
       "assignedUnitType": "DISTRICT_OFFICE",
       "assignedUnitId": "HAR-HSR-DPO-01",
       "assignedUnitName": "District Police Office Hisar",
-      "state": "Haryana",
-      "range": "Ambala Range",
+      "state": "st_hr_01",
+      "range": "rng_amb_01",
       "district": "Hisar",
       "policeStation": "District Police Office Hisar",
       "authorizedPoliceStations": [
@@ -706,8 +706,8 @@
       "assignedUnitType": "DISTRICT_OFFICE",
       "assignedUnitId": "HAR-HSR-SD-01",
       "assignedUnitName": "Sub-Divisional Police Office Hisar",
-      "state": "Haryana",
-      "range": "Ambala Range",
+      "state": "st_hr_01",
+      "range": "rng_amb_01",
       "district": "Hisar",
       "policeStation": "Sub-Divisional Police Office Hisar",
       "authorizedPoliceStations": [
@@ -736,8 +736,8 @@
       "assignedUnitType": "POLICE_STATION",
       "assignedUnitId": "HAR-HSR-PS-01",
       "assignedUnitName": "PS City Hisar",
-      "state": "Haryana",
-      "range": "Ambala Range",
+      "state": "st_hr_01",
+      "range": "rng_amb_01",
       "district": "Hisar",
       "policeStation": "PS City Hisar",
       "authorizedPoliceStations": [
@@ -766,9 +766,9 @@
       "assignedUnitType": "DISTRICT_OFFICE",
       "assignedUnitId": "HAR-KKR-DPO-01",
       "assignedUnitName": "District Police Office Kurukshetra",
-      "state": "Haryana",
-      "range": "Ambala Range",
-      "district": "Kurukshetra",
+      "state": "st_hr_01",
+      "range": "rng_amb_01",
+      "district": "dst_kkr_01",
       "policeStation": "District Police Office Kurukshetra",
       "authorizedPoliceStations": [
         "District Police Office Kurukshetra"
@@ -796,9 +796,9 @@
       "assignedUnitType": "DISTRICT_OFFICE",
       "assignedUnitId": "HAR-KKR-SD-01",
       "assignedUnitName": "Sub-Divisional Police Office Kurukshetra",
-      "state": "Haryana",
-      "range": "Ambala Range",
-      "district": "Kurukshetra",
+      "state": "st_hr_01",
+      "range": "rng_amb_01",
+      "district": "dst_kkr_01",
       "policeStation": "Sub-Divisional Police Office Kurukshetra",
       "authorizedPoliceStations": [
         "Sub-Divisional Police Office Kurukshetra"
@@ -826,9 +826,9 @@
       "assignedUnitType": "POLICE_STATION",
       "assignedUnitId": "HAR-KKR-PS-01",
       "assignedUnitName": "PS Thanesar Kurukshetra",
-      "state": "Haryana",
-      "range": "Ambala Range",
-      "district": "Kurukshetra",
+      "state": "st_hr_01",
+      "range": "rng_amb_01",
+      "district": "dst_kkr_01",
       "policeStation": "PS Thanesar Kurukshetra",
       "authorizedPoliceStations": [
         "PS Thanesar Kurukshetra"
@@ -856,9 +856,9 @@
       "assignedUnitType": "DISTRICT_OFFICE",
       "assignedUnitId": "HAR-AMB-DPO-01",
       "assignedUnitName": "District Police Office Ambala",
-      "state": "Haryana",
-      "range": "Ambala Range",
-      "district": "Ambala",
+      "state": "st_hr_01",
+      "range": "rng_amb_01",
+      "district": "dst_amb_01",
       "policeStation": "District Police Office Ambala",
       "authorizedPoliceStations": [
         "District Police Office Ambala"
@@ -886,9 +886,9 @@
       "assignedUnitType": "DISTRICT_OFFICE",
       "assignedUnitId": "HAR-AMB-SD-01",
       "assignedUnitName": "Sub-Divisional Police Office Ambala",
-      "state": "Haryana",
-      "range": "Ambala Range",
-      "district": "Ambala",
+      "state": "st_hr_01",
+      "range": "rng_amb_01",
+      "district": "dst_amb_01",
       "policeStation": "Sub-Divisional Police Office Ambala",
       "authorizedPoliceStations": [
         "Sub-Divisional Police Office Ambala"
@@ -916,9 +916,9 @@
       "assignedUnitType": "POLICE_STATION",
       "assignedUnitId": "HAR-AMB-PS-01",
       "assignedUnitName": "PS City Ambala",
-      "state": "Haryana",
-      "range": "Ambala Range",
-      "district": "Ambala",
+      "state": "st_hr_01",
+      "range": "rng_amb_01",
+      "district": "dst_amb_01",
       "policeStation": "PS City Ambala",
       "authorizedPoliceStations": [
         "PS City Ambala"
@@ -946,8 +946,8 @@
       "assignedUnitType": "DISTRICT_OFFICE",
       "assignedUnitId": "HAR-FBD-DPO-01",
       "assignedUnitName": "District Police Office Faridabad",
-      "state": "Haryana",
-      "range": "Ambala Range",
+      "state": "st_hr_01",
+      "range": "rng_amb_01",
       "district": "Faridabad",
       "policeStation": "District Police Office Faridabad",
       "authorizedPoliceStations": [
@@ -976,8 +976,8 @@
       "assignedUnitType": "DISTRICT_OFFICE",
       "assignedUnitId": "HAR-FBD-SD-01",
       "assignedUnitName": "Sub-Divisional Police Office Faridabad Central",
-      "state": "Haryana",
-      "range": "Ambala Range",
+      "state": "st_hr_01",
+      "range": "rng_amb_01",
       "district": "Faridabad",
       "policeStation": "Sub-Divisional Police Office Faridabad Central",
       "authorizedPoliceStations": [
@@ -1006,8 +1006,8 @@
       "assignedUnitType": "POLICE_STATION",
       "assignedUnitId": "HAR-FBD-PS-01",
       "assignedUnitName": "PS Central Faridabad",
-      "state": "Haryana",
-      "range": "Ambala Range",
+      "state": "st_hr_01",
+      "range": "rng_amb_01",
       "district": "Faridabad",
       "policeStation": "PS Central Faridabad",
       "authorizedPoliceStations": [
