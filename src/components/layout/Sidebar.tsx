@@ -213,60 +213,63 @@ export function Sidebar() {
   }) => {
     const hasItems = !!(items && items.length > 0);
     const isOpen = hasItems && isModuleOpen(id, isPathActive);
+    const headerClassName = cn(
+      "w-full flex items-center rounded-lg transition-colors text-left group",
+      isExpanded ? "justify-between px-2 py-1.5" : "justify-center p-2",
+      isPathActive
+        ? "bg-slate-100/90 font-semibold text-slate-900"
+        : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+    );
+    const label = (
+      <>
+        <Icon
+          className={cn(
+            "w-4 h-4 shrink-0 transition-colors",
+            isPathActive ? "text-[#203c88]" : "text-slate-500 group-hover:text-slate-800"
+          )}
+        />
+        {isExpanded && (
+          <span className="text-xs font-semibold truncate tracking-tight">
+            {t(name)}
+          </span>
+        )}
+      </>
+    );
+    const Chevron = isOpen ? ChevronDown : ChevronRight;
+
     return (
       <div key={id} className="space-y-0.5">
-        <div
-          className={cn(
-            "w-full flex items-center rounded-lg transition-colors text-left group",
-            isExpanded ? "justify-between px-2 py-1.5" : "justify-center p-2",
-            isPathActive
-              ? "bg-slate-100/90 font-semibold text-slate-900"
-              : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
-          )}
-        >
+        {hasItems ? (
+          <button
+            type="button"
+            onClick={() => {
+              if (isExpanded) {
+                toggleModule(id, isPathActive);
+              } else {
+                setIsPinned(true);
+                openModule(id);
+              }
+            }}
+            className={cn(headerClassName, "cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2")}
+            aria-expanded={isExpanded && isOpen}
+            aria-label={t(name)}
+            title={!isExpanded ? t(name) : undefined}
+          >
+            <span className="flex min-w-0 items-center gap-2.5">{label}</span>
+            {isExpanded && <Chevron className="m-1.5 h-3.5 w-3.5 shrink-0 text-slate-400" />}
+          </button>
+        ) : (
           <Link
             href={href}
             onClick={() => {
-              if (hasItems) openModule(id);
               if (!isExpanded) setIsPinned(true);
             }}
             title={!isExpanded ? t(name) : undefined}
-            className={cn(
-              "flex items-center gap-2.5 min-w-0",
-              isExpanded ? "flex-1 py-0.5" : "justify-center"
-            )}
+            className={headerClassName}
           >
-            <Icon
-              className={cn(
-                "w-4 h-4 shrink-0 transition-colors",
-                isPathActive ? "text-[#203c88]" : "text-slate-500 group-hover:text-slate-800"
-              )}
-            />
-            {isExpanded && (
-              <span className="text-xs font-semibold truncate tracking-tight">
-                {t(name)}
-              </span>
-            )}
+            <span className="flex min-w-0 items-center gap-2.5 py-0.5">{label}</span>
           </Link>
-          {isExpanded && hasItems && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                toggleModule(id, isPathActive);
-              }}
-              className="p-1 rounded text-slate-400 hover:text-slate-800 hover:bg-slate-200/60 transition-colors cursor-pointer"
-              title={isOpen ? "Collapse" : "Expand"}
-            >
-              {isOpen ? (
-                <ChevronDown className="w-3.5 h-3.5" />
-              ) : (
-                <ChevronRight className="w-3.5 h-3.5" />
-              )}
-            </button>
-          )}
-        </div>
+        )}
 
         {isOpen && isExpanded && hasItems && (
           <div className="ml-3 pl-2.5 border-l-2 border-slate-200/90 space-y-0.5 pt-0.5 animate-in fade-in-50 duration-150">
