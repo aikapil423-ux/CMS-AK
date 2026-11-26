@@ -61,6 +61,7 @@ import {
   Eye,
   FileSignature,
 } from "lucide-react";
+import { HindiSuggestionButton, VerbatimSelectionButton } from "@/components/editor/VerbatimSelectionButton";
 import { useHindiReportAutocorrect } from "@/hooks/useHindiAutocorrect";
 import { useAuth } from "@/context/AuthContext";
 import { formatDate } from "@/lib/utils";
@@ -642,7 +643,7 @@ function FIRTemplateBuilderContent() {
   };
 
   // Editor Change
-  const correctHindiInput = useHindiReportAutocorrect(editingDefinition || !["General", "Scene Inspection", "Seizure / Recovery"].includes(docCategory));
+  const hindiAutocorrect = useHindiReportAutocorrect(editingDefinition || !["General", "Scene Inspection", "Seizure / Recovery"].includes(docCategory));
 
   const handleContentChange = () => {
     setHasUnsavedChanges(true);
@@ -1291,6 +1292,14 @@ function FIRTemplateBuilderContent() {
 
           {/* MS Word-like Toolbar */}
           <div className="bg-white border border-slate-200 rounded-xl p-2.5 shadow-2xs flex flex-wrap items-center gap-1.5 text-slate-700 sticky top-2 z-20">
+            <VerbatimSelectionButton editorRef={editorRef} onChange={() => {
+              hindiAutocorrect.dismissSuggestion();
+              handleContentChange();
+            }} />
+            {hindiAutocorrect.suggestion && (
+              <HindiSuggestionButton word={hindiAutocorrect.suggestion} onAccept={hindiAutocorrect.acceptSuggestion} />
+            )}
+
             {/* Undo / Redo */}
             <div className="flex items-center border-r border-slate-200 pr-1.5 mr-0.5">
               <button
@@ -1785,7 +1794,7 @@ function FIRTemplateBuilderContent() {
               aria-label="Document body"
               contentEditable
               onInput={(event) => {
-                correctHindiInput(event);
+                hindiAutocorrect.onInput(event);
                 handleContentChange();
               }}
               className="bg-white text-slate-900 shadow-md p-8 md:p-14 min-h-[1050px] w-full max-w-[850px] outline-none rounded-sm border border-slate-300 transition-shadow focus:shadow-lg"

@@ -404,3 +404,10 @@ html.dark [role="dialog"] footer {
 }
 }
 
+
+@media screen {
+  [contenteditable="true"] span[data-verbatim] {
+    text-decoration: underline dotted;
+    text-underline-offset: 0.2em;
+  }
+}

@@ -54,6 +54,7 @@ import {
   HelpCircle,
   FileType,
 } from "lucide-react";
+import { HindiSuggestionButton, VerbatimSelectionButton } from "@/components/editor/VerbatimSelectionButton";
 import { useHindiReportAutocorrect } from "@/hooks/useHindiAutocorrect";
 import { useAuth } from "@/context/AuthContext";
 import { formatDate } from "@/lib/utils";
@@ -519,7 +520,7 @@ function TemplateDraftBuilderContent() {
 
   // 4. Auto-save trigger
   const witnessStatement = STANDARD_REPORT_TEMPLATES.find((template) => template.id === "std_witness_statement");
-  const correctHindiInput = useHindiReportAutocorrect(
+  const hindiAutocorrect = useHindiReportAutocorrect(
     editingDefinition || activeTemplateRawContent === witnessStatement?.content ||
     /verbatim|witness statement|बयान साक्षी/i.test(docName),
   );
@@ -1295,6 +1296,14 @@ function TemplateDraftBuilderContent() {
 
           {/* ================= STICKY WORD-STYLE FORMATTING TOOLBAR ================= */}
           <div className="no-print sticky top-2 z-30 bg-white border border-slate-300 rounded-xl shadow-md p-2 flex flex-wrap items-center gap-1.5 text-slate-800">
+            <VerbatimSelectionButton editorRef={editorRef} onChange={() => {
+              hindiAutocorrect.dismissSuggestion();
+              handleContentChange();
+            }} />
+            {hindiAutocorrect.suggestion && (
+              <HindiSuggestionButton word={hindiAutocorrect.suggestion} onAccept={hindiAutocorrect.acceptSuggestion} />
+            )}
+
             {/* Undo / Redo */}
             <button
               type="button"
@@ -1704,7 +1713,7 @@ function TemplateDraftBuilderContent() {
               contentEditable
               suppressContentEditableWarning
               onInput={(event) => {
-                correctHindiInput(event);
+                hindiAutocorrect.onInput(event);
                 handleContentChange();
               }}
               className="cms-paper-sheet bg-white text-slate-950 shadow-xl rounded-sm p-10 sm:p-14 border border-slate-200 outline-none w-full max-w-[850px] min-h-[1100px] leading-relaxed transition-all focus:ring-2 focus:ring-blue-500/20"

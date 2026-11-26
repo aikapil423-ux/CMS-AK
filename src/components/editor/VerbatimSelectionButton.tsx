@@ -1,0 +1,82 @@
+"use client";
+
+import type { RefObject } from "react";
+
+export function toggleVerbatimSelection(editor: HTMLElement) {
+  const selection = editor.ownerDocument.getSelection();
+  if (!selection || selection.isCollapsed || selection.rangeCount !== 1) return false;
+  const range = selection.getRangeAt(0);
+  if (!editor.contains(range.startContainer) || !editor.contains(range.endContainer)) return false;
+
+  const walker = editor.ownerDocument.createTreeWalker(range.commonAncestorContainer, NodeFilter.SHOW_TEXT);
+  const parts: { node: Text; start: number; end: number; mark: Element | null }[] = [];
+  let current = walker.currentNode instanceof Text ? walker.currentNode : walker.nextNode();
+  while (current) {
+    const node = current as Text;
+    const overlaps = range.comparePoint(node, node.length) >= 0 && range.comparePoint(node, 0) <= 0;
+    if (overlaps && !node.parentElement?.closest('[contenteditable="false"]')) {
+      const start = node === range.startContainer ? range.startOffset : 0;
+      const end = node === range.endContainer ? range.endOffset : node.length;
+      if (end > start) parts.push({ node, start, end, mark: node.parentElement?.closest("span[data-verbatim]") ?? null });
+    }
+    current = walker.nextNode();
+  }
+  if (!parts.length) return false;
+
+  if (parts.every(({ mark }) => mark)) {
+    for (const mark of new Set(parts.map(({ mark }) => mark))) {
+      if (mark && editor.contains(mark)) mark.replaceWith(...mark.childNodes);
+    }
+  } else {
+    for (const part of parts) {
+      if (part.mark) continue;
+      if (part.end < part.node.length) part.node.splitText(part.end);
+      if (part.start > 0) part.node = part.node.splitText(part.start);
+      part.start = 0;
+      part.end = part.node.length;
+      const mark = editor.ownerDocument.createElement("span");
+      mark.setAttribute("data-verbatim", "");
+      part.node.replaceWith(mark);
+      mark.append(part.node);
+    }
+  }
+
+  const first = parts[0];
+  const last = parts[parts.length - 1];
+  editor.focus();
+  selection.setBaseAndExtent(first.node, first.start, last.node, last.end);
+  return true;
+}
+
+export function VerbatimSelectionButton({ editorRef, onChange }: {
+  editorRef: RefObject<HTMLDivElement | null>;
+  onChange: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      title="चुने हुए टेक्स्ट की सुरक्षा लगाएँ या हटाएँ"
+      onMouseDown={(event) => event.preventDefault()}
+      onClick={() => {
+        if (editorRef.current && toggleVerbatimSelection(editorRef.current)) onChange();
+      }}
+      className="no-print inline-flex items-center rounded border border-slate-300 px-2 py-1 text-xs font-semibold"
+    >
+      जैसा लिखा है वैसा रखें
+    </button>
+  );
+}
+
+export function HindiSuggestionButton({ word, onAccept }: { word: string; onAccept: () => void }) {
+  return (
+    <button
+      type="button"
+      title="सुझाव लागू करें"
+      onMouseDown={(event) => event.preventDefault()}
+      onClick={onAccept}
+      className="no-print inline-flex items-center rounded border border-blue-300 bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-800"
+    >
+      सुझाव · {word}
+    </button>
+  );
+}
