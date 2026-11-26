@@ -889,6 +889,30 @@ function ComplaintListContent() {
   const pageCount=Math.max(1,Math.ceil(sortedComplaints.length/20));
   const page=registerPage.key===pageKey?Math.min(registerPage.page,pageCount):1;
   const pageComplaints=sortedComplaints.slice((page-1)*20,page*20);
+  const visibleColumnCount = columnOrder.filter((col) => visibleColumns[col]).length
+    + (visibleColumns.action ? 1 : 0);
+  const hasColumnSearch = Object.values(columnSearch).some((term) => term.trim());
+  const emptyComplaints = (
+    <EmptyState
+      title={hasColumnSearch ? "No matching complaints" : "No complaints found"}
+      description={hasColumnSearch
+        ? "Try a different column search or clear the filters."
+        : isEo
+          ? "Complaints assigned to you will appear here when they match the current filters."
+          : "Try clearing your search or changing the selected filters."}
+      actionLabel="Clear Filters"
+      onAction={() => {
+        setSearchQuery("");
+        setColumnSearch({});
+        setActiveSearchCol(null);
+        setSelectedStatuses([...ALL_STATUS_KEYS]);
+        setPriorityFilter("ALL");
+        setCategoryFilter("ALL");
+        setDateFrom("");
+        setDateTo("");
+      }}
+    />
+  );
   const renderComplaintColumnHeader = (colKey: ComplaintColKey) => {
     if (colKey === "srNo") {
       return (
@@ -1886,24 +1910,6 @@ function ComplaintListContent() {
       {/* Main Content: Table on Desktop, Cards on Mobile */}
       {loading ? (
         <LoadingSkeleton count={4} />
-      ) : sortedComplaints.length === 0 ? (
-        <EmptyState
-          title={isEo ? `No complaints assigned to ${currentUser.name}` : "No complaints found"}
-          description={
-            isEo
-              ? "You currently have no complaints marked to your PNO/Name matching the filters. Any complaint assigned to you by SHO will appear here automatically."
-              : "Try clearing your search query or selecting different statuses from the status dropdown."
-          }
-          actionLabel="Clear Filters"
-          onAction={() => {
-            setSearchQuery("");
-            setSelectedStatuses([...ALL_STATUS_KEYS]);
-            setPriorityFilter("ALL");
-            setCategoryFilter("ALL");
-            setDateFrom("");
-            setDateTo("");
-          }}
-        />
       ) : (
         <div className="space-y-4">
           {/* Desktop Table View with Horizontal Scrolling & Column Customization */}
@@ -1970,6 +1976,13 @@ function ComplaintListContent() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
+                  {sortedComplaints.length === 0 && (
+                    <tr>
+                      <td colSpan={Math.max(1, visibleColumnCount)}>
+                        {emptyComplaints}
+                      </td>
+                    </tr>
+                  )}
                   {pageComplaints.map((c, idx) => (
                     <tr
                       key={c.id}
@@ -2151,9 +2164,12 @@ function ComplaintListContent() {
             </div>
           </div>
 
-          <div className="cms-pagination"><span>Showing {(page-1)*20+1}–{Math.min(page*20,sortedComplaints.length)} of {sortedComplaints.length} complaints</span><div className="flex gap-2 items-center"><button disabled={page===1} onClick={()=>setRegisterPage({key:pageKey,page:page-1})}>Previous</button><span>Page {page} of {pageCount}</span><button disabled={page===pageCount} onClick={()=>setRegisterPage({key:pageKey,page:page+1})}>Next</button></div></div>
+          {sortedComplaints.length > 0 && (
+            <div className="cms-pagination"><span>Showing {(page-1)*20+1}–{Math.min(page*20,sortedComplaints.length)} of {sortedComplaints.length} complaints</span><div className="flex gap-2 items-center"><button disabled={page===1} onClick={()=>setRegisterPage({key:pageKey,page:page-1})}>Previous</button><span>Page {page} of {pageCount}</span><button disabled={page===pageCount} onClick={()=>setRegisterPage({key:pageKey,page:page+1})}>Next</button></div></div>
+          )}
           {/* Mobile Card-Based View */}
           <div className="md:hidden space-y-3">
+            {sortedComplaints.length === 0 && emptyComplaints}
             {pageComplaints.map((c) => (
               <Card key={c.id} className="border-slate-200 shadow-xs">
                 <CardContent className="p-4 space-y-3">

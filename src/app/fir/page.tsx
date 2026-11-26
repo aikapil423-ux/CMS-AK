@@ -1309,7 +1309,7 @@ function FIRRegisterPageContent() {
                     <EmptyState
                       title={isIo ? `No FIRs Assigned to ${currentUser.name}` : "No FIRs Found"}
                       description={
-                        searchQuery || dateFrom || dateTo
+                        searchQuery || dateFrom || dateTo || Object.values(columnSearch).some((term) => term.trim())
                           ? "No FIR records matched your search terms or date filter."
                           : isIo
                           ? "You currently have no First Information Reports assigned for investigation."
