@@ -3,6 +3,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { prisma } from "./prisma";
 import type { Prisma } from "@prisma/client";
+import type { FIRCaseDiaryItem } from "@/types";
 
 type CaseRegister = "complaints" | "firs";
 const caseTables = { complaints: '"ComplaintRecord"', firs: '"FirRecord"' } as const;
@@ -13,6 +14,19 @@ export async function readCaseRecords<T>(
   db: Prisma.TransactionClient = prisma,
 ): Promise<T[]> {
   if (!usesPostgresStore()) return readRuntimeJson<T[]>(file);
+  if (register === "firs") {
+    const rows = await db.$queryRaw<{ payload: T }[]>`
+      SELECT CASE WHEN jsonb_typeof(fir.payload->'caseDiaries') = 'array'
+        THEN jsonb_set(fir.payload, '{caseDiaries}', COALESCE(diaries.notes, '[]'::jsonb))
+        ELSE fir.payload END AS payload
+      FROM "FirRecord" fir
+      LEFT JOIN LATERAL (
+        SELECT jsonb_agg(note.payload ORDER BY note.position) AS notes
+        FROM "FirCaseDiary" note WHERE note."firId" = fir.id
+      ) diaries ON TRUE
+      ORDER BY fir.position`;
+    return rows.map(row => row.payload);
+  }
   const rows = await db.$queryRawUnsafe<{ payload: T }[]>(
     `SELECT payload FROM ${caseTables[register]} ORDER BY position`,
   );
@@ -33,19 +47,47 @@ export async function withCaseRecordTransaction<T>(
 export async function writeCaseRecords(
   register: CaseRegister,
   file: string,
-  records: { id: string }[],
+  records: { id: string; caseDiaries?: FIRCaseDiaryItem[] }[],
   db?: Prisma.TransactionClient,
+  officerId?: string,
 ) {
   if (!db) return writeRuntimeJson(file, records);
   const table = caseTables[register];
+  const payloads = register === "firs"
+    ? records.map(record => Array.isArray(record.caseDiaries) ? { ...record, caseDiaries: [] } : record)
+    : records;
   await db.$executeRawUnsafe(
     `INSERT INTO ${table} AS existing (id, position, payload)
      SELECT record->>'id', ordinal, record
      FROM jsonb_array_elements($1::jsonb) WITH ORDINALITY AS entries(record, ordinal)
      ON CONFLICT (id) DO UPDATE SET position = EXCLUDED.position, payload = EXCLUDED.payload
      WHERE (existing.position, existing.payload) IS DISTINCT FROM (EXCLUDED.position, EXCLUDED.payload)`,
-    JSON.stringify(records),
+    JSON.stringify(payloads),
   );
+  if (register !== "firs") return;
+  const notes = JSON.stringify(records.flatMap(fir => (fir.caseDiaries || []).map(
+    (note, index) => ({ firId: fir.id, id: note.id, position: index + 1, payload: note }),
+  )));
+  await db.$executeRaw`
+    WITH incoming AS (
+      SELECT * FROM jsonb_to_recordset(${notes}::jsonb) AS data("firId" text, id text, position bigint, payload jsonb)
+    )
+    INSERT INTO "FirCaseDiaryEvent" ("firId", "diaryId", "officerId", "action")
+    SELECT COALESCE(incoming."firId", old."firId"), COALESCE(incoming.id, old.id), ${officerId ?? null},
+      CASE WHEN incoming.id IS NULL THEN 'DELETE' WHEN old.id IS NULL THEN 'CREATE' ELSE 'UPDATE' END
+    FROM incoming FULL JOIN "FirCaseDiary" old USING ("firId", id)
+    WHERE incoming.payload IS DISTINCT FROM old.payload`;
+  await db.$executeRaw`
+    DELETE FROM "FirCaseDiary" old WHERE NOT EXISTS (
+      SELECT 1 FROM jsonb_to_recordset(${notes}::jsonb) AS data("firId" text, id text)
+      WHERE data."firId" = old."firId" AND data.id = old.id
+    )`;
+  await db.$executeRaw`
+    INSERT INTO "FirCaseDiary" AS old ("firId", id, position, payload)
+    SELECT "firId", id, position, payload
+    FROM jsonb_to_recordset(${notes}::jsonb) AS data("firId" text, id text, position bigint, payload jsonb)
+    ON CONFLICT ("firId", id) DO UPDATE SET position = EXCLUDED.position, payload = EXCLUDED.payload
+    WHERE (old.position, old.payload) IS DISTINCT FROM (EXCLUDED.position, EXCLUDED.payload)`;
 }
 
 function databaseKey(file: string) {

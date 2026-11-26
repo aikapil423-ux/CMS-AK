@@ -65,12 +65,108 @@ model ComplaintRecord {
   id       String @id
   position BigInt
   payload  Json
+  district           String? @default(dbgenerated())
+  policeStation      String? @default(dbgenerated())
+  registrationNumber String? @default(dbgenerated())
+  registrationDate   String? @default(dbgenerated())
+  registrationYear   String? @default(dbgenerated())
+  status             String? @default(dbgenerated())
+
+  @@index([district, policeStation, registrationDate])
+  @@index([status])
+  @@unique([district, policeStation, registrationYear, registrationNumber], map: "ComplaintRecord_registration_identity_key")
 }
 
 model FirRecord {
   id       String @id
   position BigInt
   payload  Json
+  district           String? @default(dbgenerated())
+  policeStation      String? @default(dbgenerated())
+  registrationNumber String? @default(dbgenerated())
+  registrationDate   String? @default(dbgenerated())
+  registrationYear   String? @default(dbgenerated())
+  status             String? @default(dbgenerated())
+  caseDiaries        FirCaseDiary[]
+  caseDiaryEvents    FirCaseDiaryEvent[]
+  scrutinyRecords    ScrutinyRecord[]
+
+  @@index([district, policeStation, registrationDate])
+  @@index([status])
+  @@unique([district, policeStation, registrationYear, registrationNumber], map: "FirRecord_registration_identity_key")
+}
+
+model FirCaseDiary {
+  firId    String
+  id       String
+  position BigInt
+  payload  Json
+  fir      FirRecord @relation(fields: [firId], references: [id])
+
+  @@id([firId, id])
+}
+
+model FirCaseDiaryEvent {
+  id        BigInt @id @default(autoincrement())
+  firId     String
+  diaryId   String
+  officerId String?
+  action    String
+  timestamp DateTime @default(now()) @db.Timestamptz
+  fir       FirRecord @relation(fields: [firId], references: [id])
+}
+
+model WeeklyDiaryRecord {
+  key      String @id
+  ownerId  String?
+  station  String
+  fromDate String
+  toDate   String
+  revision String?
+  payload  Json
+}
+
+model ScrutinyRecord {
+  id        String @id
+  firId     String
+  ownerId   String
+  revision  String
+  updatedAt String
+  payload   Json
+  fir       FirRecord @relation(fields: [firId], references: [id])
+
+  @@index([firId])
+  @@index([ownerId, updatedAt])
+}
+
+model CaseDocumentEvent {
+  id        BigInt @id @default(autoincrement())
+  kind      String
+  recordId  String
+  officerId String
+  action    String
+  timestamp DateTime @default(now()) @db.Timestamptz
+
+  @@index([kind, recordId])
+}
+
+model KalandraRecord {
+  id                 String @id
+  ownerId            String
+  district           String
+  policeStation      String
+  registrationDate   String
+  registrationYear   String
+  registrationNumber String
+  sequence           Int
+  status             String
+  updatedAt          String
+  archived           Boolean @default(false)
+  payload            Json
+
+  @@unique([district, policeStation, registrationYear, sequence], map: "KalandraRecord_station_year_sequence_key")
+  @@unique([district, policeStation, registrationNumber], map: "KalandraRecord_station_number_key")
+  @@index([district, policeStation, registrationDate], map: "KalandraRecord_station_date_idx")
 }
 
 model PoliceUnit {
@@ -462,6 +558,43 @@ model FirFinalReportEvent {
 
   @@index([firId, createdAt])
   @@index([reportId, version])
+}
+
+model TaDaBill {
+  id        String @id
+  ownerId   String
+  status    String
+  updatedAt String
+  deleted   Boolean @default(false)
+  payload   String
+  lines     TaDaBillLine[]
+  events    TaDaBillEvent[]
+  policeStation String?
+  district String?
+  registrationNumber String?
+  registrationDate String?
+
+  @@index([ownerId, updatedAt])
+  @@index([district, policeStation, registrationDate], map: "TaDaBill_station_date_idx")
+}
+
+model TaDaBillLine {
+  billId   String
+  form     String
+  position Int
+  payload  String
+  bill     TaDaBill @relation(fields: [billId], references: [id])
+
+  @@id([billId, form, position])
+}
+
+model TaDaBillEvent {
+  id        String @id
+  billId    String
+  officerId String
+  action    String
+  timestamp String
+  bill      TaDaBill @relation(fields: [billId], references: [id])
 }
 
 model FirBailDetail {

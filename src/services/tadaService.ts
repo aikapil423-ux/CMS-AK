@@ -170,87 +170,53 @@ export function createBlankTADABill(userId: string, userName = ""): TADABillReco
   };
 }
 
-let inMemoryTADABills: TADABillRecord[] = [];
+async function requestTada<T>(change?: object): Promise<T> {
+  const response = await fetch("/api/tada", change ? {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(change),
+  } : { cache: "no-store" });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(data?.error || "TA/DA request failed. Please retry.");
+  return data;
+}
 
 export const tadaService = {
-  getAll(): TADABillRecord[] {
-    if (typeof window !== "undefined") {
+  getLegacyBills(userId: string) {
+    const raw = localStorage.getItem(TADA_STORAGE_KEY);
+    const bills: TADABillRecord[] = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(bills)) throw new Error("The browser TA/DA history could not be read.");
+    return bills.filter(bill => bill?.userId === userId);
+  },
+
+  async importLegacyBills(bills: TADABillRecord[]) {
+    let failed = 0;
+    for (const bill of bills) {
       try {
-        const raw = localStorage.getItem(TADA_STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) {
-            inMemoryTADABills = parsed;
-            return parsed;
-          }
-        }
-      } catch (err) {
-        console.error("Failed to read TA/DA bills from localStorage:", err);
-      }
-    }
-    return [...inMemoryTADABills];
-  },
-
-  // Strictly user-isolated: user sees only their own bills (matches by user id, pno, or officer name)
-  getByUser(userId: string, pno?: string, name?: string): TADABillRecord[] {
-    if (!userId && !pno && !name) return [];
-    const all = this.getAll();
-    const cleanId = (userId || "").trim().toLowerCase();
-    const cleanPno = (pno || "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
-    const cleanName = (name || "").trim().toLowerCase();
-
-    return all.filter(b => b.userId === userId || (!b.userId && !!cleanPno && (b.form1TourProgramme?.beltEmployeeNumber || "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase() === cleanPno));
-  },
-
-  getById(id: string): TADABillRecord | null {
-    const all = this.getAll();
-    return all.find((b) => b.id === id) || null;
-  },
-
-  save(bill: TADABillRecord, userId: string): TADABillRecord {
-    const all = structuredClone(this.getAll());
-    const existing = all.find(b => b.id === bill.id);
-    if (!userId || existing && existing.userId !== userId) throw new Error("This bill belongs to another officer.");
-    const updated: TADABillRecord = {
-      ...bill,
-      userId,
-      updatedAt: new Date().toISOString(),
-    };
-    const index = all.findIndex((b) => b.id === bill.id);
-    if (index >= 0) {
-      all[index] = updated;
-    } else {
-      all.unshift(updated);
-    }
-
-
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.setItem(TADA_STORAGE_KEY, JSON.stringify(all));
-        window.dispatchEvent(new CustomEvent("cms_tada_bills_changed", { detail: updated }));
-      } catch (err) {
-        throw new Error("TA/DA bill could not be saved. Check browser storage and retry.");
-      }
-    }
-    inMemoryTADABills = [...all];
-    return updated;
-  },
-
-  delete(id: string, userId: string): boolean {
-    const all = this.getAll();
-    if (!userId || all.find(b => b.id === id)?.userId !== userId) return false;
-    const filtered = all.filter((b) => b.id !== id);
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.setItem(TADA_STORAGE_KEY, JSON.stringify(filtered));
-        inMemoryTADABills = [...filtered];
-        window.dispatchEvent(new CustomEvent("cms_tada_bills_changed"));
-        return true;
+        await requestTada({ action: "import", bill });
       } catch {
-        return false;
+        failed++;
       }
     }
-    return true;
+    return failed;
+  },
+
+  getHistory() {
+    return requestTada<{ bills: TADABillRecord[]; archivedIds: string[] }>();
+  },
+
+  async getByUser(): Promise<TADABillRecord[]> {
+    const { bills } = await this.getHistory();
+    return bills;
+  },
+
+  async save(bill: TADABillRecord, userId: string): Promise<TADABillRecord> {
+    const result = await requestTada<{ bill: TADABillRecord }>({ action: "save", bill: { ...bill, userId } });
+    return result.bill;
+  },
+
+  async delete(bill: TADABillRecord) {
+    await requestTada({ action: "delete", id: bill.id, updatedAt: bill.updatedAt });
   },
 
   // Utility to convert Tour Programme rows into TA Claim rows

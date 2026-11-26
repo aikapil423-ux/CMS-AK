@@ -1690,11 +1690,12 @@ export class CmsAgentService {
         respondent = respondent || "Suresh Kumar";
       }
     }
-    const generatedNo = kalandraService.generateKalandraNumber();
+    const generatedNo = "Assigned on save";
+    const matchingFirs = firNumber ? firService.getAllFirs().filter(record => record.firNumber === firNumber) : [];
 
     const newRecord: KalandraRecord = {
       id: "kal-" + Date.now(),
-      kalandraNumber: generatedNo,
+      kalandraNumber: "",
       typeCode: tmpl.code,
       templateId: tmpl.id,
       templateTitle: tmpl.titleHi,
@@ -1702,6 +1703,7 @@ export class CmsAgentService {
       policeStation: "PS City Panipat",
       district: "Panipat",
       caseType: firNumber ? "FROM_FIR" : "DIRECT",
+      relatedFirId: matchingFirs.length === 1 ? matchingFirs[0].id : undefined,
       relatedFirNumber: firNumber,
       respondentName: respondent,
       respondentFather: "Sh. Ram Kishan",
@@ -3252,10 +3254,7 @@ export class CmsAgentService {
 
     // Save Kalandra Record execution
     if (toolName === "save_kalandra_record") {
-      const record = params.record as KalandraRecord;
-      if (record) {
-        kalandraService.saveRecord(record);
-      }
+      const record = await kalandraService.saveRecord(params.record as KalandraRecord);
       this.updateContext({ lastActionPlanId: undefined, activeActionPlan: undefined });
       return {
         id: `msg_${Date.now()}`,

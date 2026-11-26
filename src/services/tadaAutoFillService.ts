@@ -275,7 +275,7 @@ export const tadaAutoFillService = {
     }
 
     const monthInfo = getLastMonthInfo();
-    const existingBills = tadaService.getByUser(user.id);
+    const existingBills = await tadaService.getByUser();
 
     // Check if user already has a bill for this month
     const existing = existingBills.find(
@@ -300,7 +300,7 @@ export const tadaAutoFillService = {
     const newBill = this.buildTADABill(user, monthInfo, journeys);
 
     // Auto-save strictly to user's TA history
-    const saved = tadaService.save(newBill, user.id);
+    const saved = await tadaService.save(newBill, user.id);
 
     return {
       generated: true,
@@ -325,7 +325,7 @@ export const tadaAutoFillService = {
     monthLabel: string;
     message: string;
   }> {
-    const existingBills = tadaService.getByUser(user.id);
+    const existingBills = await tadaService.getByUser();
     const existing = existingBills.find(
       (b) =>
         b.claimPeriod === monthInfo.label ||
@@ -345,7 +345,7 @@ export const tadaAutoFillService = {
     const journeys = await this.extractUserGDEntries(user, monthInfo);
     if (!journeys.length) return {generated:false,bill:this.buildTADABill(user,monthInfo,[]),count:0,monthLabel:monthInfo.label,message:"No verified GD movements found. No bill was saved."};
     const newBill = this.buildTADABill(user, monthInfo, journeys);
-    const saved = tadaService.save(newBill, user.id);
+    const saved = await tadaService.save(newBill, user.id);
 
     return {
       generated: true,

@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { bailSchema, type BailRecord } from '@/lib/bailSchema';
 import { z } from 'zod';
 import { readMasterLocationReferences } from './masterLocationReferences';
+import { usesPostgresStore } from '@/lib/runtimeJsonStore';
 const requestSchema=z.object({id:z.string().uuid(),expectedVersion:z.number().int().nonnegative(),firId:z.string().min(1),policeStation:z.string().min(1),district:z.string().min(1),authorId:z.string().min(1),firSnapshot:z.object({policeStation:z.string(),district:z.string(),assignedIoId:z.string().optional(),assignedIoName:z.string().optional()}),data:bailSchema});
 export class BailConflict extends Error {}
 const output=(row:{id:string;firId:string;version:number;dataJson:string;createdAt:Date;updatedAt:Date}):BailRecord=>({id:row.id,firId:row.firId,version:row.version,data:JSON.parse(row.dataJson),createdAt:row.createdAt.toISOString(),updatedAt:row.updatedAt.toISOString()});
@@ -26,6 +27,10 @@ export const bailDbService={
    }else{
     const count=await tx.$executeRaw`UPDATE "FirBailDetail" SET "accusedId"=${data.accusedId},"policeStation"=${location.policeStation},"district"=${location.district},"dataJson"=${values.dataJson},"firSnapshotJson"=${values.firSnapshotJson},"updatedBy"=${body.authorId},"updatedAt"=${now},"version"="version"+1 WHERE "id"=${body.id} AND "version"=${body.expectedVersion}`;
     if(count!==1)throw new BailConflict('Another edit was saved. Reload before editing.');
+   }
+   if (usesPostgresStore()) {
+    await tx.$executeRaw`INSERT INTO "CaseDocumentEvent" (kind, "recordId", "officerId", action)
+      VALUES ('FIR_BAIL_DETAIL', ${body.id}, ${body.authorId}, ${old ? 'UPDATE' : 'CREATE'})`;
    }
    const [saved]=await tx.$queryRaw<BailRow[]>`SELECT * FROM "FirBailDetail" WHERE "id"=${body.id}`;
    return output(saved);

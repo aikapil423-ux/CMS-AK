@@ -4,6 +4,7 @@ import argparse
 from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
+import re
 import sqlite3
 
 
@@ -110,17 +111,47 @@ def write_import(db, data_dir, output):
     for path in sorted(data_dir.rglob("*.json")):
         if not path.is_file():
             continue
-        table = case_tables.get(path.relative_to(data_dir).as_posix())
+        key = path.relative_to(data_dir).as_posix()
+        if re.fullmatch(r"weekly-diary/[a-f0-9]{64}\.json", key):
+            record = read_json(path)
+            columns = ("key", "station", "fromDate", "toDate", "revision", "payload")
+            row = [literal(key), *(literal(record.get(field)) for field in ("station", "from", "to", "revision"))]
+            insert_rows(output, "WeeklyDiaryRecord", columns, [row + [literal(json.dumps(record, ensure_ascii=False, allow_nan=False)) + "::jsonb"]])
+            counts["WeeklyDiaryRecord"] = counts.get("WeeklyDiaryRecord", 0) + 1
+            continue
+        if re.fullmatch(r"scrutiny-records/[a-f0-9]{64}\.json", key):
+            record = read_json(path)
+            columns = ("id", "firId", "ownerId", "revision", "updatedAt")
+            row = [literal(record[field]) for field in columns]
+            insert_rows(output, "ScrutinyRecord", (*columns, "payload"), [row + [literal(json.dumps(record, ensure_ascii=False, allow_nan=False)) + "::jsonb"]])
+            counts["ScrutinyRecord"] = counts.get("ScrutinyRecord", 0) + 1
+            continue
+        table = case_tables.get(key)
         if table is None:
             documents.append(path)
             continue
         records = read_json(path)
+        diaries = []
+        if table == "FirRecord":
+            for record in records:
+                notes = record.get("caseDiaries")
+                if not isinstance(notes, list):
+                    continue
+                for position, note in enumerate(notes, start=1):
+                    diaries.append([
+                        literal(record["id"]), literal(note["id"]), str(position),
+                        literal(json.dumps(note, ensure_ascii=False, allow_nan=False)) + "::jsonb",
+                    ])
+                record["caseDiaries"] = []
         insert_rows(output, table, ("id", "position", "payload"), [
             [literal(record["id"]), str(position),
              literal(json.dumps(record, ensure_ascii=False, allow_nan=False)) + "::jsonb"]
             for position, record in enumerate(records, start=1)
         ])
         counts[table] = len(records)
+        if table == "FirRecord":
+            insert_rows(output, "FirCaseDiary", ("firId", "id", "position", "payload"), diaries)
+            counts["FirCaseDiary"] = len(diaries)
 
     for path in documents:
         insert_rows(output, "ImportedJsonDocument", ("path", "payload"), [[

@@ -363,6 +363,17 @@ const INITIAL_MOCK_KALANDRAS: KalandraRecord[] = [
   }
 ];
 
+async function requestKalandra<T>(change?: object): Promise<T> {
+  const response = await fetch("/api/kalandra", change ? {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(change),
+  } : { cache: "no-store" });
+  const result = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(result?.error || "Kalandra request failed.");
+  return result;
+}
+
 class KalandraService {
   private getStorage<T>(key: string, fallback: T): T {
     if (typeof window === "undefined") return fallback;
@@ -418,45 +429,35 @@ class KalandraService {
     return template;
   }
 
-  public getAllRecords(): KalandraRecord[] {
-    return this.getStorage<KalandraRecord[]>(KALANDRA_RECORDS_KEY, INITIAL_MOCK_KALANDRAS);
+  public getRegister() {
+    return requestKalandra<{ records: KalandraRecord[]; archivedIds: string[] }>();
   }
 
-  public getRecordById(id: string): KalandraRecord | undefined {
-    return this.getAllRecords().find((r) => r.id === id);
+  public getLegacyRecords(): KalandraRecord[] {
+    const parsed = JSON.parse(localStorage.getItem(KALANDRA_RECORDS_KEY) || "[]");
+    if (!Array.isArray(parsed)) throw new Error("The browser Kalandra register could not be read.");
+    const demoIds = new Set(INITIAL_MOCK_KALANDRAS.map(record => record.id));
+    return parsed.filter(record => typeof record?.id === "string" && !demoIds.has(record.id));
   }
 
-  public saveRecord(record: KalandraRecord): KalandraRecord {
-    const records = this.getAllRecords();
-    const idx = records.findIndex((r) => r.id === record.id);
-    const updated = {
-      ...record,
-      updatedAt: new Date().toISOString()
-    };
-    if (idx >= 0) {
-      records[idx] = updated;
-    } else {
-      records.unshift(updated);
+  public async saveRecord(record: KalandraRecord): Promise<KalandraRecord> {
+    return (await requestKalandra<{ record: KalandraRecord }>({ action: "save", record })).record;
+  }
+
+  public async importLegacyRecords(records: KalandraRecord[]) {
+    let failures = 0;
+    for (const record of records) {
+      try {
+        await requestKalandra({ action: "import", record });
+      } catch {
+        failures++;
+      }
     }
-    this.setStorage(KALANDRA_RECORDS_KEY, records);
-    return updated;
+    return failures;
   }
 
-  public deleteRecord(id: string): boolean {
-    const records = this.getAllRecords();
-    const filtered = records.filter((r) => r.id !== id);
-    if (filtered.length !== records.length) {
-      this.setStorage(KALANDRA_RECORDS_KEY, filtered);
-      return true;
-    }
-    return false;
-  }
-
-  public generateKalandraNumber(): string {
-    const year = new Date().getFullYear();
-    const records = this.getAllRecords();
-    const count = records.reduce((max, r) => {const m = /^KAL\/(\d{4})\/(\d+)$/.exec(r.kalandraNumber); return m && Number(m[1]) === year ? Math.max(max, Number(m[2])) : max;}, 0) + 1;
-    return `KAL/${year}/${String(count).padStart(3, "0")}`;
+  public async deleteRecord(record: KalandraRecord) {
+    await requestKalandra({ action: "delete", id: record.id, updatedAt: record.updatedAt });
   }
 
   public async autofillFromSource(sourceType: "FIR" | "COMPLAINT" | "GD", sourceId: string): Promise<Partial<KalandraRecord> | null> {

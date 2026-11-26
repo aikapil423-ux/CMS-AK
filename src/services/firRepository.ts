@@ -17,13 +17,13 @@ export async function readFirRecords(db?: Prisma.TransactionClient):Promise<FIRI
   try{const data=await readCaseRecords<FIRItem>('firs',file(),db);if(!Array.isArray(data))throw new Error('Invalid FIR store.');const locations = await readMasterLocationReferences(db); return data.map(record => locations.caseRecord(record, 'name'));}
   catch(error){if((error as NodeJS.ErrnoException).code==='ENOENT')return [];throw error;}
 }
-async function withFirStore<T>(update: (records: FIRItem[]) => T): Promise<T> {
+async function withFirStore<T>(update: (records: FIRItem[]) => T, officerId?: string): Promise<T> {
   const target=file();
   const save = async (db?: Prisma.TransactionClient) => {
     const records = await readFirRecords(db);
     const result = update(records);
     const locations = await readMasterLocationReferences(db);
-    await writeCaseRecords('firs', target, records.map(record => locations.caseRecord(record, 'id')), db);
+    await writeCaseRecords('firs', target, records.map(record => locations.caseRecord(record, 'id')), db, officerId);
     return result;
   };
   if (usesPostgresStore()) return withCaseRecordTransaction('firs', save);
@@ -66,5 +66,5 @@ export async function saveFirRecords(input:unknown,user:UserSession):Promise<FIR
       saved.push(next);
     }
     return saved;
-  });
+  }, user.id);
 }

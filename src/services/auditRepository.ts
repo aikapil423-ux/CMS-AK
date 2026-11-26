@@ -1,4 +1,5 @@
 import { readRuntimeJson, writeRuntimeJson, listRuntimeJson } from "@/lib/runtimeJsonStore";
+import { listStoredPdfScrutiny } from "@/services/scrutinyRepository";
 import { readMasterLocationReferences } from "@/services/masterLocationReferences";
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -128,7 +129,7 @@ export async function loadAuditRows(user: UserSession) {
     }
   }catch{warnings.push('Court replies source unavailable. Prepared reply totals are incomplete.');}
   try {
-    for(const c of await jsonFiles(path.join(process.cwd(),'prisma','scrutiny-records')) as Bag[]) {
+    for(const c of await listStoredPdfScrutiny(auditSupervisor(user) ? undefined : user.id)) {
       const parent=cases.get(c.firId);if(!parent||!auditSupervisor(user)&&c.ownerId!==user.id)continue;
       rows.push({...parent,id:'scrutiny:'+c.id,source:'scrutiny',title:c.scrutinyNumber,category:c.challanType,status:c.decision,registered:auditDate(c.createdAt),updated:auditDate(c.updatedAt),submitted:'',officer:c.scrutinyOfficer||parent.officer,age:auditAge(c.createdAt),pending:c.decision==='PASSED'?false:true,findings:[],signals:[]});
     }

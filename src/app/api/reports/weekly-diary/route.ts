@@ -33,7 +33,7 @@ export async function POST(req:Request) {
     const old=await readDiary(user.id,body.from,body.to,body.station);
     if(body.action==='reset') {
       if(!old || old.revision!==body.revision)return Response.json({error:'Reload this diary before resetting.'},{status:409});
-      return Response.json({packet:await saveDiary(user.id,calculateDiary({...old,overrides:{},layout:emptyDiaryLayout()}),body.revision)});
+      return Response.json({packet:await saveDiary(user.id,calculateDiary({...old,overrides:{},layout:emptyDiaryLayout()}),body.revision,'RESET')});
     }
     if(body.action==='save') {
       if(!old || old.revision!==body.revision)return Response.json({error:'Reload this diary before saving.'},{status:409});
@@ -51,7 +51,7 @@ export async function POST(req:Request) {
           return Response.json({error:'Select a permitted dropdown value.'},{status:400});
         }
       }
-      const packet=await saveDiary(user.id,calculateDiary({...old,overrides,layout}),body.revision);return Response.json({packet});
+      const packet=await saveDiary(user.id,calculateDiary({...old,overrides,layout}),body.revision,'SAVE');return Response.json({packet});
     }
     if(body.action!=='build')return Response.json({error:'Invalid action.'},{status:400});
     const firs=scope.firs.filter(f=>f.policeStation===body.station),complaints=scope.complaints.filter(c=>c.policeStation===body.station);

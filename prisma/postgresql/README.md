@@ -40,6 +40,17 @@ the new app code. The migration copies existing records to the new tables
 and retains the original JSON documents as a snapshot. Attachment binaries
 and browser-local data are outside the SQL export.
 
+Complaint and FIR reporting columns are generated from each record's
+payload. FIR case-diary entries, saved scrutiny records, and weekly diaries
+have their own tables. Their save history records the authenticated officer
+and the action. Legacy weekly diary keys stay readable when the original
+owner next opens the same date range and station.
+
+TA/DA and Kalandra offer to import eligible legacy records when opened from
+the original browser profile. The officer reviews the list before importing.
+Kalandra imports require a supervising officer with access to the station.
+Unverified items remain available in the original browser storage.
+
 ## Run the local app against PostgreSQL
 
 Set `POSTGRES_DATABASE_URL` in the Git-ignored `.env.local` and run

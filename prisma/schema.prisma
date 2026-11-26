@@ -399,6 +399,43 @@ model FirFinalReportEvent {
   @@index([reportId, version])
 }
 
+model TaDaBill {
+  id        String @id
+  ownerId   String
+  status    String
+  updatedAt String
+  deleted   Boolean @default(false)
+  payload   String
+  lines     TaDaBillLine[]
+  events    TaDaBillEvent[]
+  policeStation String?
+  district String?
+  registrationNumber String?
+  registrationDate String?
+
+  @@index([ownerId, updatedAt])
+  @@index([district, policeStation, registrationDate], map: "TaDaBill_station_date_idx")
+}
+
+model TaDaBillLine {
+  billId   String
+  form     String
+  position Int
+  payload  String
+  bill     TaDaBill @relation(fields: [billId], references: [id])
+
+  @@id([billId, form, position])
+}
+
+model TaDaBillEvent {
+  id        String @id
+  billId    String
+  officerId String
+  action    String
+  timestamp String
+  bill      TaDaBill @relation(fields: [billId], references: [id])
+}
+
 model FirBailDetail {
   id String @id
   firId String
