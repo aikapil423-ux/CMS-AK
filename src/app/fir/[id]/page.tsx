@@ -347,7 +347,7 @@ export default function FIRProfilePage() {
   useEscapeKey(generateDocDropdownOpen, () => setGenerateDocDropdownOpen(false));
   useEscapeKey(generateReportDropdownOpen, () => setGenerateReportDropdownOpen(false));
 
-  const isMhc = currentUser.role === "MHC_GD_INCHARGE" || currentUser.role === "DUTY_OFFICER";
+  const isMhc = currentUser.role === "MHC_GD_INCHARGE";
   const isSuperior =
     currentUser.role === "DSP_SUBDIV" ||
     currentUser.role === "SP_DISTRICT" ||

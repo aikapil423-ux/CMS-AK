@@ -5272,7 +5272,7 @@ function RegisterFIRForm() {
                             </span>
                           </div>
                           <p className="text-xs text-amber-800 mt-1 leading-relaxed">
-                            MHC / GD Incharge cannot assign EO/IO. Allocation of the Investigating Officer (IO) must be formally executed by the <strong>Station House Officer (SHO)</strong> or Superior Officers upon review.
+                            The <strong>Station House Officer (SHO)</strong> or a superior officer assigns the Investigating Officer (IO) after review.
                           </p>
                           <p className="text-[11px] text-amber-700 italic mt-1">
                             This FIR will be registered with IO pending allocation and placed in the SHO&apos;s supervisory queue.

@@ -120,9 +120,9 @@ function FIRRegisterPageContent() {
     currentUser.role === "DSP_SUBDIV" ||
     currentUser.role === "SP_DISTRICT" ||
     currentUser.role === "SUPER_ADMIN";
-  const isMhc = currentUser.role === "MHC_GD_INCHARGE" || currentUser.role === "DUTY_OFFICER";
+  const isMhc = currentUser.role === "MHC_GD_INCHARGE";
   const isIo = currentUser.role === "ENQUIRY_OFFICER" || (!isSho && !isMhc && !isSuperior);
-  const canRegisterFir = isSho || isMhc || isSuperior;
+  const canRegisterFir = isSho || isMhc || isSuperior || currentUser.role === "DUTY_OFFICER";
 
   // Column visibility
   const [columnDropdownOpen, setColumnDropdownOpen] = useState(false);

@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   const normalize = (value: string) => value.trim().toLowerCase();
   try {
     const officers = (await getAllAccounts()).filter(account =>
-      account.status === 'ACTIVE' && account.role === 'ENQUIRY_OFFICER' &&
+      account.status === 'ACTIVE' && ['ENQUIRY_OFFICER', 'DUTY_OFFICER'].includes(account.role) &&
       normalize(account.district) === normalize(district) &&
       normalize(account.policeStation) === normalize(station)
     ).map(account => ({ id: account.id, name: account.fullName, rank: account.rankDisplay || account.rank,
