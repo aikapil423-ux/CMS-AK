@@ -18,3 +18,13 @@ if git diff --cached --name-only --diff-filter=ACMRT | grep -Eq '(^|/)accounts-s
   echo "Unstage the account seed export; it contains credential hashes." >&2
   exit 1
 fi
+
+# PostgreSQL-only guard: forbid SQLite providers, file: DB URLs, or .db binaries.
+if git grep --cached -I -n -E 'provider[[:space:]]*=[[:space:]]*"sqlite"' -- prisma/ >/dev/null 2>&1; then
+  echo "SQLite provider is forbidden. This repository is PostgreSQL-only." >&2
+  exit 1
+fi
+if git diff --cached --name-only --diff-filter=ACMRT | grep -Eq '\.db(-wal|-shm|-journal)?$'; then
+  echo "SQLite database files (.db) are forbidden. Use PostgreSQL only." >&2
+  exit 1
+fi

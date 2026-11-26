@@ -12,3 +12,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **Primary Git Repository**: `https://github.com/haryana-police/smart-CMS.git` (`upstream/main`).
 - Always pull from and push to `upstream/main` (`https://github.com/haryana-police/smart-CMS.git`). Local branch `main` tracks `upstream/main`.
 
+# Database Policy (PostgreSQL Only)
+- **PostgreSQL Only — NO SQLite:** This project strictly uses **PostgreSQL** (`prisma/postgresql/full/schema.prisma` and `prisma/schema.prisma` with `provider = "postgresql"`).
+- **NEVER** use SQLite, `provider = "sqlite"`, `prisma/dev.db`, `file:` datasource URLs, or local JSON file fallbacks in `runtimeJsonStore.ts`.
+- Always require `POSTGRES_DATABASE_URL` (`postgresql://...`) in `.env` / `.env.local` for runtime, migrations, and Prisma Client generation.
+

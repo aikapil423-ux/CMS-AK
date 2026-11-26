@@ -99,7 +99,7 @@ function databaseKey(file: string) {
 }
 
 export function usesPostgresStore() {
-  return Boolean(process.env.POSTGRES_DATABASE_URL);
+  return true;
 }
 
 export async function readRuntimeJson<T>(file: string, db: Prisma.TransactionClient = prisma): Promise<T> {
