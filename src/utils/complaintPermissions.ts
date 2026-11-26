@@ -1,3 +1,4 @@
+import { isMhcOrMmRole } from "@/lib/officerRoles";
 import { MOCK_ENQUIRY_OFFICERS } from '@/lib/mockData';
 import {
   UserSession,
@@ -102,7 +103,7 @@ export function canViewComplaint(user: AuthUserContext, complaint: ComplaintItem
   if(user.role==='DSP_SUBDIV' && user.unitId) return {allowed:Boolean(user.jurisdictionUnits?.some((name:string)=>norm(name)===norm(jurisdiction.policeStation))),reason:'Complaint is outside your subdivision.'};
   if(isSuperiorToSho(user.role))return {allowed:Boolean(norm(user.district)&&norm(user.district)===norm(jurisdiction.district)),reason:'Complaint is outside your district.'};
   if(complaint.custodyUnit && user.unitId !== complaint.custodyUnit.id)return {allowed:false,reason:'Complaint is outside your unit.'};
-  if(['SHO','MHC_GD_INCHARGE'].includes(user.role||'')){
+  if(['SHO','MHC_GD_INCHARGE', 'MM'].includes(user.role||'')){
     // Station staff see every complaint of their own station — and nothing outside it.
     if(!norm(user.stationName)||norm(user.stationName)!==norm(jurisdiction.policeStation))return {allowed:false,reason:'Complaint is outside your police station.'};
     return {allowed:true};
@@ -121,7 +122,7 @@ export function canViewComplaint(user: AuthUserContext, complaint: ComplaintItem
  */
 export function canCreateDocument(user: AuthUserContext, complaint: ComplaintItem): PermissionResult {
   const scope=canViewComplaint(user,complaint);if(!scope.allowed)return scope;
-  if (isShoOrSuperior(user.role) || user.role === "MHC_GD_INCHARGE") {
+  if (isShoOrSuperior(user.role) || isMhcOrMmRole(user.role)) {
     return { allowed: true };
   }
   if (isComplaintAssignedToEo(complaint)) {
@@ -259,7 +260,7 @@ export function canDeleteDocument(
  */
 export function canReassignEO(user: AuthUserContext, complaint: ComplaintItem): PermissionResult {
   const scope=canViewComplaint(user,complaint);if(!scope.allowed)return scope;
-  const isMhc = user.role === "MHC_GD_INCHARGE";
+  const isMhc = isMhcOrMmRole(user.role);
   if (isMhc || user.role === "ENQUIRY_OFFICER") {
     return {
       allowed: false,
@@ -350,7 +351,7 @@ export function canAskProgressReport(user: AuthUserContext, complaint: Complaint
  */
 export function canTransferJustification(user: AuthUserContext, complaint: ComplaintItem): PermissionResult {
   const scope=canViewComplaint(user,complaint);if(!scope.allowed)return scope;
-  if (user.role === "ENQUIRY_OFFICER" || user.role === "MHC_GD_INCHARGE") {
+  if (user.role === "ENQUIRY_OFFICER" || isMhcOrMmRole(user.role)) {
     return {
       allowed: false,
       reason: "Access Denied: Transfer Justification is only available to SHO and Supervisory Officers.",

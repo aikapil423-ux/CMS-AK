@@ -107,6 +107,7 @@ const ACCOUNT_ROLE_GROUPS = [
     { value: "ASI", label: "Assistant Sub-Inspector (ASI)" },
     { value: "ENQUIRY_OFFICER", label: "Investigating Officer (IO)" },
     { value: "MHC_GD_INCHARGE", label: "MHC (Moharrir Head Constable)" },
+    { value: "MM", label: "MM" },
     { value: "HEAD_CONSTABLE", label: "Head Constable" },
     { value: "CONSTABLE", label: "Constable" },
     { value: "STATION_STAFF", label: "Station Staff" },
@@ -991,10 +992,10 @@ export default function AccountManagementPage() {
       roleDisplay = "Investigating Officer (IO)";
       unitType = "INVESTIGATION_UNIT";
       jurisdiction = "SINGLE_STATION";
-    } else if (newRole === "MHC_GD_INCHARGE") {
-      designation = "Moharrir Head Constable (MHC)";
-      roleDisplay = "Moharrir Head Constable (MHC Store & GD)";
-      unitType = "MHC_STORE";
+    } else if (newRole === "MHC_GD_INCHARGE" || newRole === "MM") {
+      designation = newRole === "MM" ? "MM" : "Moharrir Head Constable (MHC)";
+      roleDisplay = newRole === "MM" ? "MM" : "Moharrir Head Constable (MHC Store & GD)";
+      unitType = newRole === "MM" ? "POLICE_STATION" : "MHC_STORE";
       jurisdiction = "SINGLE_STATION";
     } else if (newRole === "HEAD_CONSTABLE") {
       designation = "Head Constable";
@@ -2679,7 +2680,7 @@ export default function AccountManagementPage() {
                     {formData.role === "SP_DISTRICT" && `Full administrative and operational jurisdiction over entire ${formData.district || "assigned"} District.`}
                     {formData.role === "DSP_SUBDIV" && `Sub-Divisional jurisdiction across multiple selected police stations in ${formData.district || "District"}.`}
                     {formData.role === "SHO" && `Single station command: Authorized for registration, FIR approval and investigation review at ${formData.policeStation || "selected police station"}.`}
-                    {formData.role === "MHC_GD_INCHARGE" && `Dedicated MHC Malkhana & General Diary control for ${formData.policeStation || "selected station"}.`}
+                    {(formData.role === "MHC_GD_INCHARGE" || formData.role === "MM") && `Dedicated ${formData.role === "MM" ? "MM" : "MHC"} Malkhana & General Diary control for ${formData.policeStation || "selected station"}.`}
                     {formData.role === "ENQUIRY_OFFICER" && `Investigating officer assigned to cases in ${formData.policeStation || "selected unit/station"}${formData.district ? `, ${formData.district}` : ""}.`}
 
                   </p>

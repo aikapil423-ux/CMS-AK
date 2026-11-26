@@ -29,6 +29,17 @@ const {ComplaintService:s}=load('src/services/complaintService.ts');
 const payload={source:'WALK_IN_STATION',category:'OTHER_GENERAL',priority:'ROUTINE',incidentDate:'2026-10-27',incidentPlace:'Test place',complainantName:'Test Citizen',complainantMobile:'9999999999',complainantAddress:'Test address',complainantCity:'Panipat',complainantDistrict:'Panipat',accusedList:[]};
 const post=(body,user='usr_sho_1')=>route.POST(new Request('http://local/api/complaints',{method:'POST',headers:{cookie:'cms_session='+issueSession(user),'Content-Type':'application/json'},body:JSON.stringify(body)}));
 let saved;
+test('MM and MHC can work with their station complaints without assigning officers',()=>{
+ const unit={id:'chandnibagh',name:'PS Chandnibagh',district:'Panipat'};
+ const complaint={custodyUnit:unit};
+ for(const role of ['MHC_GD_INCHARGE','MM']){
+  const user={id:role,role,unitId:unit.id,stationName:unit.name,district:unit.district};
+  assert.equal(permissions.canViewComplaint(user,complaint).allowed,true);
+  assert.equal(permissions.canCreateDocument(user,complaint).allowed,true);
+  assert.equal(permissions.canReassignEO(user,complaint).allowed,false);
+  assert.equal(permissions.canViewComplaint(user,{custodyUnit:{...unit,id:'other'}}).allowed,false);
+ }
+});
 test('unsigned/forged sessions cannot access API; empty register stays empty',async()=>{
  assert.equal((await route.GET(new Request('http://local/api/complaints?viewerRole=SHO'))).status,401);
  assert.equal((await route.POST(new Request('http://local/api/complaints',{method:'POST',body:JSON.stringify({complaints:[]})}))).status,401);

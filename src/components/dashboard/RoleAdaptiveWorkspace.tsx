@@ -1,5 +1,6 @@
 "use client";
 
+import { isMhcOrMmRole } from "@/lib/officerRoles";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
@@ -87,7 +88,7 @@ export function RoleAdaptiveWorkspace({
       return "IO";
     }
     if (
-      role === "MHC_GD_INCHARGE" ||
+      isMhcOrMmRole(role) ||
 
       role === "COMMISSIONERATE_MHC" ||
       role === "STATION_STAFF" ||

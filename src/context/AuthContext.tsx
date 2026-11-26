@@ -12,7 +12,7 @@ interface AuthContextType {
   isViewAs:boolean;
   /** True while the app tree is being re-mounted for a persona/view-as switch — the login redirect must not fire. */
   switching:boolean;
-  enterViewAs:(user:UserSession)=>Promise<boolean>;
+  enterViewAs:(user:Pick<UserSession,'id'>)=>Promise<boolean>;
   exitViewAs:()=>Promise<boolean>;
   isAuthenticated:boolean;
   logout:()=>void;
@@ -72,7 +72,7 @@ export function AuthProvider({children}:{children:React.ReactNode}){
  // View-as never signs the Developer Admin out and never performs a second login:
  // the server re-issues the developer's own session with a view-as marker, so the
  // developer keeps their identity until they explicitly sign out.
- const enterViewAs=async(user:UserSession)=>{
+ const enterViewAs=async(user:Pick<UserSession,'id'>)=>{
    if(sessionUser.id!=='cms_developer_admin')return false;
    try{
      await firPersistence.flush().catch(()=>{});

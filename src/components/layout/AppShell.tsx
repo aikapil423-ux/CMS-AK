@@ -1,5 +1,6 @@
 "use client";
 
+import { isMhcOrMmRole } from "@/lib/officerRoles";
 import React, { useState } from "react";
 import { usePathname } from "next/navigation";
 import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
@@ -67,7 +68,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isComplaints = !isFir && (pathname.startsWith("/complaints") || pathname.startsWith("/enquiry-workspace"));
 
   // Only MHC, SHO, and Superior officers can register complaints/FIR (EOs cannot register complaints or FIR)
-  const isMhc = currentUser?.role === "MHC_GD_INCHARGE";
+  const isMhc = isMhcOrMmRole(currentUser?.role);
   const isSho = currentUser?.role === "SHO" || currentUser?.id === "usr_sho_1";
   const isSuperior = currentUser?.role === "DSP_SUBDIV" || currentUser?.role === "SP_DISTRICT" || currentUser?.role === "SUPER_ADMIN";
   const canRegisterComplaint = isMhc || isSho || isSuperior;

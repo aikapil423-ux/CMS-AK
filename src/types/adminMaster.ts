@@ -258,6 +258,7 @@ export type AccountRole =
   | 'ASI'
   | 'ENQUIRY_OFFICER'
   | 'MHC_GD_INCHARGE'
+  | 'MM'
   | 'HEAD_CONSTABLE'
   | 'CONSTABLE'
   | 'STATION_STAFF'

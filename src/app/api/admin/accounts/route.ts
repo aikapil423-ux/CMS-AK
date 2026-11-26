@@ -1,4 +1,5 @@
 import { apiAccess, forbidden } from '@/lib/apiSecurity';
+import { demoEnabled, demoPersonasEnabled, sessionPrincipal } from '@/lib/serverSession';
 import {
   getAllAccounts,
   createAccount,
@@ -18,14 +19,27 @@ function isDeveloperAdmin(user: any): boolean {
 }
 
 export async function GET(req: Request) {
+  const view = new URL(req.url).searchParams.get('view');
+  if (view === 'officer-switcher') {
+    const principal = await sessionPrincipal(req);
+    if (principal?.userId !== 'cms_developer_admin' || !demoEnabled()) return forbidden();
+    const accounts = await getAllAccounts();
+    const officers = accounts.filter(account => account.status === 'ACTIVE').map(account => ({
+      id: account.id,
+      name: account.fullName,
+      role: account.role,
+      roleDisplay: account.roleDisplay,
+      rank: account.rank,
+      district: account.district,
+      stationName: account.policeStation,
+    }));
+    return Response.json({ officers, includeDemoPersonas: demoPersonasEnabled() }, { headers: { 'Cache-Control': 'no-store' } });
+  }
   const actor = await apiAccess(req);
   if (actor instanceof Response) return actor;
   if (!isDeveloperAdmin(actor)) return forbidden('Developer Administrator access required for Account Master.');
 
   try {
-    const url = new URL(req.url);
-    const view = url.searchParams.get('view');
-
     if (view === 'audits') {
       const logs = await readAccountAuditLogs();
       return Response.json({ auditLogs: logs });

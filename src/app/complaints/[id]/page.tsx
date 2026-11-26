@@ -1,5 +1,6 @@
 "use client";
 
+import { isMhcOrMmRole } from "@/lib/officerRoles";
 import { useLanguage } from "@/context/LanguageContext";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
@@ -723,7 +724,7 @@ export default function ComplaintProfilePage() {
   }, [selectedEoId]);
 
   // Role & Permission Computations
-  const isMhc = currentUser.role === "MHC_GD_INCHARGE";
+  const isMhc = isMhcOrMmRole(currentUser.role);
   const isSuperior = isSuperiorToSho(currentUser.role);
   const isShoOrSuper = isShoOrSuperior(currentUser.role);
   const isSho = (currentUser.role === "SHO" || currentUser.id === "usr_sho_1" || isSuperior) && !isMhc;

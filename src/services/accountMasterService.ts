@@ -47,10 +47,10 @@ function getInitialAccounts(): MasterAccount[] {
       assignedUnitType = 'DISTRICT_OFFICE';
       jurisdictionType = 'SUBDIVISION_MULTI_STATION';
       roleVal = 'DSP_SUBDIV';
-    } else if (u.role === 'MHC_GD_INCHARGE') {
+    } else if (u.role === 'MHC_GD_INCHARGE' || u.role === 'MM') {
       assignedUnitType = 'MHC_STORE';
       jurisdictionType = 'SINGLE_STATION';
-      roleVal = 'MHC_GD_INCHARGE';
+      roleVal = u.role;
     } else if (u.role === 'ENQUIRY_OFFICER') {
       assignedUnitType = 'POLICE_STATION';
       jurisdictionType = 'SINGLE_STATION';

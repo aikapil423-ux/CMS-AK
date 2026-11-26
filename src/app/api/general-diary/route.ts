@@ -993,7 +993,7 @@ export async function POST(req: NextRequest) {
     const locations = await readMasterLocationReferences();
     const accessScope = locations.sessionScope(apiUser);
     const body = (await req.json()) as Record<string, unknown>;
-    if (!['SHO','MHC_GD_INCHARGE','SUPER_ADMIN','SP_DISTRICT','DSP_SUBDIV'].includes(apiUser.role)) return forbidden('GD writes require a diary or supervisory officer.');
+    if (!['SHO','MHC_GD_INCHARGE', 'MM','SUPER_ADMIN','SP_DISTRICT','DSP_SUBDIV'].includes(apiUser.role)) return forbidden('GD writes require a diary or supervisory officer.');
     if (body.id) {
       const idStr = String(body.id);
       const existing = await prisma.gDRecord.findUnique({ where: { id: idStr } });

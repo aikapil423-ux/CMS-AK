@@ -1,0 +1,1 @@
+ALTER TYPE "SystemRole" ADD VALUE 'MM';

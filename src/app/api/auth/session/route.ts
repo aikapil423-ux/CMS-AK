@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import {issueSession,sessionUser,sessionPrincipal,viewableOfficer,developerAdminUser,validLogin,sameOrigin,demoEnabled} from '@/lib/serverSession';
+import {issueSession,sessionUser,sessionPrincipal,viewableOfficer,developerAdminUser,validLogin,sameOrigin,demoEnabled,demoPersonasEnabled,usesDemoSession} from '@/lib/serverSession';
 export const runtime='nodejs';
 const cookieOptions=(req:Request)=>({httpOnly:true,sameSite:'strict' as const,secure:req.url.startsWith('https://'),path:'/',maxAge:8*3600});
 export async function GET(req:Request){
   const principal=await sessionPrincipal(req);
   const user=await sessionUser(req);
   const viewAsActive=Boolean(principal&&principal.userId==='cms_developer_admin'&&principal.viewAs&&user&&user.id!=='cms_developer_admin');
-  return NextResponse.json({user,sessionUser:viewAsActive?developerAdminUser():user,demoEnabled:demoEnabled(),viewAsActive},{status:user?200:401,headers:{'Cache-Control':'no-store'}});
+  return NextResponse.json({user,sessionUser:viewAsActive?developerAdminUser():user,demoEnabled:demoPersonasEnabled(),officerPickerEnabled:demoEnabled(),viewAsActive},{status:user?200:401,headers:{'Cache-Control':'no-store'}});
 }
 export async function POST(req:Request){
   if(!sameOrigin(req))return NextResponse.json({error:'Invalid origin'},{status:403});
@@ -32,7 +32,7 @@ export async function POST(req:Request){
   const user = await validLogin(b.pno||'',b.pin||'');
   if(!user)return NextResponse.json({error:'Invalid PNO or PIN. Production login must be configured.'},{status:401});
   if(b.station && b.station !== user.stationName)return NextResponse.json({error:'Selected station does not match your assignment.'},{status:403});
-  const response=NextResponse.json({user,sessionUser:user,viewAsActive:false});response.cookies.set('cms_session',issueSession(user.id, undefined, !user.unitId && user.id !== 'cms_developer_admin'),cookieOptions(req));return response;
+  const response=NextResponse.json({user,sessionUser:user,viewAsActive:false});response.cookies.set('cms_session',issueSession(user.id, undefined, usesDemoSession(user)),cookieOptions(req));return response;
   }catch{return NextResponse.json({error:'Invalid login request'},{status:400});}
 }
 export async function DELETE(req:Request){if(!sameOrigin(req))return NextResponse.json({error:'Invalid origin'},{status:403});const r=NextResponse.json({success:true});r.cookies.set('cms_session','',{httpOnly:true,path:'/',maxAge:0});return r;}

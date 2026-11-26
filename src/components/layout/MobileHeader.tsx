@@ -1,5 +1,6 @@
 "use client";
 
+import { isMhcOrMmRole } from "@/lib/officerRoles";
 import React, { useState } from "react";
 import Link from "next/link";
 import { canRegisterFir } from "@/lib/firIntegrity";
@@ -34,7 +35,7 @@ export function MobileHeader() {
   const isReports = pathname.startsWith("/reports");
   const isProsecution = pathname.startsWith("/prosecution");
 
-  const isMhc = currentUser?.role === "MHC_GD_INCHARGE";
+  const isMhc = isMhcOrMmRole(currentUser?.role);
   const isSho = currentUser?.role === "SHO" || currentUser?.id === "usr_sho_1";
   const isSuperior = currentUser?.role === "DSP_SUBDIV" || currentUser?.role === "SP_DISTRICT" || currentUser?.role === "SUPER_ADMIN";
   const canRegisterComplaint = isMhc || isSho || isSuperior;

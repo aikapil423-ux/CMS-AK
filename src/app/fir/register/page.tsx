@@ -1,5 +1,6 @@
 "use client";
 
+import { isMhcOrMmRole } from "@/lib/officerRoles";
 import React, { useState, useEffect, useRef, Suspense, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { canRegisterFir } from "@/lib/firIntegrity";
@@ -192,7 +193,7 @@ function RegisterFIRForm({ onReset }: { onReset: () => void }) {
   const complaintIdParam = searchParams.get("complaintId");
   const gdNumberParam = searchParams.get("gdNumber");
 
-  const isMhc = currentUser.role === "MHC_GD_INCHARGE";
+  const isMhc = isMhcOrMmRole(currentUser.role);
   const isSuperior = currentUser ? (currentUser.role === "DSP_SUBDIV" || currentUser.role === "SP_DISTRICT" || currentUser.role === "SUPER_ADMIN") : false;
   const isSho = currentUser ? ((currentUser.role === "SHO" || currentUser.id === "usr_sho_1" || isSuperior) && !isMhc) : false;
 

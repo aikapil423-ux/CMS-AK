@@ -8,6 +8,7 @@ const globals = globalThis as typeof globalThis & { cmsSessionSecret?: string };
 // An operational deployment must set DISABLE_DEMO_LOGIN=true; then demo cards, the demo PIN
 // and the one-click developer admin are all disabled and real credentials are required.
 export const demoEnabled = () => process.env.DISABLE_DEMO_LOGIN !== 'true';
+export const demoPersonasEnabled = () => demoEnabled() && process.env.CMS_DISABLE_DEMO_PERSONAS !== 'true';
 
 function secret() {
   const configured = process.env.CMS_SESSION_SECRET;
@@ -74,8 +75,14 @@ export async function sessionPrincipal(req: Request): Promise<{ userId: string; 
 
 // Officer IDs the Developer Admin may enter with their own session — every role is
 // viewable, including the SP office; only the developer identity itself is excluded.
+const accountMasterSessions = new WeakSet<UserSession>();
+
+export function usesDemoSession(user: UserSession): boolean {
+  return user.id !== 'cms_developer_admin' && (accountMasterSessions.has(user) || !user.unitId);
+}
+
 function masterAccountToSession(acc: any): UserSession {
-  return {
+  const user: UserSession = {
     id: acc.id,
     pno: acc.pno,
     name: acc.fullName,
@@ -90,6 +97,8 @@ function masterAccountToSession(acc: any): UserSession {
     unitId: acc.assignedUnitId,
     jurisdictionUnits: acc.authorizedPoliceStations,
   };
+  accountMasterSessions.add(user);
+  return user;
 }
 
 export async function viewableOfficer(id: string): Promise<UserSession | null> {
@@ -100,7 +109,7 @@ export async function viewableOfficer(id: string): Promise<UserSession | null> {
       const acc = await getAccountById(id);
       if (acc && acc.status === 'ACTIVE') return masterAccountToSession(acc);
     } catch {}
-    const demo = DEMO_USERS.find(user => user.id === id);
+    const demo = demoPersonasEnabled() && DEMO_USERS.find(user => user.id === id);
     if (demo) return demo;
   }
   const { prisma } = await import('@/lib/prisma');
@@ -116,7 +125,7 @@ async function baseSessionUser(userId: string, demo: boolean): Promise<UserSessi
       const acc = await getAccountById(userId);
       if (acc && acc.status === 'ACTIVE') return masterAccountToSession(acc);
     } catch {}
-    return DEMO_USERS.find(user => user.id === userId) ?? null;
+    return demoPersonasEnabled() ? DEMO_USERS.find(user => user.id === userId) ?? null : null;
   }
   const { prisma } = await import('@/lib/prisma');
   const user = await prisma.user.findUnique({ where: { id: userId }, include: { unit: true } });
@@ -149,7 +158,7 @@ export async function sessionUser(req: Request): Promise<UserSession | null> {
 export async function validLogin(pno: string, pin: string): Promise<UserSession | null> {
   if (pno.trim().toUpperCase() === 'DEV-ADMIN') {
     // Demo mode: one-click developer access. Operational deployments still require the configured password.
-    if (demoEnabled() && pin === '123456') return developerAdminUser();
+    if (demoPersonasEnabled() && pin === '123456') return developerAdminUser();
     const password = process.env.CMS_DEVELOPER_ADMIN_PASSWORD;
     if (!password) return null;
     const supplied = createHmac('sha256', secret()).update(pin).digest();
@@ -157,7 +166,7 @@ export async function validLogin(pno: string, pin: string): Promise<UserSession 
     return timingSafeEqual(supplied, expected) ? developerAdminUser() : null;
   }
   // Test personas must work even when the VM database has not been seeded.
-  if (demoEnabled() && pin === '123456') {
+  if (demoPersonasEnabled() && pin === '123456') {
     const demo = DEMO_USERS.find(candidate => candidate.pno.toUpperCase() === pno.trim().toUpperCase());
     if (demo) return demo;
   }
@@ -172,8 +181,7 @@ export async function validLogin(pno: string, pin: string): Promise<UserSession 
             const match = timingSafeEqual(scryptSync(pin, salt, 64), Buffer.from(hash, 'hex'));
             if (match) return masterAccountToSession(acc);
           }
-        }
-        if (pin === '123456' || pin === acc.plainPinSample) {
+        } else if (pin !== '123456' && pin === acc.plainPinSample) {
           return masterAccountToSession(acc);
         }
       }
@@ -186,7 +194,7 @@ export async function validLogin(pno: string, pin: string): Promise<UserSession 
     if (extra || !salt || !/^[a-f0-9]{128}$/.test(hash ?? '')) return null;
     return timingSafeEqual(scryptSync(pin, salt, 64), Buffer.from(hash, 'hex')) ? officerSession(user) : null;
   }
-  if (!demoEnabled() || pin !== '123456') return null;
+  if (!demoPersonasEnabled() || pin !== '123456') return null;
   return DEMO_USERS.find(candidate => candidate.pno.toUpperCase() === pno.trim().toUpperCase()) ?? null;
 }
 

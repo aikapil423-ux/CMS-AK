@@ -1,3 +1,4 @@
+import { isMhcOrMmRole } from "@/lib/officerRoles";
 import { ComplaintItem, ComplaintDocumentItem, ComplaintEvidenceAttachment, UserSession } from "@/types";
 import { ComplaintService } from "./complaintService";
 import { type ProcessedComplaintDocumentRecord, complaintAutoFillService } from "./complaintAutoFillService";
@@ -92,7 +93,7 @@ export function getComplaintShortTitle(c: ComplaintItem): string {
 export async function getAuthorizedComplaintsForUser(user: UserSession): Promise<ComplaintItem[]> {
   const isSupervisory =
     user.role === "SHO" ||
-    user.role === "MHC_GD_INCHARGE" ||
+    isMhcOrMmRole(user.role) ||
     user.role === "DSP_SUBDIV" ||
     user.role === "SP_DISTRICT" ||
     user.role === "SUPER_ADMIN" ||

@@ -1,5 +1,6 @@
 "use client";
 
+import { isMhcOrMmRole } from "@/lib/officerRoles";
 import { useLanguage } from "@/context/LanguageContext";
 
 import React, { useState, useEffect, useMemo, useRef, Suspense } from "react";
@@ -120,7 +121,7 @@ function FIRRegisterPageContent() {
     currentUser.role === "DSP_SUBDIV" ||
     currentUser.role === "SP_DISTRICT" ||
     currentUser.role === "SUPER_ADMIN";
-  const isMhc = currentUser.role === "MHC_GD_INCHARGE";
+  const isMhc = isMhcOrMmRole(currentUser.role);
   const isIo = currentUser.role === "ENQUIRY_OFFICER" || (!isSho && !isMhc && !isSuperior);
 
   // Column visibility

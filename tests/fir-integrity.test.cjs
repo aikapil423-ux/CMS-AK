@@ -9,14 +9,30 @@ function loadModule(file, context = {}) {
   const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText;
-  vm.runInNewContext(code, { exports, require: () => ({ MOCK_ENQUIRY_OFFICERS: [
+  vm.runInNewContext(code, { exports, require: (name) => name === '@/lib/officerRoles'
+    ? loadModule('src/lib/officerRoles.ts')
+    : ({ MOCK_ENQUIRY_OFFICERS: [
     { id: 'eo_1', name: 'SI Vikram Singh', pno: 'HR-07182930', rank: 'SI' },
     { id: 'eo_2', name: 'ASI Ramesh Chander', pno: 'HR-06281923', rank: 'ASI' },
   ] }), ...context });
   return exports;
 }
 
-const { isUserAssignedIo, isFirVisibleToUser, nextFirNumber, firPendingDays } = loadModule('src/lib/firIntegrity.ts');
+const { isUserAssignedIo, isFirVisibleToUser, nextFirNumber, firPendingDays, canRegisterFir, canManageLegacyChallan } = loadModule('src/lib/firIntegrity.ts');
+
+test('MM has the same station-scoped FIR permissions as MHC', () => {
+  const station = { id: 'chandnibagh', name: 'PS Chandnibagh', district: 'Panipat' };
+  const ownFir = { policeStation: station.name, district: station.district, custodyUnit: station };
+  const otherFir = { ...ownFir, custodyUnit: { ...station, id: 'other', name: 'PS City Panipat' } };
+  for (const role of ['MHC_GD_INCHARGE', 'MM']) {
+    const user = { id: role, role, unitId: station.id, district: station.district, stationName: station.name };
+    assert.equal(canRegisterFir(role), true);
+    assert.equal(isFirVisibleToUser(user, ownFir), true);
+    assert.equal(isFirVisibleToUser(user, otherFir), false);
+    assert.equal(canManageLegacyChallan(user, ownFir, 'submit'), true);
+    assert.equal(canManageLegacyChallan(user, ownFir, 'prepare'), false);
+  }
+});
 
 test('SHO sees only FIRs from their assigned police station', () => {
   const shoPanipat = { id: 'usr_sho_1', name: 'Inspector Rajesh Kumar', role: 'SHO', stationName: 'PS City Panipat' };

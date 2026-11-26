@@ -1,5 +1,6 @@
 "use client";
 
+import { isMhcOrMmRole } from "@/lib/officerRoles";
 import React from "react";
 import Link from "next/link";
 import { canRegisterFir } from "@/lib/firIntegrity";
@@ -46,7 +47,7 @@ export function MobileBottomNav() {
   const isActs = pathname.startsWith("/acts-sections");
 
   // Only MHC, SHO, and Superior officers can register complaints / FIR
-  const isMhc = currentUser?.role === "MHC_GD_INCHARGE";
+  const isMhc = isMhcOrMmRole(currentUser?.role);
   const isSho = currentUser?.role === "SHO" || currentUser?.id === "usr_sho_1";
   const isSuperior = currentUser?.role === "DSP_SUBDIV" || currentUser?.role === "SP_DISTRICT" || currentUser?.role === "SUPER_ADMIN";
   const canRegisterComplaint = isMhc || isSho || isSuperior;

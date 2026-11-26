@@ -1,9 +1,10 @@
+import { isMhcOrMmRole } from "@/lib/officerRoles";
 import type { TransferableRecord } from './recordCustody';
 import type { FIRItem } from '@/types';
 import { MOCK_ENQUIRY_OFFICERS } from '@/lib/mockData';
 
 export function canRegisterFir(role?: string): boolean {
-  return role !== undefined && ['SHO', 'MHC_GD_INCHARGE', 'SUPER_ADMIN', 'SP_DISTRICT', 'DSP_SUBDIV'].includes(role);
+  return role !== undefined && ['SHO', 'MHC_GD_INCHARGE', 'MM', 'SUPER_ADMIN', 'SP_DISTRICT', 'DSP_SUBDIV'].includes(role);
 }
 
 export function canManageLegacyChallan(
@@ -14,7 +15,7 @@ export function canManageLegacyChallan(
   if (!isFirVisibleToUser(user, fir)) return false;
   if (['SUPER_ADMIN', 'SHO', 'SP_DISTRICT', 'DSP_SUBDIV', 'ASP_HQ'].includes(user.role || '')) return true;
   if (user.role === 'ENQUIRY_OFFICER' && isUserAssignedIo(user, fir)) return true;
-  return action === 'submit' && user.role === 'MHC_GD_INCHARGE';
+  return action === 'submit' && isMhcOrMmRole(user.role);
 }
 
 export function nextFirNumber(
@@ -81,7 +82,7 @@ export function isFirVisibleToUser(
   // Station-level personnel: SHO and MHC see every record of their station.
   const isStationStaff =
     role === "SHO" ||
-    role === "MHC_GD_INCHARGE" ||
+    isMhcOrMmRole(role) ||
     user.id === "usr_sho_1" ||
     user.id === "usr_mhc_1";
 

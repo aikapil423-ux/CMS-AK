@@ -1,5 +1,6 @@
 "use client";
 
+import { isMhcOrMmRole } from "@/lib/officerRoles";
 import { useLanguage } from "@/context/LanguageContext";
 import { FinalReportShoReview } from "@/components/fir/FinalReportShoReview";
 
@@ -347,7 +348,7 @@ export default function FIRProfilePage() {
   useEscapeKey(generateDocDropdownOpen, () => setGenerateDocDropdownOpen(false));
   useEscapeKey(generateReportDropdownOpen, () => setGenerateReportDropdownOpen(false));
 
-  const isMhc = currentUser.role === "MHC_GD_INCHARGE";
+  const isMhc = isMhcOrMmRole(currentUser.role);
   const isSuperior =
     currentUser.role === "DSP_SUBDIV" ||
     currentUser.role === "SP_DISTRICT" ||

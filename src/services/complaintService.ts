@@ -1,3 +1,4 @@
+import { isMhcOrMmRole } from "@/lib/officerRoles";
 import {computeDaysPending,stabilizeComplaint} from '@/lib/complaintIntegrity';
 import {getStationComplaintCode,nextComplaintNumber} from '@/lib/complaintNumber';
 export {computeDaysPending} from '@/lib/complaintIntegrity';
@@ -263,7 +264,7 @@ export const ComplaintService = {
       filter?.viewerRole === "ENQUIRY_OFFICER" ||
       (Boolean(filter?.assignedEo) &&
         filter?.viewerRole !== "SHO" &&
-        filter?.viewerRole !== "MHC_GD_INCHARGE" &&
+        !isMhcOrMmRole(filter?.viewerRole) &&
         filter?.viewerRole !== "DSP_SUBDIV" &&
         filter?.viewerRole !== "SP_DISTRICT" &&
         filter?.viewerRole !== "SUPER_ADMIN");

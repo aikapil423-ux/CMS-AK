@@ -41,6 +41,7 @@ enum SystemRole {
   ENQUIRY_OFFICER
   READER_TO_SHO
   VIEWER_AUDITOR
+  MM
 }
 
 enum UserStatus {

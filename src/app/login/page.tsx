@@ -7,13 +7,45 @@ import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { DEMO_USERS } from "@/lib/mockData";
 
+type OfficerCard = {
+  id: string;
+  name: string;
+  roleDisplay: string;
+  district: string;
+  stationName: string;
+};
+
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, isAuthenticated, sessionUser, enterViewAs } = useAuth();
   const [demo, setDemo] = useState(false);
+  const [pickerEnabled, setPickerEnabled] = useState(false);
+  const [officers, setOfficers] = useState<OfficerCard[]>([]);
+  const [loadingOfficers, setLoadingOfficers] = useState(true);
+  const [officerLoadError, setOfficerLoadError] = useState(false);
+  const [selectedStation, setSelectedStation] = useState("");
+  const pinInput = React.useRef<HTMLInputElement>(null);
+  const isDeveloper = isAuthenticated && sessionUser.id === "cms_developer_admin";
+  const showOfficerPicker = pickerEnabled && !demo;
   React.useEffect(() => {
-    fetch("/api/auth/session", {cache:"no-store"}).then(r=>r.json()).then(b=>setDemo(b.demoEnabled === true)).catch(()=>setDemo(false));
+    fetch("/api/auth/session", { cache: "no-store" }).then(response => response.json()).then(data => {
+      setDemo(data.demoEnabled === true);
+      setPickerEnabled(data.officerPickerEnabled === true);
+    }).catch(() => {});
   }, []);
+  React.useEffect(() => {
+    if (!isDeveloper || !showOfficerPicker) return;
+    const controller = new AbortController();
+    fetch("/api/admin/accounts?view=officer-switcher", { signal: controller.signal })
+      .then(async response => {
+        if (!response.ok) throw new Error("Could not load officer accounts.");
+        const data = await response.json();
+        if (!controller.signal.aborted) setOfficers(data.officers);
+      })
+      .catch(() => { if (!controller.signal.aborted) setOfficerLoadError(true); })
+      .finally(() => { if (!controller.signal.aborted) setLoadingOfficers(false); });
+    return () => controller.abort();
+  }, [isDeveloper, showOfficerPicker]);
   const [pno, setPno] = useState("");
   const [pin, setPin] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -28,14 +60,49 @@ export default function LoginPage() {
   const personaList = React.useMemo(() => {
     return DEMO_USERS.filter((u) => u.district === selectedDistrict);
   }, [selectedDistrict]);
+  const officerDistricts = [...new Set(officers.map(officer => officer.district))];
+  const officerDistrict = officerDistricts.includes(selectedDistrict) ? selectedDistrict : officerDistricts[0];
+  const districtOfficers = officers.filter(officer => officer.district === officerDistrict);
+  const stations = [...new Set(districtOfficers.map(officer => officer.stationName))];
+  const station = stations.includes(selectedStation) ? selectedStation : stations.length === 1 ? stations[0] : "";
+  const visibleOfficers = districtOfficers.filter(officer => !station || officer.stationName === station);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); setError(null); setIsLoading(true);
-    const ok = await login(pno, pin);
+  const signIn = async (username: string, password: string) => {
+    setError(null);
+    setIsLoading(true);
+    const ok = await login(username, password);
     setIsLoading(false);
-    if(ok)router.push('/');else setError((window as any).__lastLoginError || (pin === '123456' && !demo
+    if(ok){
+      setPin("");
+      if (!showOfficerPicker || username.trim().toUpperCase() !== "DEV-ADMIN") router.push('/');
+    }else setError((window as any).__lastLoginError || (password === '123456' && !demo
       ? 'Demo login is disabled on this server. Sign in with your assigned PNO and password.'
       : 'Invalid PNO or PIN. Please verify your credentials.'));
+  };
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const fields = new FormData(event.currentTarget);
+    void signIn(String(fields.get("username") ?? ""), String(fields.get("password") ?? ""));
+  };
+
+  const openDeveloperRoster = () => {
+    if (isDeveloper) {
+      router.push("/");
+      return;
+    }
+    const form = pinInput.current?.form;
+    const fields = form ? new FormData(form) : null;
+    const username = String(fields?.get("username") ?? "");
+    const password = String(fields?.get("password") ?? "");
+    if (username.trim().toUpperCase() === "DEV-ADMIN" && password) {
+      void signIn("DEV-ADMIN", password);
+      return;
+    }
+    setPno("DEV-ADMIN");
+    setPin("");
+    setError(null);
+    pinInput.current?.focus();
   };
   const handleQuickDemoLogin = async (userId:string) => {
     if (!demo || isLoading) return;
@@ -48,6 +115,15 @@ export default function LoginPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleOfficerView = async (officer: OfficerCard) => {
+    setError(null);
+    setIsLoading(true);
+    const ok = await enterViewAs(officer);
+    setIsLoading(false);
+    if (ok) router.push("/");
+    else setError("Officer account could not be opened.");
   };
 
   const handleDeveloperLogin = async () => {
@@ -79,7 +155,7 @@ export default function LoginPage() {
         </div>
 
         {/* Two-Column Split Layout: Half Left (Login Form) & Half Right (Demo Personas) */}
-        <div className={`grid grid-cols-1 ${demo ? 'lg:grid-cols-2' : 'max-w-md mx-auto'} gap-6 items-stretch`}>
+        <div className={`grid grid-cols-1 ${demo || showOfficerPicker ? 'lg:grid-cols-2' : 'max-w-md mx-auto'} gap-6 items-stretch`}>
           {/* Half Left: Police Personnel Login Card */}
           <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6 sm:p-7 text-slate-900 flex flex-col justify-between">
             <div>
@@ -102,12 +178,15 @@ export default function LoginPage() {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label htmlFor="login-pno" className="block text-xs font-semibold text-slate-700 mb-1">
                     Permanent Police Number (PNO)
                   </label>
                   <div className="relative">
                     <User className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                     <input
+                      id="login-pno"
+                      name="username"
+                      autoComplete="username"
                       type="text"
                       value={pno}
                       onChange={(e) => setPno(e.target.value)}
@@ -119,12 +198,16 @@ export default function LoginPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label htmlFor="login-password" className="block text-xs font-semibold text-slate-700 mb-1">
                     Security PIN / Password
                   </label>
                   <div className="relative">
                     <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                     <input
+                      ref={pinInput}
+                      id="login-password"
+                      name="password"
+                      autoComplete="current-password"
                       type={showPassword ? "text" : "password"}
                       value={pin}
                       onChange={(e) => setPin(e.target.value)}
@@ -166,6 +249,62 @@ export default function LoginPage() {
               <span>CCTNS / ICJS Integrated</span>
             </div>
           </div>
+
+          {showOfficerPicker && (
+            <section className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-6 text-slate-900 shadow-lg sm:p-7">
+              <div>
+                <div className="mb-3 flex items-center justify-between border-b border-slate-100 pb-3">
+                  <h2 className="text-base font-bold">Officer Login by District</h2>
+                  <span className="rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">1-Click Login</span>
+                </div>
+                {isDeveloper ? (
+                  <>
+                    <div className="mb-3 flex flex-wrap gap-2">
+                      {officerDistricts.map(district => (
+                        <button key={district} type="button" aria-pressed={district === officerDistrict}
+                          onClick={() => { setSelectedDistrict(district); setSelectedStation(""); }}
+                          className={`rounded-md px-2.5 py-1 text-xs font-semibold ${district === officerDistrict ? "bg-[#203c88] text-white" : "bg-slate-100 text-slate-700"}`}>
+                          {district}
+                        </button>
+                      ))}
+                    </div>
+                    {stations.length > 0 && (
+                      <select aria-label="Police station" value={station} onChange={event => setSelectedStation(event.target.value)}
+                        className="mb-3 w-full rounded-lg border border-slate-300 bg-slate-50 px-2.5 py-1.5 text-xs">
+                        {stations.length > 1 && <option value="">All police stations</option>}
+                        {stations.map(name => <option key={name} value={name}>{name}</option>)}
+                      </select>
+                    )}
+                    <div aria-label="Officer accounts" className="grid max-h-72 grid-cols-1 gap-1.5 overflow-y-auto pr-0.5">
+                      {visibleOfficers.map(officer => (
+                        <button key={officer.id} type="button" disabled={isLoading} onClick={() => handleOfficerView(officer)}
+                          className="flex w-full items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-left hover:border-blue-300 hover:bg-blue-50 disabled:opacity-60">
+                          <div>
+                            <p className="text-xs font-semibold text-slate-800">{officer.name}</p>
+                            <p className="mt-0.5 text-[10px] text-slate-500">{officer.roleDisplay}</p>
+                          </div>
+                          <ArrowRight className="ml-2 h-3.5 w-3.5 shrink-0 text-slate-400" />
+                        </button>
+                      ))}
+                    </div>
+                    {(loadingOfficers || officerLoadError || visibleOfficers.length === 0) && (
+                      <p role="status" className="text-xs text-slate-600">
+                        {loadingOfficers ? "Loading officer accounts…" : officerLoadError ? "Could not load officer accounts. Refresh to try again." : "No officer accounts found."}
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-xs text-slate-600">Verify your Developer Admin password to unlock the station roster. Then click any officer to open their CMS view.</p>
+                )}
+              </div>
+              <button type="button" disabled={isLoading}
+                onClick={openDeveloperRoster}
+                className="mt-4 flex w-full items-center justify-between rounded-lg bg-slate-900 p-2.5 text-left text-xs font-semibold text-white hover:bg-slate-800">
+                {isDeveloper ? "Open Developer Admin dashboard" : "Developer Admin"}
+                <ArrowRight className="h-3.5 w-3.5 text-slate-300" />
+              </button>
+            </section>
+          )}
 
           {/* Half Right: Demo Personas by District & Developer Access Card */}
           {demo && (

@@ -1,5 +1,6 @@
 "use client";
 
+import { isMhcOrMmRole } from "@/lib/officerRoles";
 import React, { useState, useRef, useEffect } from "react";
 import { UserCog } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -12,7 +13,12 @@ interface TopBarPersonaSwitcherProps {
   isMobile?: boolean;
 }
 
-function getRoleBadge(user: UserSession): { badge: string; colorClass: string } {
+type SwitchableOfficer = Pick<UserSession, "id" | "name" | "district" | "stationName"> & {
+  rank: string;
+  role: string;
+};
+
+function getRoleBadge(user: Pick<SwitchableOfficer, "role" | "rank">): { badge: string; colorClass: string } {
   if (user.role === "SP_DISTRICT" || user.rank === "SUPERINTENDENT_OF_POLICE") {
     return { badge: "SP", colorClass: "bg-indigo-50 text-indigo-700 border-indigo-200" };
   }
@@ -25,8 +31,8 @@ function getRoleBadge(user: UserSession): { badge: string; colorClass: string } 
   if (user.role === "SHO") {
     return { badge: "SHO", colorClass: "bg-red-50 text-red-700 border-red-200" };
   }
-  if (user.role === "MHC_GD_INCHARGE") {
-    return { badge: "MHC", colorClass: "bg-emerald-50 text-emerald-700 border-emerald-200" };
+  if (isMhcOrMmRole(user.role)) {
+    return { badge: user.role === "MM" ? "MM" : "MHC", colorClass: "bg-emerald-50 text-emerald-700 border-emerald-200" };
   }
   if (user.role === "ENQUIRY_OFFICER") {
     if (user.rank === "INSPECTOR") {
@@ -54,15 +60,30 @@ export function TopBarPersonaSwitcher({ isMobile = false }: TopBarPersonaSwitche
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   const [selectedDistrict, setSelectedDistrict] = useState<string>("ALL");
-  const districts = React.useMemo(() => {
-    const list = Array.from(new Set(DEMO_USERS.map((u) => u.district)));
-    return ["ALL", ...list];
-  }, []);
+  const [selectedStation, setSelectedStation] = useState("");
+  const [officers, setOfficers] = useState<SwitchableOfficer[]>([]);
+  const isDeveloper = sessionUser.id === 'cms_developer_admin';
 
-  const filteredUsers = React.useMemo(() => {
-    if (selectedDistrict === "ALL") return DEMO_USERS;
-    return DEMO_USERS.filter((u) => u.district === selectedDistrict);
-  }, [selectedDistrict]);
+  useEffect(() => {
+    if (!isOpen || !isDeveloper) return;
+    const controller = new AbortController();
+    fetch("/api/admin/accounts?view=officer-switcher", { signal: controller.signal })
+      .then(response => response.ok ? response.json() : null)
+      .then(data => {
+        if (!data || controller.signal.aborted) return;
+        const roster = data.officers as SwitchableOfficer[];
+        const rosterIds = new Set(roster.map(officer => officer.id));
+        const demos = data.includeDemoPersonas ? DEMO_USERS.filter(officer => !rosterIds.has(officer.id)) : [];
+        setOfficers([...demos, ...roster]);
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [isOpen, isDeveloper]);
+
+  const districts = ["ALL", ...new Set(officers.map(officer => officer.district))];
+  const districtOfficers = officers.filter(officer => selectedDistrict === "ALL" || officer.district === selectedDistrict);
+  const stations = [...new Set(districtOfficers.map(officer => officer.stationName).filter(Boolean))].sort();
+  const filteredUsers = districtOfficers.filter(officer => !selectedStation || officer.stationName === selectedStation);
 
   // Close when clicking outside
   useEffect(() => {
@@ -99,7 +120,7 @@ export function TopBarPersonaSwitcher({ isMobile = false }: TopBarPersonaSwitche
 
   // Click an officer to enter their ID view with the developer's own session.
   // Clicking the officer currently being viewed returns to the developer's own ID.
-  const handleView = async (user: UserSession) => {
+  const handleView = async (user: SwitchableOfficer) => {
     if (pendingId) return;
     const isViewedNow = isViewAs && currentUser.id === user.id;
     setIsOpen(false);
@@ -113,7 +134,7 @@ export function TopBarPersonaSwitcher({ isMobile = false }: TopBarPersonaSwitche
   };
 
   const activeRoleInfo = getRoleBadge(currentUser);
-  if (sessionUser.id !== 'cms_developer_admin') return <span className="text-xs px-2" title={currentUser.pno}>{currentUser.name}</span>;
+  if (!isDeveloper) return <span className="text-xs px-2" title={currentUser.pno}>{currentUser.name}</span>;
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -159,7 +180,7 @@ export function TopBarPersonaSwitcher({ isMobile = false }: TopBarPersonaSwitche
                 : "Enter officer ID"}
             </span>
             <span className="text-[10px] text-slate-400 font-mono">
-              {DEMO_USERS.length} {isHindi ? "पद" : "Roles"}
+              {filteredUsers.length} {isHindi ? "अधिकारी" : "Officers"}
             </span>
           </div>
           <p className="px-3 pt-1.5 text-[10px] text-slate-400">
@@ -177,6 +198,7 @@ export function TopBarPersonaSwitcher({ isMobile = false }: TopBarPersonaSwitche
                 onClick={(e) => {
                   e.stopPropagation();
                   setSelectedDistrict(d);
+                  setSelectedStation("");
                 }}
                 className={cn(
                   "px-2.5 py-0.5 rounded-md font-medium whitespace-nowrap transition-colors shrink-0 cursor-pointer",
@@ -193,6 +215,18 @@ export function TopBarPersonaSwitcher({ isMobile = false }: TopBarPersonaSwitche
                 {d === "ALL" ? "All Districts" : d}
               </button>
             ))}
+          </div>
+
+          <div className="px-2 py-1.5">
+            <select
+              aria-label={isHindi ? "पुलिस थाना" : "Police station"}
+              value={selectedStation}
+              onChange={event => setSelectedStation(event.target.value)}
+              className="w-full rounded border border-slate-200 bg-white px-2 py-1 text-xs"
+            >
+              <option value="">{isHindi ? "सभी थाने" : "All stations"}</option>
+              {stations.map(station => <option key={station} value={station}>{station}</option>)}
+            </select>
           </div>
 
           {/* Minimalist List: Role badge + Name, click enters that officer's ID view */}

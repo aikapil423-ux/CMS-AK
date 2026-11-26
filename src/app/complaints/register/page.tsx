@@ -1,5 +1,6 @@
 "use client";
 
+import { isMhcOrMmRole } from "@/lib/officerRoles";
 import { recordedCalendarDate } from "@/lib/dataIntegrity";
 import { complaintRelationFromSource } from "@/lib/complaintRelation";
 import React, { useState, useRef, useEffect } from "react";
@@ -303,7 +304,7 @@ export default function RegisterComplaintPage() {
   const [voiceLang, setVoiceLang] = useState<"hi-IN" | "en-IN">("hi-IN");
 
   // Permissions: Only MHC, SHO, and Superior officers can register complaints
-  const isMhc = currentUser ? (currentUser.role === "MHC_GD_INCHARGE") : false;
+  const isMhc = currentUser ? (isMhcOrMmRole(currentUser.role)) : false;
   const isSuperior = currentUser ? (currentUser.role === "DSP_SUBDIV" || currentUser.role === "SP_DISTRICT" || currentUser.role === "SUPER_ADMIN") : false;
   const isSho = currentUser ? ((currentUser.role === "SHO" || currentUser.id === "usr_sho_1" || isSuperior) && !isMhc) : false;
   const canRegisterComplaint = isMhc || isSho || isSuperior;

@@ -1,5 +1,6 @@
 "use client";
 
+import { isMhcOrMmRole } from "@/lib/officerRoles";
 import { useLanguage } from "@/context/LanguageContext";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
@@ -187,7 +188,7 @@ function ComplaintListContent() {
 
   const isAllSelected = selectedStatuses.length === ALL_STATUS_KEYS.length;
 
-  const isMhc = currentUser.role === "MHC_GD_INCHARGE";
+  const isMhc = isMhcOrMmRole(currentUser.role);
   const isSho = currentUser.role === "SHO" || currentUser.id === "usr_sho_1";
   const isSuperior = currentUser.role === "DSP_SUBDIV" || currentUser.role === "SP_DISTRICT" || currentUser.role === "SUPER_ADMIN";
   const isEo = currentUser.role === "ENQUIRY_OFFICER" || (!isSho && !isMhc && !isSuperior);
