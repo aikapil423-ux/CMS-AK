@@ -25,6 +25,7 @@ export default function LoginPage() {
   const [loadingOfficers, setLoadingOfficers] = useState(true);
   const [officerLoadError, setOfficerLoadError] = useState(false);
   const [selectedStation, setSelectedStation] = useState("");
+  const [officerSearch, setOfficerSearch] = useState("");
   const pinInput = React.useRef<HTMLInputElement>(null);
   const isDeveloper = isAuthenticated && sessionUser.id === "cms_developer_admin";
   const showOfficerPicker = (pickerEnabled && !demo) || (localAutoAdmin && isDeveloper);
@@ -68,7 +69,11 @@ export default function LoginPage() {
   const districtOfficers = officers.filter(officer => officer.district === officerDistrict);
   const stations = [...new Set(districtOfficers.map(officer => officer.stationName))];
   const station = stations.includes(selectedStation) ? selectedStation : stations.length === 1 ? stations[0] : "";
-  const visibleOfficers = districtOfficers.filter(officer => !station || officer.stationName === station);
+  const searchTerm = officerSearch.trim().toLowerCase();
+  const visibleOfficers = districtOfficers.filter(officer =>
+    (!station || officer.stationName === station) &&
+    (!searchTerm || officer.name.toLowerCase().includes(searchTerm) || officer.roleDisplay.toLowerCase().includes(searchTerm))
+  );
 
   const signIn = async (username: string, password: string) => {
     setError(null);
@@ -269,14 +274,24 @@ export default function LoginPage() {
                   <span className="rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">1-Click Login</span>
                 </div>
                 <>
-                    <div className="mb-3 flex flex-wrap gap-2">
-                      {officerDistricts.map(district => (
-                        <button key={district} type="button" aria-pressed={district === officerDistrict}
-                          onClick={() => { setSelectedDistrict(district); setSelectedStation(""); }}
-                          className={`rounded-md px-2.5 py-1 text-xs font-semibold ${district === officerDistrict ? "bg-[#203c88] text-white" : "bg-slate-100 text-slate-700"}`}>
-                          {district}
-                        </button>
-                      ))}
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-wrap gap-2">
+                        {officerDistricts.map(district => (
+                          <button key={district} type="button" aria-pressed={district === officerDistrict}
+                            onClick={() => { setSelectedDistrict(district); setSelectedStation(""); }}
+                            className={`rounded-md px-2.5 py-1 text-xs font-semibold ${district === officerDistrict ? "bg-[#203c88] text-white" : "bg-slate-100 text-slate-700"}`}>
+                            {district}
+                          </button>
+                        ))}
+                      </div>
+                      <input
+                        type="search"
+                        aria-label="Search officer accounts"
+                        value={officerSearch}
+                        onChange={event => setOfficerSearch(event.target.value)}
+                        placeholder="Search officer or role..."
+                        className="w-full sm:w-48 rounded-lg border border-slate-300 bg-slate-50 px-2.5 py-1 text-xs text-slate-800 placeholder:text-slate-400 focus:border-[#203c88] focus:bg-white focus:outline-none"
+                      />
                     </div>
                     {stations.length > 0 && (
                       <select aria-label="Police station" value={station} onChange={event => setSelectedStation(event.target.value)}

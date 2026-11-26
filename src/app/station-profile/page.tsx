@@ -311,7 +311,7 @@ export default function StationProfilePage() {
             {currentUser.stationName}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500">
-            Kurukshetra Police District • Ambala Range • Haryana Police
+            Panipat Police District • Karnal Range • Haryana Police
           </p>
         </div>
 

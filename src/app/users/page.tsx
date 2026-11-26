@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { CheckCircle, Eye, X } from "lucide-react";
-import { DEMO_USERS } from "@/lib/mockData";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
@@ -12,12 +11,20 @@ export default function UsersDirectoryPage() {
   const { currentUser, sessionUser, isViewAs, enterViewAs, exitViewAs } = useAuth();
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [officers, setOfficers] = useState<any[]>([]);
   const isDeveloper = sessionUser.id === "cms_developer_admin";
+
+  useEffect(() => {
+    fetch("/api/admin/accounts?view=officer-switcher", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : { officers: [] }))
+      .then((data) => setOfficers(Array.isArray(data.officers) ? data.officers : []))
+      .catch(() => setOfficers([]));
+  }, []);
 
   const enter = async (userId: string) => {
     if (pendingId) return;
     setPendingId(userId);
-    const target = DEMO_USERS.find((u) => u.id === userId);
+    const target = officers.find((u) => u.id === userId);
     if (target) await enterViewAs(target);
     setPendingId(null);
   };
@@ -41,7 +48,7 @@ export default function UsersDirectoryPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {DEMO_USERS.map((user) => {
+        {officers.map((user) => {
           const isCurrent = !isViewAs && currentUser.id === user.id;
           const isViewed = isViewAs && currentUser.id === user.id;
           const isPreviewing = previewId === user.id;
