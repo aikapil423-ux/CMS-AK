@@ -89,22 +89,31 @@ export function validateFinalReport(data: FinalReportData): string[] {
 
 const escape = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 export function toStatutoryFinalReport(fir: FIRItem, data: FinalReportData) {
-  const actRows = [{ sNo: 1, act: fir.majorAct || '—', sections: fir.actsAndSections || '—' }];
+  const actRows = fir.actsAndSectionsList?.length
+    ? fir.actsAndSectionsList.map(({ act, sections }, index) => ({ sNo: index + 1, act, sections }))
+    : [{ sNo: 1, act: fir.majorAct || '—', sections: fir.actsAndSections || '—' }];
   const fmtDmy = (val?: string) => { const s = String(val || '').trim(); const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? `${m[3]}/${m[2]}/${m[1]}` : s; };
   return {
     court: `${data.courtType} — ${data.judgeName}`, district: fir.district, ps: fir.policeStation,
     year: String(fir.firYear || ''), firNo: fir.firNumber, firDate: fmtDmy(fir.firDate),
     reportNo: data.reportNo, reportDate: fmtDmy(data.reportDate), actRows, finalFormType: data.formType === 'CHARGESHEET' ? data.formType : [data.formType, [data.finalReportReason, data.finalReportReasonDetails].filter(Boolean).join(': ')].filter(Boolean).join(' — '),
-    ifFirUnoccurred: '—', ifChargeSheet: data.formType === 'CHARGESHEET' ? data.chargeSheetType : '—', ioName: fir.assignedIoName || '—', ioRank: fir.assignedIoRank || '—', ioNo: '—',
+    ifFirUnoccurred: '—', ifChargeSheet: data.formType === 'CHARGESHEET' ? data.chargeSheetType : '—', ioName: fir.assignedIoName || '—', ioRank: fir.assignedIoRank || '—', ioNo: fir.assignedIoPno || fir.assignedIoBeltNumber || '—',
     complainantName: fir.complainantName, complainantFather: fir.complainantRelativeName || fir.complainantFatherSpouse || '—',
     propertyRows: data.properties.map((p, i) => ({ sNo: i + 1, propertyDescription: [p.type, p.description].filter(Boolean).join(': ') || '—', estimatedValue: p.value, psPropertyRegisterNo: '', fromWhomWhereRecovered: p.recoveredFrom, disposal: p.disposal })),
     accusedPersonList: data.accused.filter(a => a.action === 'ChargeSheeted').map((a, i) => {
       const details = a.chargesheetDetails, person = details?.personal.information, bailer = details?.bailer.information;
       const addressText = (value?: Record<string, string>) => value ? Object.values(value).filter(Boolean).join(', ') : '';
+      const detailedAddresses = details ? (['presentAddress', 'permanentAddress'] as const).map((kind, index) => ({
+        sNo: index + 1,
+        addressType: kind === 'presentAddress' ? 'Present' : 'Permanent',
+        address: addressText(details.personal[kind]),
+        whetherVerified: details.general.verified,
+      })).filter(row => row.address) : [];
+      const sourceAccused = fir.accusedList.find(x => x.id === a.accusedId) ?? fir.accusedList.find(x => !x.id && x.name === a.name);
       return {
       sNo: i + 1, name: a.name, whetherVerified: details?.general.verified || '', husbandFatherName: person?.relativeName || a.relativeName,
       dateOrYearOfBirth: person?.dob || person?.birthYear || person?.ageYears || '', sex: person?.gender || '', nationality: person?.nationality || '', passportNo: details?.personal.identifications.find(id => id.type.toLowerCase() === 'passport')?.number || '', passportDateOfIssue: person?.passportIssueDate || '', passportPlaceOfIssue: person?.passportIssuePlace || '', religion: person?.religion || '', scStObc: person?.category || '', occupation: person?.occupation || '',
-      addresses: details ? ['presentAddress', 'permanentAddress'].map((kind, index) => ({ sNo: index + 1, addressType: kind === 'presentAddress' ? 'Present' : 'Permanent', address: addressText(details.personal[kind as 'presentAddress' | 'permanentAddress']), whetherVerified: details.general.verified })) : [{sNo: 1, addressType: '', address: fir.accusedList.find(x => x.id === a.accusedId || x.name === a.name)?.address || '', whetherVerified: ''}],
+      addresses: detailedAddresses.length ? detailedAddresses : [{ sNo: 1, addressType: '', address: sourceAccused?.address || '', whetherVerified: '' }],
       regularCriminalNo: details?.general.regularCrimeNo || '', dateOfArrest: details?.general.arrestDate || '', dateOfReleaseOnBail: details?.general.bailDate || '', dateForwardedToCourt: details?.general.courtForwardedDate || '', underActsSections: details ? details.acts.filter(act => act.selected).map((act, index) => ({ sNo: index + 1, act: act.act, sections: act.sections })) : actRows,
       bailerName: bailer ? [bailer.firstName, bailer.middleName, bailer.lastName].filter(Boolean).join(' ') : '', bailerFatherHusbandName: bailer?.relativeName || '', bailerOccupation: bailer?.occupation || '', bailerAddresses: details ? [{ sNo: 1, addressType: 'Present', address: addressText(details.bailer.presentAddress) }] : [],
       identificationDob: person?.dob || '', identificationUid: person?.uid || '', otherIdProofs: details?.personal.identifications.map((id, index) => ({ sNo: index + 1, idType: id.type, idNumber: id.number })) || [],

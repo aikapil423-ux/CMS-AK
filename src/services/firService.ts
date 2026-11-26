@@ -1,3 +1,4 @@
+import { getTodayIsoIST, getTime24IST } from "@/lib/utils";
 import {
   FIRItem,
   FIRStatus,
@@ -1141,8 +1142,8 @@ export const firService = {
     }
 
     const now = new Date();
-    const dateStr = now.toISOString().split("T")[0];
-    const timeStr = now.toTimeString().slice(0, 5);
+    const dateStr = getTodayIsoIST(now);
+    const timeStr = getTime24IST(now);
 
     const newFir: FIRItem = {
       id: input.id || `fir-${Date.now()}-${Math.random().toString(36).slice(2,10)}`,
@@ -1367,8 +1368,8 @@ export const firService = {
       }
     }
 
-    // Always persist to dedicated localStorage backup key to guarantee 100% persistence on page refresh
-    if (typeof window !== "undefined" && window.localStorage) {
+    // The server-managed flow persists the confirmed FIR through its repository.
+    if (!serverManaged && typeof window !== "undefined" && window.localStorage) {
       try {
         window.localStorage.setItem(
           `haryana_police_cms_fir_crimedetails_${firId}`,
@@ -1420,8 +1421,8 @@ export const firService = {
     }
 
     const now = new Date();
-    const dateStr = now.toISOString().split("T")[0];
-    const timeStr = now.toTimeString().slice(0, 5);
+    const dateStr = getTodayIsoIST(now);
+    const timeStr = getTime24IST(now);
 
     // Initial vs Supplementary:
     // Reopening a case previously closed without a challan must NOT fabricate an earlier challan.
@@ -1514,8 +1515,8 @@ export const firService = {
     }
 
     const now = new Date();
-    const dateStr = now.toISOString().split("T")[0];
-    const timeStr = now.toTimeString().slice(0, 5);
+    const dateStr = getTodayIsoIST(now);
+    const timeStr = getTime24IST(now);
 
     challan.submittedToCourt = true;
     challan.courtSubmittedAt = dateStr + " " + timeStr;
@@ -1607,8 +1608,8 @@ export const firService = {
     }
 
     const now = new Date();
-    const dateStr = now.toISOString().split("T")[0];
-    const timeStr = now.toTimeString().slice(0, 5);
+    const dateStr = getTodayIsoIST(now);
+    const timeStr = getTime24IST(now);
 
     const latestCompletion = fir.completionHistory?.[0];
     const priorReason = latestCompletion
@@ -1689,8 +1690,8 @@ export const firService = {
     if (!fir) return undefined;
 
     const now = new Date();
-    const dateStr = now.toISOString().split("T")[0];
-    const timeStr = now.toTimeString().slice(0, 5);
+    const dateStr = getTodayIsoIST(now);
+    const timeStr = getTime24IST(now);
 
     const timelineItem: FIRTimelineEvent = {
       id: "tl-" + Date.now(),
@@ -1740,8 +1741,8 @@ export const firService = {
     if (!fir) return undefined;
 
     const now = new Date();
-    const dateStr = now.toISOString().split("T")[0];
-    const timeStr = now.toTimeString().slice(0, 5);
+    const dateStr = getTodayIsoIST(now);
+    const timeStr = getTime24IST(now);
 
     const timelineItem: FIRTimelineEvent = {
       id: `tl-${Date.now()}`,
@@ -1860,8 +1861,8 @@ export const firService = {
     if (!fir) return undefined;
 
     const now = new Date();
-    const dateStr = now.toISOString().split("T")[0];
-    const timeStr = now.toTimeString().slice(0, 5);
+    const dateStr = getTodayIsoIST(now);
+    const timeStr = getTime24IST(now);
     const formNum = `${formType === "CHARGESHEET" ? "CS" : "FR"}/${fir.firYear}/${Date.now().toString().slice(-4)}`;
 
     const status: FIRStatus =
@@ -1914,7 +1915,7 @@ export const firService = {
     const now = new Date();
     const item: FIRAuditRecord = {
       id: `aud-${Date.now()}`,
-      timestamp: `${now.toISOString().split("T")[0]} ${now.toTimeString().slice(0, 5)}`,
+      timestamp: `${getTodayIsoIST(now)} ${getTime24IST(now)}`,
       action,
       officerName: officerName || "Officer",
       role: role || "SHO",
@@ -2167,8 +2168,8 @@ export const firService = {
     if (validTargetIds.length === 0) throw new Error("Please select at least one valid target FIR to link");
 
     const now = new Date();
-    const dateStr = now.toISOString().split("T")[0];
-    const timeStr = now.toTimeString().slice(0, 5);
+    const dateStr = getTodayIsoIST(now);
+    const timeStr = getTime24IST(now);
     const isDuplicate = payload.linkType === "DUPLICATE";
     const isCross = payload.linkType === "CROSS";
 
@@ -2285,8 +2286,8 @@ export const firService = {
     const target = this.getFirById(targetId);
 
     const now = new Date();
-    const dateStr = now.toISOString().split("T")[0];
-    const timeStr = now.toTimeString().slice(0, 5);
+    const dateStr = getTodayIsoIST(now);
+    const timeStr = getTime24IST(now);
 
     const pUpdatedList = (primary.linkedFirsList || []).filter((l) => l.firId !== targetId);
     const hasOtherDuplicatesP = pUpdatedList.some((l) => l.linkType === "DUPLICATE");

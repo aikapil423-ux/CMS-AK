@@ -1,5 +1,6 @@
 "use client";
 
+import { getTodayIsoIST } from "@/lib/utils";
 import React, { useState, useEffect, useRef } from "react";
 import {
   Crosshair,
@@ -154,7 +155,7 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
   const [aliases, setAliases] = useState<FIRAliasEntry[]>([]);
   const [tempAlias, setTempAlias] = useState("");
   const [gender, setGender] = useState<string>("Male");
-  const [maritalStatus, setMaritalStatus] = useState("Married");
+  const [maritalStatus, setMaritalStatus] = useState("");
   const [relationType, setRelationType] = useState("Father");
   const [relativeName, setRelativeName] = useState("");
   const [mobile, setMobile] = useState("");
@@ -277,7 +278,7 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
     setAliases([]);
     setTempAlias("");
     setGender("Male");
-    setMaritalStatus("Married");
+    setMaritalStatus("");
     setRelationType("Father");
     setRelativeName("");
     setMobile("");
@@ -355,7 +356,7 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
       setAliases(acc.aliases || []);
     }
     setGender(acc.gender || "Male");
-    setMaritalStatus(acc.maritalStatus || "Married");
+    setMaritalStatus(acc.maritalStatus || "");
     setRelationType(acc.relationType || (acc as any).relationWithComplainant || "Father");
     setRelativeName(acc.fatherName || acc.relativeName || (acc.alias && (acc.alias.includes("पुत्र") || acc.alias.includes("पत्नी") || acc.alias.includes("पुत्री")) ? acc.alias : ""));
     setMobile(acc.mobile || (acc as any).phone || "");
@@ -448,12 +449,12 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
         const parts = dob.split("-");
         if (parts.length === 3) {
           const updatedDob = `${validYear}-${parts[1]}-${parts[2]}`;
-          const todayIso = new Date().toISOString().split("T")[0];
+          const todayIso = getTodayIsoIST();
           setDob(updatedDob > todayIso ? todayIso : updatedDob);
         }
       } else {
         const defaultDob = `${validYear}-01-01`;
-        const todayIso = new Date().toISOString().split("T")[0];
+        const todayIso = getTodayIsoIST();
         setDob(defaultDob > todayIso ? todayIso : defaultDob);
       }
     }
@@ -1259,6 +1260,7 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                     onChange={(e) => setMaritalStatus(e.target.value)}
                     className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
                   >
+                    <option value="">Select marital status</option>
                     {getDynamicMaritalStatusOptions().map((ms) => (
                       <option key={ms} value={ms}>
                         {ms}
@@ -1415,7 +1417,7 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                     </div>
                     <DatePickerDDMMYYYY
                       value={dob}
-                      max={new Date().toISOString().split("T")[0]}
+                      max={getTodayIsoIST()}
                       onChange={(e) => handleDobChange(e.target.value)}
                       placeholder="DD/MM/YYYY"
                       size="sm"
@@ -1870,7 +1872,7 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                     <label className="font-semibold text-slate-700 block mb-1">Date of Issue</label>
                     <DatePickerDDMMYYYY
                       value={passportIssueDate}
-                      max={new Date().toISOString().split("T")[0]}
+                      max={getTodayIsoIST()}
                       onChange={(e) => setPassportIssueDate(e.target.value)}
                       placeholder="DD/MM/YYYY"
                       size="sm"

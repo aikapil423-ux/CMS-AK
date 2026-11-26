@@ -161,7 +161,7 @@ function CompleteCasesContent() {
   const handleOpenReopenModal = (fir: FIRItem) => {
     setSelectedFirForReopen(fir);
     setReopenReason("");
-    setReopenCourtName("Chief Judicial Magistrate (CJM), Panipat");
+    setReopenCourtName(fir.courtName || "");
     setReopenOrderNumber("");
     setReopenOrderDate(getTodayIsoIST());
     setReopenAssignedIoId("");

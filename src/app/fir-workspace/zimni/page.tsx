@@ -43,7 +43,7 @@ import { FIRItem, FIRCaseDiaryItem } from "@/types";
 import { FIRWorkspaceNav } from "@/components/fir-workspace/FIRWorkspaceNav";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { AutoSuggestField } from "@/components/ui/auto-suggest-field";
-import { formatDate, getTodayIsoIST } from "@/lib/utils";
+import { formatDate, getTime24IST, getTodayIsoIST } from "@/lib/utils";
 import { printA4Element, downloadA4DocumentAsHtml, getA4DocumentHtml, getZimniPagedHtml } from "@/utils/printElement";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { universalEvidenceService } from "@/services/universalEvidenceService";
@@ -276,6 +276,9 @@ function ZimniWorkspaceContent() {
 
   const activeFir = firs.find((fir) => fir.id === selectedFirId);
   const activeFirId = activeFir?.id;
+  const draftKey = currentUser?.id && (!selectedFirId || activeFirId)
+    ? `zimni_draft_v2_${JSON.stringify([currentUser.id, currentUser.district, currentUser.stationName, activeFirId || "general"])}`
+    : null;
 
   const handleToggleLanguage = (lang: TemplateLanguage) => {
     if (lang === templateLang) return;
@@ -348,14 +351,30 @@ function ZimniWorkspaceContent() {
     setIsFilling(false);
     setSaveStatus(null);
     generatedFirFields.current = null;
-    setData(blankZimni(templateLang));
-    if (activeFir) void handleAutoFillFromFir();
+    const blank = blankZimni(templateLang);
+    setData(blank);
+    try {
+      const raw = draftKey && localStorage.getItem(draftKey);
+      if (raw) {
+        const saved = JSON.parse(raw) as ZimniProformaData;
+        if (Array.isArray(saved.entries) && Array.isArray(saved.leftHeaderLines) && Array.isArray(saved.rightHeaderLines)) {
+          setData({ ...blank, ...saved, ...ZIMNI_LABELS[templateLang] });
+          return;
+        }
+      }
+    } catch {
+      setSaveStatus("The local draft could not be restored.");
+    }
+    if (activeFir) void handleAutoFillFromFir().catch(() => {
+      setIsFilling(false);
+      setSaveStatus("Processed FIR entries could not be loaded.");
+    });
   });
 
   useEffect(() => {
     fillSelectedFir();
     return () => { ++fillRequest.current; };
-  }, [activeFirId, selectedFirId]);
+  }, [activeFirId, selectedFirId, draftKey]);
 
   // Reset to a blank proforma
   const handleResetTemplate = () => {
@@ -363,6 +382,7 @@ function ZimniWorkspaceContent() {
     setIsFilling(false);
     generatedFirFields.current = null;
     setData(blankZimni(templateLang));
+    if (draftKey) localStorage.removeItem(draftKey);
     setSaveStatus(templateLang === "en" ? "Template cleared" : "प्रारूप खाली कर दिया गया");
     setTimeout(() => setSaveStatus(null), 3000);
   };
@@ -417,7 +437,7 @@ function ZimniWorkspaceContent() {
         firId: activeFir.id,
         zimniNumber: zimniNum,
         date: data.signDate.replace(/^[^\d]*/, "") || getTodayIsoIST(),
-        time: new Date().toTimeString().slice(0, 5),
+        time: getTime24IST(),
         officer: data.officerNameRank || activeFir.assignedIoName || currentUser?.name || "Investigating Officer",
         officerRole: "INVESTIGATING_OFFICER",
         summary: summaryText,
@@ -455,6 +475,9 @@ function ZimniWorkspaceContent() {
         console.warn("Evidence persistent registration warning:", evErr);
       }
 
+      if (draftKey) {
+        try { localStorage.removeItem(draftKey); } catch { /* The Zimni is already saved. */ }
+      }
       setSaveStatus(`Zimni No. ${zimniNum} saved to FIR ${activeFir.firNumber}!`);
       setTimeout(() => setSaveStatus(null), 4000);
 
@@ -476,8 +499,8 @@ function ZimniWorkspaceContent() {
   // Save to LocalStorage
   const handleSaveDraft = () => {
     try {
-      const key = `zimni_draft_${selectedFirId || "general"}`;
-      localStorage.setItem(key, JSON.stringify(data));
+      if (!draftKey) throw new Error("Select an available FIR or sign in.");
+      localStorage.setItem(draftKey, JSON.stringify(data));
       setSaveStatus("Draft Saved Successfully!");
       setTimeout(() => setSaveStatus(null), 3000);
     } catch (e) {

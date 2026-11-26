@@ -1,5 +1,6 @@
 "use client";
 
+import { getTodayIsoIST } from "@/lib/utils";
 import React, { useState, useEffect, useRef } from "react";
 import {
   UploadCloud,
@@ -134,7 +135,7 @@ export function FIRUploadAutoFillModal({
     try {
       setProcessingStep("Creating synthetic document from verified complaint record...");
       const docContent = `COMPLAINT NO: ${c.complaintNumber}
-DATE: ${c.incidentDate || new Date().toISOString().split("T")[0]}
+DATE: ${c.incidentDate || getTodayIsoIST()}
 POLICE STATION: ${c.policeStation || currentStation || "PS City Thanesar"}
 DISTRICT: ${c.district || currentDistrict || "Kurukshetra"}
 
@@ -149,7 +150,7 @@ ${c.accusedList?.map((a) => `Accused Name: ${a.name}, Address: ${a.address || "U
 
 INCIDENT / घटना विवरण:
 Place of Incident: ${c.incidentPlace || "Main Market Chowk"}
-Date of Occurrence: ${c.incidentDate || new Date().toISOString().split("T")[0]}
+Date of Occurrence: ${c.incidentDate || getTodayIsoIST()}
 Time of Occurrence: ${c.incidentTime || "11:00 AM"}
 
 COMPLAINT FACTS & ALLEGATIONS:

@@ -1370,7 +1370,7 @@ function FIRRegisterPageContent() {
                         }
                         router.push(`/fir/${fir.id}`);
                       }}
-                      className="hover:bg-slate-50/80 transition-colors group cursor-pointer"
+                      className="fir-register-row hover:bg-slate-50/80 transition-colors group cursor-pointer"
                     >
                       {columnOrder.map((col) => {
                         if (!visibleColumns[col]) return null;

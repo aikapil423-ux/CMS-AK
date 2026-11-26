@@ -62,25 +62,15 @@ export function CrimeDetailModal({
 
   const [placeSubTab, setPlaceSubTab] = useState<"general" | "shown_by">("general");
 
-  // Check if FIR already has saved crime details data (from fir props or dedicated localStorage backup)
-  const savedCrimeData = React.useMemo(() => {
-    if ((fir as any)?.crimeDetailsData) return (fir as any).crimeDetailsData;
-    if (typeof window !== "undefined" && window.localStorage) {
-      try {
-        const raw = window.localStorage.getItem(`haryana_police_cms_fir_crimedetails_${fir.id}`);
-        if (raw) return JSON.parse(raw);
-      } catch (_) {}
-    }
-    return undefined;
-  }, [fir]);
+  const savedCrimeData = fir.crimeDetailsData;
 
   // Form State initialized with FIR's existing data where available
   const [isHeinous, setIsHeinous] = useState(savedCrimeData?.isHeinous ?? fir.isHeinous ?? false);
   const [isSensitive, setIsSensitive] = useState(savedCrimeData?.isSensitive ?? fir.isSensitive ?? false);
 
   // 1. Place of Occurrence
-  const [longitude, setLongitude] = useState(savedCrimeData?.placeOfOccurrence?.longitude || "76.8485° E");
-  const [latitude, setLatitude] = useState(savedCrimeData?.placeOfOccurrence?.latitude || "30.7046° N");
+  const [longitude, setLongitude] = useState(savedCrimeData?.placeOfOccurrence?.longitude || "");
+  const [latitude, setLatitude] = useState(savedCrimeData?.placeOfOccurrence?.latitude || "");
   const [visitDateTime, setVisitDateTime] = useState(
     savedCrimeData?.placeOfOccurrence?.visitDateTime || `${getTodayIsoIST()}T10:00`
   );
@@ -303,35 +293,18 @@ export function CrimeDetailModal({
 
   // Split acts and sections for Table 2 matching official IIF-II proforma
   const actsAndSectionsList = React.useMemo(() => {
-    if (!fir.actsAndSections) {
-      return [{ sNo: 1, act: "Bharatiya Nyaya Sanhita, 2023", sections: "Sec 103, 303(2) BNS" }];
+    if (fir.actsAndSectionsList?.length) {
+      return fir.actsAndSectionsList.map(({ act, sections }, index) => ({ sNo: index + 1, act, sections }));
     }
-    const raw = fir.actsAndSections;
-    const parts = raw.split(/;|\n/);
-    if (parts.length > 1) {
-      return parts.map((p, i) => {
-        const trimmed = p.trim();
-        const hasAct = trimmed.toLowerCase().includes("act");
-        return {
-          sNo: i + 1,
-          act: hasAct ? trimmed.split(/sec|section/i)[0].trim() : (fir.majorAct || "Bharatiya Nyaya Sanhita, 2023"),
-          sections: hasAct ? (trimmed.match(/sec.*|section.*/i)?.[0] || trimmed) : trimmed,
-        };
-      });
-    }
-    return [
-      {
-        sNo: 1,
-        act: raw.toLowerCase().includes("arms") ? "ARMS ACT, 1959" : (fir.majorAct || "Bharatiya Nyaya Sanhita, 2023"),
-        sections: raw.toLowerCase().includes("arms") ? "25" : (fir.bnsSections?.join(", ") || raw),
-      },
-      {
-        sNo: 2,
-        act: raw.toLowerCase().includes("arms") ? (fir.majorAct || "IPC 1860 / BNS 2023") : "Special & Local Laws (SLL)",
-        sections: raw.toLowerCase().includes("arms") ? (fir.bnsSections?.join(", ") || "302 / 103") : "Applicable Provisions",
-      },
-    ];
-  }, [fir.actsAndSections, fir.majorAct, fir.bnsSections]);
+    return (fir.actsAndSections || "").split(/[;\n]/).map(entry => entry.trim()).filter(Boolean).map((entry, index) => {
+      const separator = entry.indexOf(":");
+      return {
+        sNo: index + 1,
+        act: separator >= 0 ? entry.slice(0, separator).trim() : fir.majorAct || "",
+        sections: separator >= 0 ? entry.slice(separator + 1).trim() : entry,
+      };
+    });
+  }, [fir.actsAndSections, fir.actsAndSectionsList, fir.majorAct]);
 
   const handleDownloadProforma = () => {
     const el = document.getElementById("cctns-iif2-official-sheet");
@@ -442,22 +415,20 @@ export function CrimeDetailModal({
       submittedBy: currentUserName,
     };
 
-    if (typeof window !== "undefined" && window.localStorage) {
-      try {
-        window.localStorage.setItem(
-          `haryana_police_cms_fir_crimedetails_${fir.id}`,
-          JSON.stringify(crimeDetailsPayload)
-        );
-      } catch (e) {
-        console.warn("Direct localStorage backup failed:", e);
-      }
+    let updated: FIRItem | undefined;
+    try {
+      updated = await firService.saveCrimeDetails(fir.id, crimeDetailsPayload, currentUserName, htmlSnapshot);
+      if (!updated) throw new Error("The FIR is no longer available.");
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Crime details could not be saved.");
+      return;
+    } finally {
+      setIsSubmitting(false);
     }
-
-    const updated = await firService.saveCrimeDetails(fir.id, crimeDetailsPayload, currentUserName, htmlSnapshot);
 
     // Trigger Roznamcha GD auto-suggestion for Crime Details IIF-II
     try {
-      void GeneralDiaryService.createFirActionSuggestion({
+      await GeneralDiaryService.createFirActionSuggestion({
         actionType: "CRIME_DETAILS",
         firId: fir.id,
         firNumber: fir.firNumber,
@@ -465,8 +436,8 @@ export function CrimeDetailModal({
         district: fir.district,
         officer: {
           name: currentUserName || "IO",
-          rank: "Sub-Inspector",
-          beltNumber: "IO/FIR",
+          rank: "",
+          beltNumber: "",
         },
         actsAndSections: fir.actsAndSections,
         place: majorPlaceType ? `${majorPlaceType} - ${minorPlaceType}` : fir.incidentPlace,
@@ -477,8 +448,6 @@ export function CrimeDetailModal({
     } catch (gdErr) {
       console.warn("Failed to create Roznamcha GD suggestion for Crime Details:", gdErr);
     }
-
-    setIsSubmitting(false);
 
     if (updated) {
       setIsSavedSuccess(true);
@@ -627,13 +596,16 @@ export function CrimeDetailModal({
       submittedBy: currentUserName,
     };
 
-    const updated = await firService.saveCrimeDetails(fir.id, crimeDetailsPayload, currentUserName);
-    setIsSubmitting(false);
-    setShowConfirmDialog(false);
-
-    if (updated) {
-      if (onSubmitted) onSubmitted(updated);
-      if (!isPageMode && onClose) onClose();
+    try {
+      const updated = await firService.saveCrimeDetails(fir.id, crimeDetailsPayload, currentUserName);
+      if (!updated) throw new Error("The FIR is no longer available.");
+      setShowConfirmDialog(false);
+      onSubmitted?.(updated);
+      if (!isPageMode) onClose?.();
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Crime details could not be saved.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 

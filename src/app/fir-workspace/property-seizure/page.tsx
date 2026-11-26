@@ -726,7 +726,7 @@ function PropertySeizurePageContent() {
               <option value="">{templateLang === "hi" ? "-- सक्रिय अभियोग (FIR) चुनें --" : "-- Select Active FIR Case --"}</option>
               {firs.map((f) => (
                 <option key={f.id} value={f.id}>
-                  FIR #{f.firNumber} - PS {f.policeStation} ({f.actsAndSections || "Offence"})
+                  FIR #{f.firNumber} - {f.policeStation} ({f.actsAndSections || "Offence"})
                 </option>
               ))}
             </select>

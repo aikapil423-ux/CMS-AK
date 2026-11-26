@@ -40,7 +40,7 @@ import { FIRItem, ChallanMode, ChallanType } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
-import { isFirVisibleToUser } from "@/lib/firIntegrity";
+import { canManageLegacyChallan, isFirVisibleToUser } from "@/lib/firIntegrity";
 
 // 3 Authoritative Tabs as per Specification
 export type PartBTab = "PARTIAL" | "UNDER_CHECKING" | "REOPEN";
@@ -136,7 +136,7 @@ function FIRPartBContent() {
   // Prepare Challan Modal State (Quick issuance from Partial / Re-open tab)
   const [challanModalFir, setChallanModalFir] = useState<FIRItem | null>(null);
   const [challanMode, setChallanMode] = useState<ChallanMode>("COMPLETE");
-  const [challanCourtName, setChallanCourtName] = useState("Court of CJM, Panipat");
+  const [challanCourtName, setChallanCourtName] = useState("");
   const [challanBriefFacts, setChallanBriefFacts] = useState("");
   const [isIssuingChallan, setIsIssuingChallan] = useState(false);
 
@@ -232,6 +232,10 @@ function FIRPartBContent() {
   // Handle Recording Court Submission (From Under Checking)
   const handleConfirmCourtSubmission = async () => {
     if (!submittingFir) return;
+    if (!submittingReport && !canManageLegacyChallan(currentUser, submittingFir, "submit")) {
+      setSubmissionError("Your role cannot record this court submission.");
+      return;
+    }
     if (submittingReport && !courtReceiptNo.trim()) {
       setSubmissionError("Enter the CHI number.");
       return;
@@ -275,13 +279,18 @@ function FIRPartBContent() {
 
   // Handle Issuing Challan (From Re-open or Partial)
   const handleConfirmIssueChallan = async () => {
-    if (!challanModalFir) return;
+    if (!challanModalFir || !canManageLegacyChallan(currentUser, challanModalFir, "prepare")) return;
+    const courtName = challanCourtName.trim();
+    if (!courtName) {
+      alert("Enter the court name before issuing the challan.");
+      return;
+    }
     setIsIssuingChallan(true);
     try {
       await firService.issueChallan({
         firId: challanModalFir.id,
         challanMode,
-        courtName: challanCourtName.trim() || (challanModalFir.courtName || "Court of CJM, Panipat"),
+        courtName,
         issuedBy: `${currentUser.name} (${currentUser.role})`,
         issuedByRank: currentUser.rankDisplay || "IO",
         briefFacts: challanBriefFacts.trim() || undefined,
@@ -562,7 +571,7 @@ function FIRPartBContent() {
                       </td>
 
                       <td className="py-3 px-4 text-right">
-                        {activeTab === "UNDER_CHECKING" && (reviewReport ? reviewReport.createdBy === currentUser.id || currentUser.role === "SHO" : pendingChallan(fir)) && (
+                        {activeTab === "UNDER_CHECKING" && (reviewReport ? reviewReport.createdBy === currentUser.id || currentUser.role === "SHO" : canManageLegacyChallan(currentUser, fir, "submit") && pendingChallan(fir)) && (
                           <button
                             type="button"
                             onClick={() => {
@@ -578,13 +587,13 @@ function FIRPartBContent() {
                           </button>
                         )}
 
-                        {activeTab === "PARTIAL" && (
+                        {activeTab === "PARTIAL" && canManageLegacyChallan(currentUser, fir, "prepare") && (
                           <button
                             type="button"
                             onClick={() => {
                               setChallanModalFir(fir);
                               setChallanMode("COMPLETE");
-                              setChallanCourtName(fir.courtName || "Court of CJM, Panipat");
+                              setChallanCourtName(fir.courtName || "");
                               setChallanBriefFacts("");
                             }}
                             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs cursor-pointer transition-colors"
@@ -594,13 +603,13 @@ function FIRPartBContent() {
                           </button>
                         )}
 
-                        {activeTab === "REOPEN" && (
+                        {activeTab === "REOPEN" && canManageLegacyChallan(currentUser, fir, "prepare") && (
                           <button
                             type="button"
                             onClick={() => {
                               setChallanModalFir(fir);
                               setChallanMode("COMPLETE");
-                              setChallanCourtName(fir.courtName || "Court of CJM, Panipat");
+                              setChallanCourtName(fir.courtName || "");
                               setChallanBriefFacts("");
                             }}
                             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-purple-700 hover:bg-purple-800 text-white shadow-xs cursor-pointer transition-colors"
@@ -667,7 +676,7 @@ function FIRPartBContent() {
                   </div>
 
                   <div className="pt-2 border-t border-slate-100 flex justify-end">
-                    {activeTab === "UNDER_CHECKING" && (reviewReport ? reviewReport.createdBy === currentUser.id || currentUser.role === "SHO" : pendingChallan(fir)) && (
+                    {activeTab === "UNDER_CHECKING" && (reviewReport ? reviewReport.createdBy === currentUser.id || currentUser.role === "SHO" : canManageLegacyChallan(currentUser, fir, "submit") && pendingChallan(fir)) && (
                           <button
                         type="button"
                         onClick={() => {
@@ -683,13 +692,13 @@ function FIRPartBContent() {
                       </button>
                     )}
 
-                    {activeTab === "PARTIAL" && (
+                    {activeTab === "PARTIAL" && canManageLegacyChallan(currentUser, fir, "prepare") && (
                       <button
                         type="button"
                         onClick={() => {
                           setChallanModalFir(fir);
                           setChallanMode("COMPLETE");
-                          setChallanCourtName(fir.courtName || "Court of CJM, Panipat");
+                          setChallanCourtName(fir.courtName || "");
                           setChallanBriefFacts("");
                         }}
                         className="w-full py-2 rounded-lg text-xs font-bold bg-blue-600 text-white flex items-center justify-center gap-1.5"
@@ -699,13 +708,13 @@ function FIRPartBContent() {
                       </button>
                     )}
 
-                    {activeTab === "REOPEN" && (
+                    {activeTab === "REOPEN" && canManageLegacyChallan(currentUser, fir, "prepare") && (
                       <button
                         type="button"
                         onClick={() => {
                           setChallanModalFir(fir);
                           setChallanMode("COMPLETE");
-                          setChallanCourtName(fir.courtName || "Court of CJM, Panipat");
+                          setChallanCourtName(fir.courtName || "");
                           setChallanBriefFacts("");
                         }}
                         className="w-full py-2 rounded-lg text-xs font-bold bg-purple-700 text-white flex items-center justify-center gap-1.5"
@@ -888,7 +897,7 @@ function FIRPartBContent() {
                   type="text"
                   value={challanCourtName}
                   onChange={(e) => setChallanCourtName(e.target.value)}
-                  placeholder="Court of CJM, Panipat"
+                  placeholder="Enter court name"
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-slate-800"
                 />
               </div>

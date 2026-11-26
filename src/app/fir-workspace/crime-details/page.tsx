@@ -19,14 +19,18 @@ function CrimeDetailsPageContent() {
   const [selectedFirId, setSelectedFirId] = useState<string>("");
   const [activeFir, setActiveFir] = useState<FIRItem | null>(null);
 
-  // Load registered FIRs
   useEffect(() => {
-    const allFirs = firService.getAllFirs();
-    setFirs(allFirs);
-    if (firIdParam && allFirs.some((f) => f.id === firIdParam || f.firNumber === firIdParam)) {
-      setSelectedFirId(firIdParam);
-    }
-  }, [firIdParam]);
+    const refresh = () => setFirs(firService.getAllFirs());
+    refresh();
+    return firService.subscribe(refresh);
+  }, [currentUser]);
+
+  const linkedFirs = firIdParam ? firs.filter(fir => fir.id === firIdParam || fir.firNumber === firIdParam) : [];
+  const linkedFirId = linkedFirs.length === 1 ? linkedFirs[0].id : "";
+
+  useEffect(() => {
+    setSelectedFirId(linkedFirId);
+  }, [firIdParam, linkedFirId]);
 
   useEffect(() => {
     if (selectedFirId) {

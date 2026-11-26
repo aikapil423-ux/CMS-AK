@@ -1,5 +1,6 @@
 "use client";
 
+import { getTodayIsoIST, getTime24IST } from "@/lib/utils";
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -145,7 +146,7 @@ export const DEFAULT_SAMPLE_DATA_HI: Record<FIRNoticeTemplateType, NoticeFormDat
     dispatchNo: "HP/SRS/2026/NATGRID-012",
     policeStation: "City Sirsa",
     district: "Sirsa",
-    issueDate: new Date().toISOString().split("T")[0],
+    issueDate: getTodayIsoIST(),
 
     shoName: "निरीक्षक, प्रबंधक अफसर (SHO)",
     shoPhone: "9812033441",
@@ -313,12 +314,12 @@ export const DEFAULT_SAMPLE_DATA_EN: Record<FIRNoticeTemplateType, NoticeFormDat
   natgrid_proforma: {
     headerDept: "HARYANA POLICE",
     headerGovt: "NATIONAL INTELLIGENCE GRID",
-    docTitle: "NATGRID PERFORMA",
+    docTitle: "NATGRID PROFORMA",
     docSubTitle: "",
     dispatchNo: "HP/SRS/2026/NATGRID-012",
     policeStation: "City Sirsa",
     district: "Sirsa",
-    issueDate: new Date().toISOString().split("T")[0],
+    issueDate: getTodayIsoIST(),
 
     shoName: "Inspector, SHO",
     shoPhone: "9812033441",
@@ -1120,8 +1121,8 @@ function FIRTemplatesContent() {
       }
 
       const now = new Date();
-      const dateStr = now.toISOString().split("T")[0];
-      const timeStr = now.toTimeString().slice(0, 5);
+      const dateStr = getTodayIsoIST(now);
+      const timeStr = getTime24IST(now);
 
       const htmlContent = `<!DOCTYPE html>
 <html lang="${templateLang}">
@@ -2539,20 +2540,20 @@ function FIRTemplatesContent() {
             </div>
           )}
 
-          {/* ================= TEMPLATE 4: NATGRID PERFORMA (EXACT OFFICIAL LAYOUT) ================= */}
+          {/* ================= TEMPLATE 4: NATGRID PROFORMA (EXACT OFFICIAL LAYOUT) ================= */}
           {selectedTemplate === "natgrid_proforma" && (
             <div className="space-y-4 text-slate-950 font-serif">
-              {/* Centered Heading: NATGRID PERFORMA */}
+              {/* Centered Heading: NATGRID PROFORMA */}
               <div className="text-center pt-2 pb-2">
                 <AutoGrowingTextarea
                   rows={1}
                   value={
                     formData.docTitle ??
-                    (templateLang === "hi" ? "राष्ट्रीय आसूचना ग्रिड (NATGRID) प्रपत्र" : "NATGRID PERFORMA")
+                    (templateLang === "hi" ? "राष्ट्रीय आसूचना ग्रिड (NATGRID) प्रपत्र" : "NATGRID PROFORMA")
                   }
                   onChange={(e) => handleFieldChange("docTitle", e.target.value)}
                   className="w-full font-bold text-slate-950 underline underline-offset-4 text-base sm:text-lg text-center bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-purple-500 rounded px-2 py-0.5 outline-none tracking-wide resize-none"
-                  placeholder={templateLang === "hi" ? "राष्ट्रीय आसूचना ग्रिड (NATGRID) प्रपत्र" : "NATGRID PERFORMA"}
+                  placeholder={templateLang === "hi" ? "राष्ट्रीय आसूचना ग्रिड (NATGRID) प्रपत्र" : "NATGRID PROFORMA"}
                 />
               </div>
 

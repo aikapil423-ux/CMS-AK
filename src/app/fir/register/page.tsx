@@ -161,6 +161,11 @@ const MINOR_HEADS: Record<string, string[]> = {
   "Traffic & Motor Vehicles": ["Rash and Negligent Driving", "Fatal Accident", "Hit and Run"],
 };
 
+function weekdayForDate(date: string) {
+  const parsed = new Date(toIsoDateString(date) + "T00:00:00Z");
+  return Number.isNaN(parsed.getTime()) ? "" : new Intl.DateTimeFormat("en-GB", { weekday: "long", timeZone: "UTC" }).format(parsed);
+}
+
 function getNowLocal() {
   const date = getTodayIsoIST();
   try {
@@ -180,7 +185,7 @@ function getNowLocal() {
   }
 }
 
-function RegisterFIRForm() {
+function RegisterFIRForm({ onReset }: { onReset: () => void }) {
   const { currentUser } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -219,6 +224,10 @@ function RegisterFIRForm() {
     return `${owner}:general`;
   }, [complaintIdParam, gdNumberParam, currentUser?.id, currentUser?.stationName, currentUser?.district]);
   const draftFinalized = useRef(false);
+  const discardDraft = () => {
+    draftFinalized.current = true;
+    firService.clearFirDraft(draftKey);
+  };
   const [isDraftLoaded, setIsDraftLoaded] = useState(false);
   const [draftSaveError, setDraftSaveError] = useState("");
   const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
@@ -655,16 +664,16 @@ function RegisterFIRForm() {
   const [signatureCanvasDrawn, setSignatureCanvasDrawn] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
   const [hardwareOfflineNotice, setHardwareOfflineNotice] = useState(false);
-  const [officerName, setOfficerName] = useState(() => currentUser?.name || "Inspector Rajesh Kumar");
-  const [officerRank, setOfficerRank] = useState(() => currentUser?.rankDisplay || currentUser?.roleDisplay || "Inspector (SHO)");
-  const [officerNumber, setOfficerNumber] = useState(() => currentUser?.pno || "SHO/2901");
+  const [officerName, setOfficerName] = useState(() => currentUser?.name || "");
+  const [officerRank, setOfficerRank] = useState(() => currentUser?.rankDisplay || currentUser?.roleDisplay || "");
+  const [officerNumber, setOfficerNumber] = useState(() => currentUser?.pno || "");
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
     if (currentUser) {
-      setOfficerName(currentUser.name || "Inspector Rajesh Kumar");
-      setOfficerRank(currentUser.rankDisplay || currentUser.roleDisplay || "Inspector (SHO)");
-      setOfficerNumber(currentUser.pno || "SHO/2901");
+      setOfficerName(currentUser.name || "");
+      setOfficerRank(currentUser.rankDisplay || currentUser.roleDisplay || "");
+      setOfficerNumber(currentUser.pno || "");
     }
   }, [currentUser]);
 
@@ -795,13 +804,13 @@ function RegisterFIRForm() {
       {
         id: "occ-1",
         srNo: 1,
-        day: "Monday",
-        dateFrom: c.incidentDate || new Date().toISOString().split("T")[0],
-        dateTo: c.incidentDate || new Date().toISOString().split("T")[0],
+        day: weekdayForDate(c.incidentDate || getTodayIsoIST()),
+        dateFrom: c.incidentDate || getTodayIsoIST(),
+        dateTo: c.incidentDate || getTodayIsoIST(),
         timeFrom: c.incidentTime || "10:00",
         timeTo: "12:00",
         timePeriod: "Morning / General",
-        infoReceivedDate: new Date().toISOString().split("T")[0],
+        infoReceivedDate: getTodayIsoIST(),
         infoReceivedTime: new Date().toTimeString().slice(0, 5),
         directionFromPs: "",
         distanceKm: "",
@@ -1060,27 +1069,7 @@ function RegisterFIRForm() {
     initData();
   }, [complaintIdParam, gdNumberParam, draftKey, applyComplaintToFir]);
 
-  // Synchronous auto-save right before page unload (preserves data even on hard refresh Ctrl+F5)
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      if (isDraftLoaded && !draftFinalized.current && latestDraftRef.current) {
-        try {
-          firService.saveFirDraft(latestDraftRef.current, draftKey);
-        } catch {
-          // ignore
-        }
-      }
-    };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [isDraftLoaded, draftKey]);
-
-  // Continuous auto-save with 700ms debounce whenever any field is filled or updated
-  useEffect(() => {
-    if (!isDraftLoaded) return;
-
-    // Check if form has any meaningful data (do not save completely blank form)
-    const hasData = Boolean(
+  const hasData = Boolean(
       gdEntryNumber ||
       complaintNumber ||
       complainantFirstName ||
@@ -1094,6 +1083,25 @@ function RegisterFIRForm() {
       accusedList.length > 0 ||
       propertiesList.length > 0
     );
+
+  // Synchronous auto-save right before page unload (preserves data even on hard refresh Ctrl+F5)
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (isDraftLoaded && hasData && !draftFinalized.current && latestDraftRef.current) {
+        try {
+          firService.saveFirDraft(latestDraftRef.current, draftKey);
+        } catch {
+          // ignore
+        }
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDraftLoaded, draftKey, hasData]);
+
+  // Continuous auto-save with 700ms debounce whenever any field is filled or updated
+  useEffect(() => {
+    if (!isDraftLoaded) return;
 
     if (!hasData) return;
 
@@ -1487,18 +1495,7 @@ function RegisterFIRForm() {
 
   // Discard draft action
   const handleDiscardDraft = () => {
-    firService.clearFirDraft(draftKey);
-    setDraftRestoredNotice(null);
-    setLastSavedTime(null);
-    if (complaintIdParam) {
-      ComplaintService.getComplaintById(complaintIdParam).then((c) => {
-        if (c) applyComplaintToFir(c);
-      });
-      setSaveDraftFeedback("Draft discarded. Complaint details restored!");
-      setTimeout(() => setSaveDraftFeedback(null), 3000);
-    } else {
-      handleClearAll();
-    }
+    handleClearAll();
   };
 
   // Apply auto-fill from uploaded and processed complaint document
@@ -1634,67 +1631,14 @@ function RegisterFIRForm() {
       variant: "danger",
       confirmLabel: "Yes, Clear All Fields",
       onConfirm: () => {
-        firService.clearFirDraft(draftKey);
-        setDraftRestoredNotice(null);
-        setLastSavedTime(null);
-        setAutoFilledFields({});
-        setActsAndSectionsList([]);
-        setMajorMinorHeadsList([]);
-        setOccurrencesList([]);
-        setVictimsList([]);
-        setAccusedList([]);
-        setPropertiesList([]);
-        setShowAddPropertyForm(false);
-        setDepartmentList([]);
-        setIdentificationsList([]);
-        setComplainantAliases([]);
-        setGdEntryNumber("");
-        setComplaintNumber("");
-        setOriginalDateTime("");
-        setActRemarks("");
-        setComplainantFirstName("");
-        setComplainantMiddleName("");
-        setComplainantLastName("");
-        setComplainantMaritalStatus("");
-        setComplainantMobile("");
-        setComplainantEmail("");
-        setComplainantRelativeName("");
-        setComplainantAge("");
-        setComplainantDob("");
-        setComplainantYearOfBirth("");
-        setPermHouseNo("");
-        setPermStreet("");
-        setPermColony("");
-        setPermPincode("");
-        setFirContentText("");
-        setBriefFacts("");
-        setActionType("");
-        setReasonsForDelay("");
-        setCountDeceased("0");
-        setCountSeriouslyHurt("0");
-        setCountSimpleHurt("0");
-        setCountNonInjured("0");
-        setInjuryDescription("");
-        setSignatureCanvasDrawn(false);
-        const canvas = canvasRef.current;
-        if (canvas) {
-          const ctx = canvas.getContext("2d");
-          if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
-        }
-        setConfirmConfig((prev) => ({ ...prev, isOpen: false }));
-        setSaveDraftFeedback("All FIR form fields have been reset.");
-        setTimeout(() => setSaveDraftFeedback(null), 3000);
+        discardDraft();
+        onReset();
       },
     });
   };
 
   // Close / Exit Confirmation
   const handleCloseForm = () => {
-    const hasData =
-      actsAndSectionsList.length > 0 ||
-      complainantFirstName.trim().length > 0 ||
-      firContentText.trim().length > 0;
-
     if (hasData) {
       setConfirmConfig({
         isOpen: true,
@@ -1703,11 +1647,12 @@ function RegisterFIRForm() {
         variant: "warning",
         confirmLabel: "Discard & Exit",
         onConfirm: () => {
-          setConfirmConfig((prev) => ({ ...prev, isOpen: false }));
+          discardDraft();
           router.push("/fir");
         },
       });
     } else {
+      discardDraft();
       router.push("/fir");
     }
   };
@@ -2176,7 +2121,7 @@ function RegisterFIRForm() {
           dateTo: firDate,
           timeFrom: "10:00",
           timeTo: "12:00",
-          day: "Monday",
+          day: weekdayForDate(firDate),
           timePeriod: "Morning / Pahar 1",
           directionFromPs: "",
           distanceKm: "",
@@ -2207,6 +2152,7 @@ function RegisterFIRForm() {
       status: "UNDER_INVESTIGATION",
       mainStatus: "Under Investigation",
       gdNumber: gdEntryNumber,
+      gdEntryNumber,
       gdDate,
       gdTime,
       sourceOfComplaint,
@@ -2262,20 +2208,7 @@ function RegisterFIRForm() {
       complainantNationality,
       complainantPincode: permPincode,
       isAccusedKnown,
-      accusedList:
-        accusedList.length > 0
-          ? accusedList
-          : (forPreview
-              ? []
-              : [
-                  {
-                    id: "acc-un",
-                    name: isAccusedKnown ? "Identified Suspect" : "Accused is not known",
-                    isIdentified: isAccusedKnown,
-                    isKnown: isAccusedKnown,
-                    physicalDescription: "Under investigation",
-                  },
-                ]),
+      accusedList,
       victimsList,
       propertiesList,
       totalPropertyEstimatedValue: propertiesList.reduce(
@@ -6035,6 +5968,7 @@ function RegisterFIRForm() {
 
 export default function RegisterFIRPage() {
   const { currentUser, isAuthenticated } = useAuth();
+  const [resetCount, setResetCount] = useState(0);
   if (isAuthenticated && !canRegisterFir(currentUser.role)) {
     return <div className="mx-auto max-w-xl p-8 text-center"><p>Your account can work on assigned FIRs. FIR registration requires an intake role.</p><Link className="mt-3 inline-block underline" href="/fir">Open FIR Register</Link></div>;
   }
@@ -6046,7 +5980,7 @@ export default function RegisterFIRPage() {
         </div>
       }
     >
-      {isAuthenticated && currentUser && <RegisterFIRForm key={JSON.stringify([currentUser.id, currentUser.stationName, currentUser.district])} />}
+      {isAuthenticated && currentUser && <RegisterFIRForm key={JSON.stringify([currentUser.id, currentUser.stationName, currentUser.district, resetCount])} onReset={() => setResetCount(count => count + 1)} />}
     </Suspense>
   );
 }

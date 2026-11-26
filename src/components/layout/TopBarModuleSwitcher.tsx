@@ -182,6 +182,7 @@ export function TopBarModuleSwitcher({ isMobile = false }: TopBarModuleSwitcherP
         }`}
         title={isHindi ? "मॉड्यूल बदलें (Switch Module)" : "Switch Police Module"}
         aria-label={isHindi ? "मॉड्यूल बदलें" : "Switch Module"}
+        data-module-switcher
         aria-expanded={isOpen}
       >
         <LayoutGrid className="w-4 h-4" />

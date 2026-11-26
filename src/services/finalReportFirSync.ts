@@ -8,7 +8,7 @@ export async function synchronizeFinalReportFir(report: ComplaintReportItem, use
     if (!fir) throw new Error('FIR master record was not found.');
     const record = applyFinalReportState(fir, report);
     if (record === fir) return;
-    try { await saveFirRecords([{record, expectedVersion: fir.persistenceVersion || 0}], user); return; }
+    try { await saveFirRecords([{record, expectedVersion: fir.persistenceVersion || 0}], user, 'final-report'); return; }
     catch (error) { if (!(error instanceof FirRepositoryConflict) || attempt === 3) throw error; }
   }
 }

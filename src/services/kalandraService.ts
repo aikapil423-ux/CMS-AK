@@ -1,3 +1,4 @@
+import { getTodayIsoIST } from "@/lib/utils";
 import { escapeDocumentValue } from "@/lib/dataIntegrity";
 import {
   KalandraLegalStatus,
@@ -525,7 +526,7 @@ class KalandraService {
       const gd = gdList.find((g) => g.id === sourceId || g.gdNumber === sourceId);
       if (!gd) return null;
 
-      const gdDateStr = gd.activityDateTime ? gd.activityDateTime.split("T")[0] : (gd.officialCreationTimestamp ? gd.officialCreationTimestamp.split("T")[0] : new Date().toISOString().split("T")[0]);
+      const gdDateStr = gd.activityDateTime ? gd.activityDateTime.split("T")[0] : (gd.officialCreationTimestamp ? gd.officialCreationTimestamp.split("T")[0] : getTodayIsoIST());
 
       return {
         caseType: "FROM_GD",

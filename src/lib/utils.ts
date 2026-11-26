@@ -14,6 +14,15 @@ export function escapeHtml(value: unknown): string {
     .replace(/'/g, "&#39;");
 }
 
+export function getTime24IST(now: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Kolkata",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(now);
+}
+
 export function getTodayIsoIST(now: Date = new Date()): string {
   try {
     return new Intl.DateTimeFormat("en-CA", {

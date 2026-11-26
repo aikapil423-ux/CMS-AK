@@ -14,7 +14,10 @@ function FIRFinalFormContent(){
  const {currentUser}=useAuth(),search=useSearchParams();
  const [firs,setFirs]=useState<FIRItem[]>([]),[selected,setSelected]=useState(''),[formType,setFormType]=useState<FinalFormType>('CHARGESHEET'),[message,setMessage]=useState('');
  useEffect(()=>{const load=()=>setFirs(firService.getAllFirs());load();return firService.subscribe(load);},[currentUser]);
- useEffect(()=>{const id=search.get('firId'),type=search.get('type');if(id){const matches=firService.getAllFirs().filter(f=>f.id===id || f.firNumber===id);setSelected(matches.length===1?matches[0].id:'');}if(type && type in labels)setFormType(type as FinalFormType);},[search]);
+ const linkedId=search.get('firId');
+ const matches=linkedId ? firs.filter(f=>f.id===linkedId || f.firNumber===linkedId) : [];
+ const linkedFirId=matches.length===1 ? matches[0].id : '';
+ useEffect(()=>{const type=search.get('type');setSelected(linkedFirId);if(type && type in labels)setFormType(type as FinalFormType);},[search,linkedFirId]);
  const active=firs.find(f=>f.id===selected);
  return <div className="space-y-5 p-4 sm:p-6">
   <FIRWorkspaceNav />

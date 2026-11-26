@@ -117,7 +117,7 @@ export const STANDARD_FIR_INVESTIGATION_TEMPLATES: FIRInvestigationTemplate[] = 
   </tr>
   <tr>
     <td style="border: 1px solid #000; padding: 6px 10px; font-weight: bold;">गवाह का नाम व पहचान:</td>
-    <td style="border: 1px solid #000; padding: 6px 10px;">{{WITNESS_NAME}}, उम्र लगभग: ...... वर्ष</td>
+    <td style="border: 1px solid #000; padding: 6px 10px;">{{WITNESS_NAME}}<br/> उम्र लगभग: ...... वर्ष</td>
   </tr>
   <tr>
     <td style="border: 1px solid #000; padding: 6px 10px; font-weight: bold;">पिता/पति का नाम:</td>
@@ -490,6 +490,7 @@ function FIRTemplateBuilderContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { currentUser } = useAuth();
+  const templateStorageKey = currentUser?.id ? `${FIR_CUSTOM_TEMPLATES_STORAGE_KEY}:${currentUser.id}` : null;
 
   const queryFirId = searchParams.get("firId");
   const queryTemplateId = searchParams.get("templateId");
@@ -497,7 +498,8 @@ function FIRTemplateBuilderContent() {
   // State
   const [activeTab, setActiveTab] = useState<"editor" | "my_templates">("editor");
   const [firsList, setFirsList] = useState<FIRItem[]>([]);
-  const [selectedFir, setSelectedFir] = useState<FIRItem | null>(null);
+  const [selectedFirId, setSelectedFirId] = useState("");
+  const selectedFir = firsList.find(fir => fir.id === selectedFirId) || null;
 
   // Template lists
   const [savedTemplates, setSavedTemplates] = useState<FIRInvestigationTemplate[]>([]);
@@ -544,22 +546,24 @@ function FIRTemplateBuilderContent() {
 
   // Load FIRs on Mount
   useEffect(() => {
-    const all = firService.getAllFirs();
-    setFirsList(all);
-    if (queryFirId) {
-      const match = all.find((f) => f.id === queryFirId || f.firNumber === queryFirId);
-      if (match) setSelectedFir(match);
-    } else {
-      setSelectedFir(null);
-    }
-  }, [queryFirId]);
+    const refresh = () => setFirsList(firService.getAllFirs());
+    refresh();
+    return firService.subscribe(refresh);
+  }, [currentUser]);
+
+  const linkedFirs = queryFirId ? firsList.filter(fir => fir.id === queryFirId || fir.firNumber === queryFirId) : [];
+  const linkedFirId = linkedFirs.length === 1 ? linkedFirs[0].id : "";
+
+  useEffect(() => {
+    setSelectedFirId(linkedFirId);
+  }, [queryFirId, linkedFirId]);
 
   // Load Saved Custom Templates from localStorage and API
   const loadSavedTemplates = useCallback(async () => {
     setLibraryError("");
     let localCustom: FIRInvestigationTemplate[] = [];
     try {
-      const raw = localStorage.getItem(FIR_CUSTOM_TEMPLATES_STORAGE_KEY);
+      const raw = templateStorageKey ? localStorage.getItem(templateStorageKey) : null;
       if (raw) {
         localCustom = JSON.parse(raw);
       }
@@ -595,7 +599,7 @@ function FIRTemplateBuilderContent() {
     }
 
     setSavedTemplates(localCustom);
-  }, []);
+  }, [templateStorageKey]);
 
   useEffect(() => {
     loadSavedTemplates();
@@ -624,7 +628,7 @@ function FIRTemplateBuilderContent() {
     const f = firsList.find((item) => item.id === firId);
     if (!f) return;
     if (hasUnsavedChanges && !confirm("Discard unsaved document changes and switch FIR?")) return;
-    setSelectedFir(f);
+    setSelectedFirId(f?.id || "");
   };
 
   const handleApplyFirDataToEditor = () => {
@@ -898,7 +902,7 @@ function FIRTemplateBuilderContent() {
       setCurrentTemplateId(saved.id);
       // Discard only the matching legacy local entry after the server confirms success.
       const remaining = savedTemplates.filter((t) => t.id !== currentTemplateId && t.id.startsWith("fir-tpl-"));
-      try { localStorage.setItem(FIR_CUSTOM_TEMPLATES_STORAGE_KEY, JSON.stringify(remaining)); } catch { /* The server remains authoritative. */ }
+      try { if (templateStorageKey) localStorage.setItem(templateStorageKey, JSON.stringify(remaining)); } catch { /* The server remains authoritative. */ }
       await loadSavedTemplates();
     } catch (error) {
       setSaveStatus("Save failed — changes pending");
@@ -969,7 +973,7 @@ function FIRTemplateBuilderContent() {
     };
     const updated = [cloned, ...savedTemplates];
     setSavedTemplates(updated);
-    localStorage.setItem(FIR_CUSTOM_TEMPLATES_STORAGE_KEY, JSON.stringify(updated));
+    if (templateStorageKey) localStorage.setItem(templateStorageKey, JSON.stringify(updated));
     alert(`टेम्पलेट की प्रतिलिपि बनाई गई: ${cloned.name}`);
   };
 
@@ -980,7 +984,7 @@ function FIRTemplateBuilderContent() {
     try {
       if (!tplId.startsWith("fir-tpl-")) await BuilderService.deleteTemplate(tplId);
       const filtered = savedTemplates.filter((t) => t.id !== tplId);
-      localStorage.setItem(FIR_CUSTOM_TEMPLATES_STORAGE_KEY, JSON.stringify(filtered.filter((t) => t.id.startsWith("fir-tpl-"))));
+      if (templateStorageKey) localStorage.setItem(templateStorageKey, JSON.stringify(filtered.filter((t) => t.id.startsWith("fir-tpl-"))));
       setSavedTemplates(filtered);
     } catch {
       alert("Template could not be deleted. Please retry.");
@@ -999,11 +1003,8 @@ function FIRTemplateBuilderContent() {
     setDocCategory("General");
     setDocDescription("");
     setEditingDefinition(true);
-    const blankTpl = STANDARD_FIR_INVESTIGATION_TEMPLATES.find((t) => t.id === "std_fir_blank")!;
-    if (editorRef.current) {
-      rawTemplateRef.current = blankTpl.content;
-      editorRef.current.innerHTML = blankTpl.content;
-    }
+    rawTemplateRef.current = "";
+    if (editorRef.current) editorRef.current.innerHTML = "";
     setActiveTab("editor");
     setHasUnsavedChanges(false);
     setSaveStatus("Blank Document Ready");
@@ -1209,6 +1210,7 @@ function FIRTemplateBuilderContent() {
                 setEditingDefinition(!editingDefinition);
                 setHasUnsavedChanges(false);
               }}>{editingDefinition ? "Preview Case Document" : "Edit Template Definition"}</Button>
+              {editingDefinition && (
               <Button
                 type="button"
                 size="sm"
@@ -1219,6 +1221,7 @@ function FIRTemplateBuilderContent() {
                 <Save className="w-3.5 h-3.5" />
                 <span>Save to My Templates (सहेजें)</span>
               </Button>
+              )}
             </div>
           )}
 

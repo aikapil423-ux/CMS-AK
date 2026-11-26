@@ -550,3 +550,12 @@ html.dark .cms-court-theme a.cms-register-fir-action:hover {
   color: #ffffff !important;
 }
 }
+
+html.dark .cms-court-theme .fir-register-row:hover {
+  background-color: #172747 !important;
+}
+.cms-court-theme .cms-topbar button[data-module-switcher][aria-expanded="true"] {
+  background-color: #203c88 !important;
+  color: #fff !important;
+  border-color: #203c88 !important;
+}

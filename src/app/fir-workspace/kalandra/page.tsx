@@ -52,6 +52,7 @@ import { GeneralDiaryService } from "@/services/generalDiaryService";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
+import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { getTodayIsoIST } from "@/lib/utils";
@@ -60,13 +61,15 @@ type ActiveTab = "templates" | "create" | "drafts" | "prepared" | "manager";
 
 function KalandraWorkspaceContent() {
   const { currentUser } = useAuth();
+  const { language } = useLanguage();
   const defaultDistrict = currentUser?.district || "Panipat";
   const defaultPs = currentUser?.stationName || "PS City Panipat";
   const searchParams = useSearchParams();
   const linkedFirId = searchParams.get("firId");
 
   const [activeTab, setActiveTab] = useState<ActiveTab>("templates");
-  const [lang, setLang] = useState<"hi" | "en">("hi");
+  const [lang, setLang] = useState<"hi" | "en">(language === "en" ? "en" : "hi");
+  useEffect(() => { setLang(language === "en" ? "en" : "hi"); }, [language]);
   const isHi = lang === "hi";
 
   // Data state
@@ -322,7 +325,7 @@ function KalandraWorkspaceContent() {
       secondPartyName: formData.secondPartyName,
       secondPartyFather: formData.secondPartyFather,
       secondPartyAddress: formData.secondPartyAddress,
-      incidentDate: formData.incidentDate || new Date().toISOString().split("T")[0],
+      incidentDate: formData.incidentDate || getTodayIsoIST(),
       incidentTime: formData.incidentTime,
       incidentPlace: formData.incidentPlace || "",
       reportingOfficer: formData.reportingOfficer || "SI Balwan Singh",
@@ -385,7 +388,7 @@ function KalandraWorkspaceContent() {
       secondPartyName: formData.secondPartyName,
       secondPartyFather: formData.secondPartyFather,
       secondPartyAddress: formData.secondPartyAddress,
-      incidentDate: formData.incidentDate || new Date().toISOString().split("T")[0],
+      incidentDate: formData.incidentDate || getTodayIsoIST(),
       incidentTime: formData.incidentTime,
       incidentPlace: formData.incidentPlace || "",
       reportingOfficer: formData.reportingOfficer || "SI Balwan Singh",
@@ -443,14 +446,14 @@ function KalandraWorkspaceContent() {
       respondentAge: 38,
       respondentAddress: isHi ? "मकान नं. 42, मेन बाजार, अम्बाला शहर" : "H.No. 42, Main Bazar, Ambala City",
       respondentMobile: "9876543210",
-      incidentDate: new Date().toISOString().split("T")[0],
+      incidentDate: getTodayIsoIST(),
       incidentTime: "11:30 AM",
       incidentPlace: isHi ? "मेन चौक, बाजार क्षेत्र" : "Main Chowk, Bazar Area",
       factsAndCircumstances: kalandraService.populateNarrative(
         (isHi ? t.defaultNarrativeTemplateHi : t.defaultNarrativeTemplateEn) || "",
         {
           district: isHi ? "अम्बाला" : "Ambala",
-          incidentDate: new Date().toISOString().split("T")[0],
+          incidentDate: getTodayIsoIST(),
           incidentTime: "11:30 AM",
           incidentPlace: isHi ? "मेन चौक, बाजार क्षेत्र" : "Main Chowk, Bazar Area",
           respondentName: isHi ? "रमेश कुमार" : "Ramesh Kumar",

@@ -366,7 +366,7 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
                         <strong>(c) General Diary Reference (रोजनामचा संदर्भ):</strong>
                       </div>
                       <div className="col-span-3">
-                        <strong>Entry No. (प्रविष्टि सं.):</strong> {fir.gdEntryNumber || ""}
+                        <strong>Entry No. (प्रविष्टि सं.):</strong> {fir.gdEntryNumber || fir.gdNumber || ""}
                       </div>
                       <div className="col-span-4">
                         <strong>Date and Time (दिनांक और समय):</strong>

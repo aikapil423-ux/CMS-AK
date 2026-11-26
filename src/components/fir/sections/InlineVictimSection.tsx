@@ -133,7 +133,7 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
   const [aliases, setAliases] = useState<FIRAliasEntry[]>([]);
   const [tempAlias, setTempAlias] = useState("");
   const [gender, setGender] = useState<string>("");
-  const [maritalStatus, setMaritalStatus] = useState("Married");
+  const [maritalStatus, setMaritalStatus] = useState("");
   const [relationType, setRelationType] = useState("Father");
   const [relativeName, setRelativeName] = useState("");
   const [relativeAliasName, setRelativeAliasName] = useState("");
@@ -279,7 +279,7 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
     setAliases([]);
     setTempAlias("");
     setGender("");
-    setMaritalStatus("Married");
+    setMaritalStatus("");
     setRelationType("Father");
     setRelativeName("");
     setRelativeAliasName("");
@@ -332,7 +332,7 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
     setLastName(vic.lastName || (parts.length > 1 ? parts[parts.length - 1] : ""));
     setAliases(vic.aliases || []);
     setGender(vic.gender || "");
-    setMaritalStatus(vic.maritalStatus || "Married");
+    setMaritalStatus(vic.maritalStatus || "");
     setRelationType(vic.relationType || "Father");
     setRelativeName(vic.relativeName || "");
     setRelativeAliasName(vic.relativeAliasName || "");
@@ -376,7 +376,7 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
   };
 
   const handleDobChange = (val: string) => {
-    const todayIso = new Date().toISOString().split("T")[0];
+    const todayIso = getTodayIsoIST();
     let clamped = val;
     if (clamped && clamped > todayIso) {
       clamped = todayIso;
@@ -420,12 +420,12 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
         const parts = dob.split("-");
         if (parts.length === 3) {
           const updatedDob = `${validYear}-${parts[1]}-${parts[2]}`;
-          const todayIso = new Date().toISOString().split("T")[0];
+          const todayIso = getTodayIsoIST();
           setDob(updatedDob > todayIso ? todayIso : updatedDob);
         }
       } else {
         const defaultDob = `${validYear}-01-01`;
-        const todayIso = new Date().toISOString().split("T")[0];
+        const todayIso = getTodayIsoIST();
         setDob(defaultDob > todayIso ? todayIso : defaultDob);
       }
     }
@@ -835,6 +835,7 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                     onChange={(e) => setMaritalStatus(e.target.value)}
                     className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
                   >
+                    <option value="">Select marital status</option>
                     {getDynamicMaritalStatusOptions().map((ms) => (
                       <option key={ms} value={ms}>
                         {ms}

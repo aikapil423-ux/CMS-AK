@@ -9,6 +9,7 @@ type Persistent=Omit<typeof firService,Write> & {[K in Write]:(...args:Parameter
 let activeUser:UserSession | undefined;
 let queue:Promise<unknown>=Promise.resolve();
 let failure='';
+let ready=false;
 const listeners=new Set<()=>void>();
 function publish(error=''){failure=error;listeners.forEach(fn=>fn());}
 async function request(method='GET',changes?:unknown){
@@ -22,6 +23,7 @@ export const firPersistence={
  subscribe(fn:()=>void){listeners.add(fn);return()=>{listeners.delete(fn);};},
  async hydrate(user:UserSession, preserveRecordsOnError = false){
   await queue.catch(()=>{});
+  if(activeUser?.id!==user.id || activeUser?.stationName!==user.stationName || activeUser?.district!==user.district || activeUser?.role!==user.role)ready=false;
   activeUser=user;
   const legacy=firService.getLocalMigrationRecords().filter(f=>isFirVisibleToUser(user,f));
   try{
@@ -31,8 +33,9 @@ export const firPersistence={
     for(let start=0;start<pending.length;start+=500){const imported=await request('POST',pending.slice(start,start+500).map(record=>({record,expectedVersion:0,preserveNumber:true})));records=[...records,...imported];}
    }
    firService.replaceServerRecords(records);
+   ready=true;
    publish();
-  }catch(error){if(!preserveRecordsOnError)firService.replaceServerRecords([]);publish(error instanceof Error?error.message:'FIR backend is unavailable.');throw error;}
+  }catch(error){if(!preserveRecordsOnError || !ready){ready=false;firService.replaceServerRecords([]);}publish(error instanceof Error?error.message:'FIR backend is unavailable.');throw error;}
  },
 };
 
@@ -43,13 +46,13 @@ export const persistentFirService=new Proxy(firService,{
   return (...args:unknown[])=>{
    const operation=queue.catch(()=>{}).then(async()=>{
     if(!activeUser)throw new Error('FIR session is not ready. Reload and sign in.');
-    if(failure)throw new Error(failure);
+    if(!ready)throw new Error(failure || 'Load FIR records before saving.');
     const before=structuredClone(target.getAllFirs());
     let result:unknown,operationError:unknown;
     try{result=await method.apply(target,args);}catch(error){operationError=error;}
     const after=target.getAllFirs(),changes=after.filter(record=>JSON.stringify(before.find(f=>f.id===record.id))!==JSON.stringify(record)).map(record=>({record,expectedVersion:before.find(f=>f.id===record.id)?.persistenceVersion || 0}));
     try{
-     if(changes.length){const saved=await request('POST',changes);const merged=after.map(record=>saved.find(f=>f.id===record.id)||record);target.replaceServerRecords(merged);
+     if(changes.length){const saved=await request('POST',changes);const merged=after.map(record=>saved.find(f=>f.id===record.id)||record);target.replaceServerRecords(merged);publish();
       const canonical=(value:unknown)=>value && typeof value==='object' && 'id' in value?saved.find(f=>f.id===(value as FIRItem).id)||value:value;
       result=Array.isArray(result)?result.map(canonical):canonical(result);
      }

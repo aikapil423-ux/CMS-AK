@@ -6,6 +6,17 @@ export function canRegisterFir(role?: string): boolean {
   return role !== undefined && ['SHO', 'MHC_GD_INCHARGE', 'SUPER_ADMIN', 'SP_DISTRICT', 'DSP_SUBDIV'].includes(role);
 }
 
+export function canManageLegacyChallan(
+  user: NonNullable<Parameters<typeof isFirVisibleToUser>[0]>,
+  fir: FIRItem,
+  action: 'prepare' | 'submit',
+): boolean {
+  if (!isFirVisibleToUser(user, fir)) return false;
+  if (['SUPER_ADMIN', 'SHO', 'SP_DISTRICT', 'DSP_SUBDIV', 'ASP_HQ'].includes(user.role || '')) return true;
+  if (user.role === 'ENQUIRY_OFFICER' && isUserAssignedIo(user, fir)) return true;
+  return action === 'submit' && user.role === 'MHC_GD_INCHARGE';
+}
+
 export function nextFirNumber(
   firs: Pick<FIRItem, 'firNumber' | 'firYear' | 'policeStation'>[],
   year: number,
