@@ -6,6 +6,7 @@ import { FIRItem } from "@/types";
 import { Button } from "@/components/ui/button";
 import { printA4Element, downloadA4DocumentAsHtml } from "@/utils/printElement";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
+import { getFirPrintAddress, getFirPrintTimePeriod } from "@/lib/firOccurrence";
 
 interface FIRReceiptModalProps {
   fir: FIRItem | null;
@@ -42,6 +43,8 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
   const gdTimeHrs = fir.gdTime ? `${fir.gdTime} hrs` : (fir.firTime ? `${fir.firTime} hrs` : "");
   const occDateFromDMY = formatDateDMY(fir.incidentDateFrom);
   const occDateToDMY = formatDateDMY(fir.incidentDateTo || fir.incidentDateFrom);
+  const occurrenceAddress = getFirPrintAddress(fir);
+  const occurrenceTimePeriod = getFirPrintTimePeriod(fir);
 
   const ioName = fir.assignedIoName || fir.actionTakenData?.directedIoName || "";
   const ioRank = fir.assignedIoRank || fir.actionTakenData?.directedIoRank || "";
@@ -322,7 +325,7 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
 
                     <div className="grid grid-cols-12 gap-2 pt-1">
                       <div className="col-span-4">
-                        <strong>Time Period (समय अवधि):</strong> {fir.incidentTimePeriod || ""}
+                        <strong>Time Period (समय अवधि):</strong> {occurrenceTimePeriod}
                       </div>
                       <div className="col-span-4">
                         <strong>Time From (समय से):</strong> {fir.incidentTimeFrom ? `${fir.incidentTimeFrom} hrs` : ""}
@@ -393,7 +396,7 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
                   </div>
 
                   <div>
-                    <strong>(b) Address (पता):</strong> {fir.incidentPlace || ""}
+                    <strong>(b) Address (पता):</strong> {occurrenceAddress}
                   </div>
 
                   <div>

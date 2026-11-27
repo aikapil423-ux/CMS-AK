@@ -1,4 +1,13 @@
-import type { RelativeRelation } from '@/types';
+import type { ComplaintItem, RelativeRelation } from '@/types';
+
+export function formatComplaintRelative(
+  complaint: Pick<ComplaintItem, 'complainantRelationType' | 'complainantRelativeName' | 'complainantFatherSpouse'>,
+): string {
+  const relative = complaint.complainantRelativeName?.trim() || complaint.complainantFatherSpouse?.trim();
+  if (!relative) return '';
+
+  return [complaint.complainantRelationType, relative].filter(Boolean).join(' ');
+}
 
 export function complaintRelationFromSource(source: string, name: string): { type?: RelativeRelation; relative: string } {
   const subject = name.trim().split(/\s+/).map(word => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s+');

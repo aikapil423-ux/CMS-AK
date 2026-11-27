@@ -1,5 +1,7 @@
 "use client";
 
+import { formatComplaintRelative } from "@/lib/complaintRelation";
+
 import React, { useRef, useEffect } from "react";
 import {
   Printer,
@@ -92,12 +94,9 @@ export function ComplaintReceiptModal({
   const mhcMobile = isMhcInvalid ? "—" : (complaint.mhcPhone || "—");
 
   // Complainant Details
+  const complainantRelative = formatComplaintRelative(complaint);
   const complainantFullName = complaint.complainantName
-    ? `${complaint.complainantName}${
-        complaint.complainantRelativeName || complaint.complainantFatherSpouse
-          ? ` (S/O ${complaint.complainantRelativeName || complaint.complainantFatherSpouse})`
-          : ""
-      }`
+    ? `${complaint.complainantName}${complainantRelative ? ` (${complainantRelative})` : ""}`
     : "Citizen Complainant";
 
   const fullAddress = [

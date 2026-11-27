@@ -1413,6 +1413,10 @@ export interface FIROccurrenceItem {
   beatNo?: string;
   landmark?: string;
   address?: string;
+  houseNo?: string;
+  streetName?: string;
+  tehsil?: string;
+  pincode?: string;
   isOutsidePsLimits?: boolean;
   outsidePs?: boolean;
   outsidePsName?: string;

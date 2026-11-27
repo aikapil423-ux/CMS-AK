@@ -19,6 +19,7 @@ import { DIRECTION_FROM_PS_OPTIONS, getDynamicDirectionFromPs } from "@/componen
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { useAuth } from "@/context/AuthContext";
 import { getTodayIsoIST } from "@/lib/utils";
+import { getFirTimePeriod } from "@/lib/firOccurrence";
 
 export interface ExtendedFIROccurrenceItem extends FIROccurrenceItem {
   isDateKnown?: boolean;
@@ -29,10 +30,6 @@ export interface ExtendedFIROccurrenceItem extends FIROccurrenceItem {
   delayInRegistrationByPolice?: string;
   delayInReportingByComplainant?: string;
   reasonsForDelay?: string;
-  houseNo?: string;
-  streetName?: string;
-  tehsil?: string;
-  pincode?: string;
   isOrganisedCrime?: boolean;
 }
 
@@ -429,7 +426,7 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
       dateTo: dateTo || undefined,
       timeTo: timeTo || undefined,
       day,
-      timePeriod: "Morning / General",
+      timePeriod: getFirTimePeriod(timeFrom),
       infoReceivedDate,
       infoReceivedTime,
       isForestPlace,

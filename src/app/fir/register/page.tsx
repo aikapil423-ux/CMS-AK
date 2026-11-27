@@ -84,6 +84,7 @@ import { Button } from "@/components/ui/button";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { getTodayIsoIST, toIsoDateString, parseTimeTo24Hour, parseGdActivityDateTime } from "@/lib/utils";
+import { getFirTimePeriod } from "@/lib/firOccurrence";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { AutoSuggestField } from "@/components/ui/auto-suggest-field";
 import { useFirIoRoster } from "@/hooks/useFirIoRoster";
@@ -810,7 +811,7 @@ function RegisterFIRForm({ onReset }: { onReset: () => void }) {
         dateTo: c.incidentDate || getTodayIsoIST(),
         timeFrom: c.incidentTime || "10:00",
         timeTo: "12:00",
-        timePeriod: "Morning / General",
+        timePeriod: getFirTimePeriod(c.incidentTime || "10:00"),
         infoReceivedDate: getTodayIsoIST(),
         infoReceivedTime: new Date().toTimeString().slice(0, 5),
         directionFromPs: "",
@@ -1552,7 +1553,6 @@ function RegisterFIRForm({ onReset }: { onReset: () => void }) {
           timeFrom: data.occurrence.timeFrom?.trim() || "",
           timeTo: data.occurrence.timeTo?.trim() || "",
           day: "",
-          timePeriod: "",
           directionFromPs: data.occurrence.directionFromPs?.trim() || "",
           distanceKm: data.occurrence.distanceKm?.trim() || "",
           area: data.occurrence.place?.trim() || "",
@@ -2123,7 +2123,6 @@ function RegisterFIRForm({ onReset }: { onReset: () => void }) {
           timeFrom: "10:00",
           timeTo: "12:00",
           day: weekdayForDate(firDate),
-          timePeriod: "Morning / Pahar 1",
           directionFromPs: "",
           distanceKm: "",
           area: "",
@@ -2180,7 +2179,7 @@ function RegisterFIRForm({ onReset }: { onReset: () => void }) {
       incidentTimeFrom: primaryOcc.timeFrom,
       incidentTimeTo: primaryOcc.timeTo,
       incidentDay: primaryOcc.day,
-      incidentTimePeriod: primaryOcc.timePeriod,
+      incidentTimePeriod: getFirTimePeriod(primaryOcc.timeFrom),
       distanceFromPs: primaryOcc.distanceKm
         ? `${primaryOcc.distanceKm} KM ${primaryOcc.directionFromPs || ""}`.trim()
         : (primaryOcc.directionFromPs || ""),
