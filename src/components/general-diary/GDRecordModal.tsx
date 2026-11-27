@@ -22,8 +22,6 @@ import { useLanguage } from "@/context/LanguageContext";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { cleanGdNarrative } from "@/services/generalDiaryService";
 import { printA4Element, downloadA4ElementAsPdf } from "@/utils/printElement";
-import { stationStaffService } from "@/services/stationStaffService";
-import { DEMO_USERS } from "@/lib/mockData";
 
 interface GDRecordModalProps {
   record: GeneralDiaryRecord | null;
@@ -47,43 +45,6 @@ export function GDRecordModal({
   const { isHindi } = useLanguage();
 
   useEscapeKey(isOpen, onClose);
-
-  // Resolve Station Moharrir Head Constable (MHC / मुंशी)
-  const stationMhc = React.useMemo(() => {
-    if (!record) {
-      return {
-        name: "HC Devinder Kumar",
-        rank: "Head Constable (MHC)",
-        beltNumber: "334/PNP",
-        pno: "HR-05192834",
-      };
-    }
-    try {
-      const staffList = stationStaffService.getStaffForStation(record.policeStation);
-      const mhcStaff = staffList.find(
-        (s) => s.category === "MHC" || s.assignedDuty?.toLowerCase().includes("mhc") || s.assignedDuty?.toLowerCase().includes("moharrir")
-      );
-      if (mhcStaff) {
-        return {
-          name: mhcStaff.name,
-          rank: mhcStaff.rank || "Head Constable",
-          beltNumber: mhcStaff.beltNumber || "MHC",
-          pno: mhcStaff.pno || "",
-        };
-      }
-    } catch (e) {
-      console.warn("Could not load station staff for MHC:", e);
-    }
-
-    // Fallback to default MHC from DEMO_USERS
-    const demoMhc = DEMO_USERS.find((u) => u.role === "MHC_GD_INCHARGE");
-    return {
-      name: demoMhc?.name || "HC Devinder Kumar",
-      rank: demoMhc?.rankDisplay || "Head Constable (MHC)",
-      beltNumber: demoMhc?.pno || "334/PNP",
-      pno: demoMhc?.pno || "HR-05192834",
-    };
-  }, [record]);
 
   const handlePrint = React.useCallback(() => {
     if (!record) return;
@@ -499,8 +460,8 @@ export function GDRecordModal({
 
             {/* Signatures & Seal Footer */}
             {(() => {
-              const signatory = (record.isLocked ? (record.verifiedBy || record.actualAuthor) : null) || stationMhc;
-              const beltVal = signatory.beltNumber || signatory.pno || "—";
+              const signatory = record.verifiedBy || record.actualAuthor;
+              const beltVal = signatory?.beltNumber || signatory?.pno || "—";
               return (
                 <div className="pt-4 border-t-2 border-slate-900 flex flex-row items-end justify-between text-xs font-sans">
                   <div className="text-center w-36">
@@ -512,10 +473,10 @@ export function GDRecordModal({
                   <div className="text-right space-y-0.5">
                     <p className="text-slate-400">______________________________________</p>
                     <p className="font-bold text-slate-950">
-                      {signatory.name}
+                      {signatory?.name || "—"}
                     </p>
                     <p className="text-slate-700 text-[11px] font-medium">
-                      {signatory.rank || (isHindi ? "अधिकारी / रोजनामचा लेखक" : "Officer / Duty Writer")}
+                      {signatory?.rank || (isHindi ? "अधिकारी / रोजनामचा लेखक" : "Officer / Duty Writer")}
                     </p>
                     <p className="text-slate-600 font-mono text-[11px]">
                       {isHindi ? "बेल्ट/PNO:" : "Belt/PNO:"} {beltVal} • {record.policeStation}

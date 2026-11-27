@@ -86,7 +86,7 @@ export function ComplaintReceiptModal({
 
   // MHC details fallback (station-neutral, avoid cross-district KKR leak)
   const isMhcInvalid = !complaint.mhcName || complaint.mhcName.includes("Inspector");
-  const mhcRank = "Head Constable (MHC)";
+  const mhcRank = complaint.mhcRank || "MHC";
   const mhcName = isMhcInvalid ? `Station MHC (${complaint.policeStation || "Duty Desk"})` : complaint.mhcName;
   const mhcBeltNumber = !complaint.mhcBeltNumber || complaint.mhcBeltNumber === "882/KKR" ? "MHC-Desk" : complaint.mhcBeltNumber;
   const mhcMobile = isMhcInvalid ? "—" : (complaint.mhcPhone || "—");

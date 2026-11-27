@@ -10,7 +10,7 @@ import type {
   SpecialStationAllocation,
   AccountAuditLog,
 } from '../types/adminMaster';
-import { INVESTIGATING_OFFICER_LABEL, isRetiredDutyOfficerRole } from "@/lib/officerRoles";
+import { INVESTIGATING_OFFICER_LABEL, normalizeOfficerRole } from "@/lib/officerRoles";
 import { DEMO_USERS } from '@/lib/mockData';
 import { readMasterLocationReferences } from './masterLocationReferences';
 
@@ -27,6 +27,13 @@ interface AccountsStoreData {
 // The JSON store then keeps only non-secret master/profile fields. File mode
 // remains a legacy fallback for local SQLite/test runs (hashes only, no plaintext).
 const usesUserTable = () => usesPostgresStore();
+
+export async function getActiveStationOfficers(station: string, district: string) {
+  const normalize = (value: string) => value.trim().toLowerCase();
+  return (await getAllAccounts()).filter(account => account.status === 'ACTIVE' &&
+    normalize(account.policeStation) === normalize(station) &&
+    normalize(account.district) === normalize(district));
+}
 
 type DbAccountRow = {
   id: string;
@@ -104,9 +111,9 @@ function accountFromDbRow(row: DbAccountRow, profile?: MasterAccount): MasterAcc
     status: (['ACTIVE', 'INACTIVE', 'SUSPENDED'].includes(row.status) ? row.status : 'ACTIVE') as MasterAccount['status'],
     passwordHash: row.passwordHash,
     assignedUnitId: row.unitId,
-    assignedUnitName: base.assignedUnitName || row.unit.name || row.unitId,
-    district: base.district || row.unit.district,
-    policeStation: base.policeStation || row.unit.name || row.unit.code || row.unitId,
+    assignedUnitName: row.unit.name || base.assignedUnitName || row.unitId,
+    district: row.unit.district || base.district,
+    policeStation: row.unit.name || base.policeStation || row.unit.code || row.unitId,
   });
 }
 
@@ -220,7 +227,9 @@ async function withStoreLock<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 function normalizeAccountRole(account: MasterAccount): MasterAccount {
-  if (!isRetiredDutyOfficerRole(account.role)) return account;
+  const role = normalizeOfficerRole(account.role);
+  if (role === account.role) return account;
+  if (role === 'MHC_GD_INCHARGE') return { ...account, role, roleDisplay: 'MHC' };
   return {
     ...account,
     role: 'ENQUIRY_OFFICER',

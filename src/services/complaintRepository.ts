@@ -11,6 +11,7 @@ import {canViewComplaint,isShoOrSuperior,canDeleteDocument,canEditDocument,isUse
 import {stabilizeComplaint,computeDaysPending} from '@/lib/complaintIntegrity';
 import {complaintRegistrationSchema} from '@/lib/validations/complaint';
 import {nextComplaintNumber} from '@/lib/complaintNumber';
+import { getActiveStationOfficers } from '@/services/accountMasterService';
 const file=path.join(process.cwd(),'prisma','complaints-store.json');
 export class ComplaintAccessError extends Error{}
 export class ComplaintConflict extends Error{}
@@ -63,11 +64,28 @@ export async function saveComplaintChanges(input:unknown,user:UserSession){
  next={...next,custodyUnit:old?.custodyUnit,recordTransfers:old?.recordTransfers};
  authorize(user,next,old,registeredFir);
  if((old?.persistenceVersion||0)!==change.expectedVersion)throw new ComplaintConflict('Complaint changed on another device. Reload and retry.');
+ const assignmentChanged = next.assignedEoId !== old?.assignedEoId ||
+   next.assignedEoPno !== old?.assignedEoPno || next.assignedEoName !== old?.assignedEoName;
+ const station = old?.custodyUnit?.name || next.policeStation;
+ const district = old?.custodyUnit?.district || next.district;
+ if (db && assignmentChanged && (next.assignedEoId || next.assignedEoPno || next.assignedEoName)) {
+   const officer = (await getActiveStationOfficers(station, district)).find(account =>
+     account.id === next.assignedEoId && account.role === 'ENQUIRY_OFFICER' && account.pno === next.assignedEoPno);
+   if (!officer) {
+     throw new ComplaintAccessError('Select an active EO/IO from the complaint’s current station.');
+   }
+   next = {...next, assignedEoName: officer.fullName, assignedEoRank: officer.rankDisplay || officer.rank,
+     assignedEoBeltNumber: officer.beltNumber, assignedEoPhone: officer.mobileNumber};
+ }
  if(!old){const year=Number(next.createdAt.slice(0,4));if(!Number.isInteger(year)||year<1900||year>new Date().getFullYear()+1)throw new Error('Invalid registration date');complaintRegistrationSchema.parse(next);
  const number=nextComplaintNumber(list,year,next.policeStation,next.district);
  if(next.complaintNumber!==number)throw new ComplaintConflict('Complaint number changed. Refresh the register and retry registration.');
  if(next.status!=='REGISTERED'&&next.status!=='FIR_REGISTER')throw new ComplaintAccessError('New complaints must start at intake.');
- next={...next,registeredBy:user.name};}
+ const roster = db ? await getActiveStationOfficers(station, district) : [];
+ const desk = roster.find(account => account.id === user.id && isMhcOrMmRole(account.role)) ||
+   roster.find(account => account.role === 'MHC_GD_INCHARGE') || roster.find(account => account.role === 'MM');
+ next={...next,registeredBy:user.name,mhcName:desk?.fullName,mhcRank:desk?.rankDisplay || desk?.rank,
+   mhcBeltNumber:desk?.beltNumber,mhcPhone:desk?.mobileNumber};}
  const oldDocuments=new Set(old?.documents?.map(d=>d.id)||[]),oldReports=new Set(old?.reports?.map(r=>r.id)||[]);
  next={...next,documents:next.documents?.map(d=>oldDocuments.has(d.id)?d:{...d,createdByUserId:user.id,uploadedBy:user.name}),reports:next.reports?.map(r=>oldReports.has(r.id)?r:{...r,createdByUserId:user.id,officerName:user.name,createdByName:user.name,createdByRole:user.role})};
  const auditIds=new Set(old?.auditTrail?.map(a=>a.id)||[]),timelineIds=new Set(old?.timeline?.map(t=>t.id)||[]);

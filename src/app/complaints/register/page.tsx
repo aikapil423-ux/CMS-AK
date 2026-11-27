@@ -54,7 +54,7 @@ import { complaintAutoFillService, ProcessedComplaintDocumentRecord } from "@/se
 import { universalEvidenceService } from "@/services/universalEvidenceService";
 import { evidenceBlobStore } from "@/services/evidenceBlobStore";
 import { GeneralDiaryService } from "@/services/generalDiaryService";
-import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
+import { useFirIoRoster } from "@/hooks/useFirIoRoster";
 import {
   ComplaintItem,
   IntelligenceCheckResult,
@@ -291,6 +291,7 @@ function summarizeComplaintText(
 export default function RegisterComplaintPage() {
   const router = useRouter();
   const { currentUser } = useAuth();
+  const { officers: eoRoster, loading: eoRosterLoading, error: eoRosterError } = useFirIoRoster(currentUser.stationName, currentUser.district, currentUser.role === "SHO");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdComplaint, setCreatedComplaint] = useState<ComplaintItem | null>(null);
@@ -2199,7 +2200,7 @@ export default function RegisterComplaintPage() {
   // Helper: Assemble preview data from currently filled form fields
   const buildPreviewData = (): ComplaintPreviewData => {
     const primaryComp = complainants[0];
-    const selectedEo = selectedEoId ? MOCK_ENQUIRY_OFFICERS.find((o) => o.id === selectedEoId) : undefined;
+    const selectedEo = selectedEoId ? eoRoster.find((o) => o.id === selectedEoId) : undefined;
 
     return {
       sourceChannel,
@@ -2530,7 +2531,7 @@ export default function RegisterComplaintPage() {
 
       if (isSho && !isMhc && selectedEoId) {
         // If registered by SHO with an EO selected, immediately allocate to selected officer
-        const eo = MOCK_ENQUIRY_OFFICERS.find((o) => o.id === selectedEoId);
+        const eo = eoRoster.find((o) => o.id === selectedEoId);
         if (eo) {
           const assignRes = await ComplaintService.assignEnquiryOfficer(
             complaint.id,
@@ -5166,8 +5167,8 @@ export default function RegisterComplaintPage() {
                       }}
                       className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-600 font-semibold text-slate-800"
                     >
-                      <option value="">Select EO</option>
-                      {MOCK_ENQUIRY_OFFICERS.map((eo) => {
+                      <option value="">{eoRosterLoading ? "Loading station officers…" : eoRosterError || (eoRoster.length ? "Select EO" : "No active EO/IO at this station")}</option>
+                      {eoRoster.map((eo) => {
                         const label = eo.name.startsWith(eo.rank) ? eo.name : `${eo.rank} ${eo.name}`;
                         return (
                           <option key={eo.id} value={eo.id}>

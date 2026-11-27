@@ -48,7 +48,7 @@ import {
   AuthUserContext,
   canViewComplaint,
 } from "@/utils/complaintPermissions";
-import { DEMO_USERS, MOCK_COMPLAINTS, MOCK_HISTORICAL_FIRS, MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
+import { DEMO_USERS, MOCK_COMPLAINTS, MOCK_HISTORICAL_FIRS } from "@/lib/mockData";
 import { ComplaintRegistrationInput } from "@/lib/validations/complaint";
 import { GeneralDiaryService } from "./generalDiaryService";
 import { GeneralDiaryRecord } from "@/types/generalDiary";
@@ -738,10 +738,6 @@ export const ComplaintService = {
       ].filter((doc, idx, arr) => arr.findIndex((d) => d.fileName.toLowerCase() === doc.fileName.toLowerCase()) === idx),
       daysPending: 0,
       workflowState: initialWorkflow,
-      mhcName: "HC Devinder Kumar",
-      mhcRank: "Head Constable (MHC)",
-      mhcBeltNumber: "889/KKR",
-      mhcPhone: "9813098765",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -801,7 +797,6 @@ export const ComplaintService = {
     const previousEoName = currentComplaint.assignedEoName;
     const isReassignment = Boolean(previousEoId && previousEoId !== eoId);
 
-    const eoRoster = MOCK_ENQUIRY_OFFICERS.find((e) => e.id === eoId);
     const targetDate = new Date();
     targetDate.setDate(targetDate.getDate() + targetDays);
     const nowIso = new Date().toISOString();
@@ -812,15 +807,11 @@ export const ComplaintService = {
       assignedEoName: eoName,
       assignedEoRank: eoRank,
       assignedEoPno: eoPno,
-      assignedEoBeltNumber: (eoRoster as any)?.beltNumber || eoPno,
-      assignedEoPhone: (eoRoster as any)?.phone || "9812034567",
-      mhcName: (currentComplaint.mhcName && !currentComplaint.mhcName.includes("Rajesh") && !currentComplaint.mhcName.includes("Inspector")) ? currentComplaint.mhcName : "HC Devinder Kumar",
-      mhcRank: "Head Constable (MHC)",
-      mhcBeltNumber: "889/KKR",
-      mhcPhone: "9813098765",
+      assignedEoBeltNumber: undefined,
+      assignedEoPhone: undefined,
       assignedAt: nowIso,
       assignedDirections: directions,
-      assignedRosterDuty: eoRoster?.rosterDuty || "Investigation Duty",
+      assignedRosterDuty: "Investigation Duty",
       targetResolutionDate: targetDate.toISOString().split("T")[0],
       status: "ASSIGNED_TO_EO" as ComplaintStatus,
       workflowState: "PENDING",

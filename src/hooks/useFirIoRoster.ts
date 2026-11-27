@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react';
 
-interface FirIo {
+export interface FirIo {
   id: string;
   name: string;
   rank: string;
   pno: string;
   beltNumber: string;
   phone: string;
+  role: string;
 }
 
-export function useFirIoRoster(station?: string, district?: string, enabled = true) {
-  const scope = enabled && station && district ? new URLSearchParams({ station, district }).toString() : '';
+export function useFirIoRoster(station?: string, district?: string, enabled = true, purpose?: 'diary') {
+  const scope = enabled && station && district ? new URLSearchParams({ station, district, ...(purpose ? { purpose } : {}) }).toString() : '';
   const [result, setResult] = useState<{ scope: string; officers: FirIo[]; error?: string }>();
   useEffect(() => {
     if (!scope) return;

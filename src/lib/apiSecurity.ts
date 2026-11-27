@@ -20,7 +20,7 @@ export function scopeAllowed(user: UserSession, record: {district?: string;polic
 }
 
 export function officerDetails(user: UserSession) {
-  return {name:user.name,rank:user.rankDisplay || user.rank || '',pno:user.pno, beltNumber:user.pno,role:user.role};
+  return {name:user.name,rank:user.rankDisplay || user.rank || '',pno:user.pno, beltNumber:user.beltNumber || user.pno,role:user.role};
 }
 
 export function forbidden(message='Access denied.') { return Response.json({error:message},{status:403}); }

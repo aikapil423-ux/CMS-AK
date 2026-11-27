@@ -5,8 +5,6 @@ import { Printer, X, Download, FileDown } from "lucide-react";
 import { FIRItem } from "@/types";
 import { Button } from "@/components/ui/button";
 import { printA4Element, downloadA4DocumentAsHtml } from "@/utils/printElement";
-import { useAuth } from "@/context/AuthContext";
-import { DEMO_USERS } from "@/lib/mockData";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 interface FIRReceiptModalProps {
@@ -49,24 +47,13 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
   const ioRank = fir.assignedIoRank || fir.actionTakenData?.directedIoRank || "";
   const ioBelt = fir.assignedIoBeltNumber || fir.actionTakenData?.directedIoBelt || fir.assignedIoPno || "";
 
-  const { currentUser } = useAuth();
-  const registeredName = fir.signatureData?.officerInChargeName || fir.registeredBy?.split("(")[0]?.trim() || currentUser?.name || "";
-  const matchedUser = DEMO_USERS.find((u) =>
-    u.name.toLowerCase().trim() === registeredName.toLowerCase().trim() ||
-    registeredName.toLowerCase().includes(u.name.toLowerCase().split(",")[0].trim()) ||
-    (currentUser && currentUser.name.toLowerCase().trim() === u.name.toLowerCase().trim())
-  ) || currentUser;
-
-  const officerNameDisplay = fir.signatureData?.officerInChargeName || registeredName;
+  const officerNameDisplay = fir.signatureData?.officerInChargeName || fir.registeredBy?.split("(")[0]?.trim() || "";
   const officerRankDisplay =
     fir.signatureData?.officerInChargeRank ||
     fir.registeredBy?.match(/\((.*?)\)/)?.[1] ||
-    matchedUser?.rankDisplay ||
-    matchedUser?.roleDisplay ||
     "";
   const officerNoDisplay =
     fir.signatureData?.officerInChargeNumber ||
-    matchedUser?.pno ||
     "";
 
   // Total Property value

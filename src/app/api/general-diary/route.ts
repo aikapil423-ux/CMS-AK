@@ -1,4 +1,6 @@
 import { apiAccess, scopeAllowed, forbidden, officerDetails } from "@/lib/apiSecurity";
+import { getActiveStationOfficers } from "@/services/accountMasterService";
+import { isMhcOrMmRole } from "@/lib/officerRoles";
 import { NextRequest, NextResponse } from "next/server";
 import { readMasterLocationReferences, type MasterLocationReferences } from "@/services/masterLocationReferences";
 import { Prisma, GDRecord } from "@prisma/client";
@@ -999,11 +1001,13 @@ export async function POST(req: NextRequest) {
     const accessScope = locations.sessionScope(apiUser);
     const body = (await req.json()) as Record<string, unknown>;
     if (!['SHO','MHC_GD_INCHARGE', 'MM','SUPER_ADMIN','SP_DISTRICT','DSP_SUBDIV'].includes(apiUser.role)) return forbidden('GD writes require a diary or supervisory officer.');
+    let previousOfficer: GDOfficerParticulars | null = null;
     if (body.id) {
       const idStr = String(body.id);
       const existing = await prisma.gDRecord.findUnique({ where: { id: idStr } });
       if (existing) {
         if (!scopeAllowed(accessScope, locations.location(existing, "id"))) return forbidden();
+        previousOfficer = parseJson<GDOfficerParticulars | null>(existing.entryForOfficerJson, null);
       } else if (idStr.startsWith("sugg_")) {
         const sugg = (await getSmartVerifiedSuggestions()).find((s) => s.id === idStr);
         if (!sugg || !scopeAllowed(accessScope, locations.location(sugg, "id"))) return forbidden();
@@ -1073,6 +1077,26 @@ export async function POST(req: NextRequest) {
       });
       return NextResponse.json({ success: true, record: mapRowToRecord(updated, locations) });
     }
+
+    const selected = body.entryForOfficer as Partial<GDOfficerParticulars> | undefined;
+    const roster = await getActiveStationOfficers(apiUser.stationName, apiUser.district);
+    const officer = roster.find(account => account.pno === selected?.pno &&
+      (account.role === "SHO" || account.role === "ENQUIRY_OFFICER" || isMhcOrMmRole(account.role)));
+    if (officer) {
+      body.entryForOfficer = {
+        name: officer.fullName, rank: officer.rankDisplay || officer.rank,
+        pno: officer.pno, beltNumber: officer.beltNumber, role: officer.role,
+      };
+    } else if (previousOfficer && previousOfficer.pno === selected?.pno && previousOfficer.name === selected?.name) {
+      body.entryForOfficer = previousOfficer;
+    } else {
+      return forbidden("Select an active officer from this station.");
+    }
+    const author = roster.find(account => account.id === apiUser.id);
+    if (author) body.actualAuthor = {
+      name: author.fullName, rank: author.rankDisplay || author.rank,
+      pno: author.pno, beltNumber: author.beltNumber, role: author.role,
+    };
 
     if (action === "SAVE_DRAFT") {
       const draft = await saveDraftEntry(body, locations);

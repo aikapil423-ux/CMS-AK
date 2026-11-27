@@ -55,7 +55,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge, PriorityBadge } from "@/components/ui/badge";
 import { EmptyState, LoadingSkeleton } from "@/components/ui/state-views";
-import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
+import { useFirIoRoster, type FirIo } from "@/hooks/useFirIoRoster";
 import { formatDate, formatDateTime, getTodayIsoIST, getDateDaysAgoIsoIST, getMonthStartIsoIST, toIsoDateString } from "@/lib/utils";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
@@ -418,6 +418,9 @@ function ComplaintListContent() {
 
   // Quick Assign EO dropdown state (directly opens dropdown on click, no dialogue box)
   const [assignDropdownComplaintId, setAssignDropdownComplaintId] = useState<string | null>(null);
+  const assignmentRecord = complaints.find(item => item.id === assignDropdownComplaintId) || assigningComplaint || selectedComplaint;
+  const assignmentScope = assignmentRecord?.custodyUnit;
+  const { officers: eoRoster, loading: eoRosterLoading, error: eoRosterError } = useFirIoRoster(assignmentScope?.name || assignmentRecord?.policeStation, assignmentScope?.district || assignmentRecord?.district, isSho && !isMhc);
   const [assignToast, setAssignToast] = useState<string | null>(null);
   const [isQuickAssigning, setIsQuickAssigning] = useState<boolean>(false);
 
@@ -441,7 +444,7 @@ function ComplaintListContent() {
     };
   }, [assignDropdownComplaintId]);
 
-  const handleQuickAssignEO = async (complaintId: string, eo: (typeof MOCK_ENQUIRY_OFFICERS)[0]) => {
+  const handleQuickAssignEO = async (complaintId: string, eo: FirIo) => {
     if (isMhc || !isSho) {
       setAssignToast("Access Denied: MHC cannot assign EO/IO. Allocation must be done by SHO only (PPR Rule 22.48).");
       setTimeout(() => setAssignToast(null), 4000);
@@ -475,8 +478,8 @@ function ComplaintListContent() {
   };
 
   const selectedEo = useMemo(() => {
-    return MOCK_ENQUIRY_OFFICERS.find((e) => e.id === selectedEoId) || null;
-  }, [selectedEoId]);
+    return eoRoster.find((e) => e.id === selectedEoId) || null;
+  }, [selectedEoId, eoRoster]);
 
   const handleOpenAssignModal = (complaint: ComplaintItem) => {
     setAssigningComplaint(complaint);
@@ -518,7 +521,7 @@ function ComplaintListContent() {
 
   const handleAssignEO = async () => {
     if (!assigningComplaint || !selectedEoId) return;
-    const eo = MOCK_ENQUIRY_OFFICERS.find((e) => e.id === selectedEoId);
+    const eo = eoRoster.find((e) => e.id === selectedEoId);
     if (!eo) return;
     setIsAssigning(true);
 
@@ -1294,7 +1297,12 @@ function ComplaintListContent() {
                           <span className="text-slate-400 font-mono text-[9px]">Rank &amp; Name</span>
                         </div>
                         <div className="max-h-56 overflow-y-auto py-0.5">
-                          {MOCK_ENQUIRY_OFFICERS.map((eo) => {
+                          {eoRoster.length === 0 && (
+                            <p role="status" className="px-3 py-2 text-xs text-slate-600">
+                              {eoRosterLoading ? "Loading station officers…" : eoRosterError || "No active EO/IO at this station."}
+                            </p>
+                          )}
+                          {eoRoster.map((eo) => {
                             const label = eo.name.startsWith(eo.rank) ? eo.name : `${eo.rank} ${eo.name}`;
                             return (
                               <button
@@ -2478,7 +2486,12 @@ function ComplaintListContent() {
                                   <span className="text-slate-400 font-mono text-[9px]">Rank &amp; Name</span>
                                 </div>
                                 <div className="max-h-56 overflow-y-auto py-0.5">
-                                  {MOCK_ENQUIRY_OFFICERS.map((eo) => {
+                                  {eoRoster.length === 0 && (
+                            <p role="status" className="px-3 py-2 text-xs text-slate-600">
+                              {eoRosterLoading ? "Loading station officers…" : eoRosterError || "No active EO/IO at this station."}
+                            </p>
+                          )}
+                          {eoRoster.map((eo) => {
                                     const label = eo.name.startsWith(eo.rank) ? eo.name : `${eo.rank} ${eo.name}`;
                                     const isSelected = c.assignedEoId === eo.id || c.assignedEoName?.toLowerCase().includes(eo.name.toLowerCase());
                                     return (
@@ -2895,7 +2908,12 @@ function ComplaintListContent() {
                           <span className="text-slate-400 font-mono text-[9px]">Rank &amp; Name</span>
                         </div>
                         <div className="max-h-64 overflow-y-auto py-1 divide-y divide-slate-100">
-                          {MOCK_ENQUIRY_OFFICERS.map((eo) => {
+                          {eoRoster.length === 0 && (
+                            <p role="status" className="px-3 py-2 text-xs text-slate-600">
+                              {eoRosterLoading ? "Loading station officers…" : eoRosterError || "No active EO/IO at this station."}
+                            </p>
+                          )}
+                          {eoRoster.map((eo) => {
                             const label = eo.name.startsWith(eo.rank) ? eo.name : `${eo.rank} ${eo.name}`;
                             const isSelected = selectedComplaint.assignedEoId === eo.id || selectedComplaint.assignedEoName?.toLowerCase().includes(eo.name.toLowerCase());
                             return (
@@ -2920,17 +2938,9 @@ function ComplaintListContent() {
                                   </div>
                                   <div className="flex items-center gap-2 text-[10px] text-slate-500 font-normal">
                                     <span>PNO: {eo.pno}</span>
-                                    <span>ÔÇó</span>
-                                    <span className="truncate">{eo.rosterDuty || eo.shift}</span>
                                   </div>
                                 </div>
-                                {isSelected ? (
-                                  <Check className="w-4 h-4 text-blue-600 shrink-0" />
-                                ) : (
-                                  <span className="text-[10px] text-slate-400 shrink-0 font-normal">
-                                    {eo.activeCases ?? 0} active
-                                  </span>
-                                )}
+                                {isSelected && <Check className="w-4 h-4 text-blue-600 shrink-0" />}
                               </button>
                             );
                           })}

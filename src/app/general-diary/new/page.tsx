@@ -18,7 +18,6 @@ import {
   Sparkles,
   FileText,
   Search,
-  XCircle,
   Check,
   ChevronDown,
   Plus,
@@ -52,7 +51,7 @@ import { FIRActSectionEntry } from "@/types";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { AutoSuggestField } from "@/components/ui/auto-suggest-field";
-import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
+import { useFirIoRoster } from "@/hooks/useFirIoRoster";
 import { DropdownManagerService } from "@/services/dropdownManagerService";
 import { LEGACY_GD_TYPE_CODES } from "@/lib/generalDiaryConfig";
 import { CmsAgentService } from "@/services/agent/cmsAgentService";
@@ -64,67 +63,6 @@ import {
   parseGDActivityDateTime,
   toDDMMYYYY,
 } from "@/lib/gdDateTime";
-
-// Default station officers ordered strictly by rank hierarchy:
-// Inspector (50) > SI (40) > ASI (30) > HC (20) > Constable (10)
-const DEFAULT_STATION_OFFICERS = [
-  {
-    id: "usr_sho_1",
-    name: "Inspector Rajesh Kumar",
-    rank: "Inspector / SHO",
-    beltNumber: "HR-04291882",
-    pno: "HR-04291882",
-  },
-  {
-    id: "usr_si_malkeet",
-    name: "SI Malkeet",
-    rank: "Sub-Inspector",
-    beltNumber: "512/PNP",
-    pno: "08192841",
-  },
-  {
-    id: "eo_3",
-    name: "SI Pooja Rani",
-    rank: "Sub-Inspector",
-    beltNumber: "819/PNP",
-    pno: "07291845",
-  },
-  {
-    id: "eo_1",
-    name: "SI Vikram Singh",
-    rank: "Sub-Inspector",
-    beltNumber: "742/PNP",
-    pno: "07182930",
-  },
-  {
-    id: "eo_2",
-    name: "ASI Ramesh Chander",
-    rank: "Assistant Sub-Inspector",
-    beltNumber: "614/PNP",
-    pno: "06281923",
-  },
-  {
-    id: "usr_duty_1",
-    name: "ASI Surender Pal",
-    rank: "ASI",
-    beltNumber: "419/PNP",
-    pno: "09384712",
-  },
-  {
-    id: "usr_mhc_1",
-    name: "HC Devinder Kumar",
-    rank: "Head Constable (MHC)",
-    beltNumber: "889/PNP",
-    pno: "05192834",
-  },
-  {
-    id: "usr_constable_1",
-    name: "Constable Praveen Kumar",
-    rank: "Constable",
-    beltNumber: "902/PNP",
-    pno: "09812931",
-  },
-];
 
 // Strict officer ranking priority hierarchy:
 // 1. Inspector / SHO (Priority 50)
@@ -220,63 +158,6 @@ export const sortOfficersList = <T extends { rank?: string; name: string }>(list
   });
 };
 
-const inferRankAndName = (input: string): { rank: string; name: string } => {
-  const trimmed = input.trim();
-  const upper = trimmed.toUpperCase();
-
-  // Check ASI before SI and Inspector
-  if (
-    upper.startsWith("ASI ") ||
-    upper.startsWith("ASI.") ||
-    upper.startsWith("ASSISTANT SUB-INSPECTOR ") ||
-    upper.startsWith("ASSISTANT SUB INSPECTOR ") ||
-    /\bASI\b/.test(upper)
-  ) {
-    return { rank: "Assistant Sub-Inspector", name: trimmed };
-  }
-  // Check SI before Inspector
-  if (
-    upper.startsWith("SI ") ||
-    upper.startsWith("SI.") ||
-    upper.startsWith("SUB-INSPECTOR ") ||
-    upper.startsWith("SUB INSPECTOR ") ||
-    /\bSI\b/.test(upper)
-  ) {
-    return { rank: "Sub-Inspector", name: trimmed };
-  }
-  // Check Inspector
-  if (
-    upper.startsWith("INSPECTOR ") ||
-    upper.startsWith("INSP ") ||
-    upper.startsWith("SHO ") ||
-    /\bINSPECTOR\b/.test(upper) ||
-    /\bSHO\b/.test(upper)
-  ) {
-    return { rank: "Inspector", name: trimmed };
-  }
-  // Check Head Constable
-  if (
-    upper.startsWith("HC ") ||
-    upper.startsWith("HC.") ||
-    upper.startsWith("HEAD CONSTABLE ") ||
-    upper.startsWith("EHC ") ||
-    /\bHC\b/.test(upper)
-  ) {
-    return { rank: "Head Constable", name: trimmed };
-  }
-  // Check Constable
-  if (
-    upper.startsWith("CT ") ||
-    upper.startsWith("CT.") ||
-    upper.startsWith("CONSTABLE ") ||
-    /\bCT\b/.test(upper)
-  ) {
-    return { rank: "Constable", name: trimmed };
-  }
-
-  return { rank: "Officer", name: trimmed };
-};
-
 function NewGDEntryContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -285,35 +166,14 @@ function NewGDEntryContent() {
   const editDraftId = searchParams.get("editDraft");
   const preselectedType = searchParams.get("type");
 
-  // Officers list with localStorage persistence (strictly sorted on load)
-  const [stationOfficers, setStationOfficers] = useState(() => {
-    return sortOfficersList(DEFAULT_STATION_OFFICERS);
-  });
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("cms_gd_station_officers");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const sorted = sortOfficersList(parsed);
-          setStationOfficers(sorted);
-          localStorage.setItem("cms_gd_station_officers", JSON.stringify(sorted));
-        }
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  }, []);
-
-  // Sorted Ranking-wise: Top rank on top
-  const sortedOfficers = useMemo(() => {
-    return sortOfficersList(stationOfficers);
-  }, [stationOfficers]);
+  const { officers: stationOfficers, loading: officersLoading, error: officersError } =
+    useFirIoRoster(currentUser.stationName, currentUser.district, true, "diary");
+  const sortedOfficers = useMemo(() => sortOfficersList(stationOfficers), [stationOfficers]);
+  const [draftOfficer, setDraftOfficer] = useState<GDOfficerParticulars | null>(null);
 
   // Form State
   const [types, setTypes] = useState<GDEntryTypeConfig[]>([]);
-  const [selectedOfficerId, setSelectedOfficerId] = useState<string>(() => currentUser?.id || "usr_sho_1");
+  const [selectedOfficerId, setSelectedOfficerId] = useState<string>(() => currentUser?.id || "");
   const [selectedType, setSelectedType] = useState<string>(preselectedType || "");
 
   useEffect(() => {
@@ -324,8 +184,6 @@ function NewGDEntryContent() {
 
   // Officer dropdown and Add Officer state
   const [officerDropdownOpen, setOfficerDropdownOpen] = useState(false);
-  const [isAddingOfficer, setIsAddingOfficer] = useState(false);
-  const [newOfficerInput, setNewOfficerInput] = useState("");
   const officerDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -337,58 +195,6 @@ function NewGDEntryContent() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  const handleSaveNewOfficer = () => {
-    const rawName = newOfficerInput.trim();
-    if (!rawName) return;
-
-    // Auto detect rank from typed name (e.g. "asi kuldeep" -> Assistant Sub-Inspector)
-    const detected = inferRankAndName(rawName);
-
-    const newOfficer = {
-      id: `off_${Date.now()}`,
-      name: rawName,
-      rank: detected.rank !== "Officer" ? detected.rank : "Sub-Inspector",
-      beltNumber: "",
-      pno: `0${Math.floor(1000000 + Math.random() * 9000000)}`,
-    };
-
-    const updated = sortOfficersList([...stationOfficers, newOfficer]);
-    setStationOfficers(updated);
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.setItem("cms_gd_station_officers", JSON.stringify(updated));
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    setSelectedOfficerId(newOfficer.id);
-    setIsAddingOfficer(false);
-    setNewOfficerInput("");
-    setOfficerDropdownOpen(false);
-  };
-
-  const handleCancelAddOfficer = () => {
-    setIsAddingOfficer(false);
-    setNewOfficerInput("");
-  };
-
-  const handleRemoveOfficer = (idToRemove: string) => {
-    const updated = sortOfficersList(stationOfficers.filter((o) => o.id !== idToRemove));
-    setStationOfficers(updated);
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.setItem("cms_gd_station_officers", JSON.stringify(updated));
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    if (selectedOfficerId === idToRemove) {
-      if (updated.length > 0) {
-        setSelectedOfficerId(updated[0].id);
-      }
-    }
-  };
 
   // Date & Time of Activity — user-selectable (back-dating allowed).
   // Defaults always show current date and time by default (never blank).
@@ -690,41 +496,13 @@ function NewGDEntryContent() {
     };
   }, [editDraftId]);
 
-  // Get active officer
-  const currentOfficer = useMemo(() => {
-    if (isAddingOfficer) {
-      const typed = newOfficerInput.trim();
-      if (typed) {
-        const detected = inferRankAndName(typed);
-        return {
-          name: typed,
-          rank: detected.rank !== "Officer" ? detected.rank : "Officer",
-          beltNumber: "",
-          pno: "Pending",
-        };
-      }
-      return {
-        name: "Enter officer rank & name below...",
-        rank: "New Officer",
-        beltNumber: "",
-        pno: "Pending",
-      };
-    }
-    const found = stationOfficers.find((o) => o.id === selectedOfficerId);
-    return (
-      found ||
-      sortedOfficers[0] || {
-        name: "Inspector Rajesh Kumar",
-        rank: "Inspector / SHO",
-        beltNumber: "04291882",
-        pno: "04291882",
-      }
-    );
-  }, [isAddingOfficer, newOfficerInput, selectedOfficerId, stationOfficers, sortedOfficers]);
+  const currentOfficer = draftOfficer ||
+    stationOfficers.find(officer => officer.id === selectedOfficerId) ||
+    sortedOfficers[0] || { name: "", rank: "", pno: "", beltNumber: "" };
 
   // Quick Preset Templates generator based on selectedType and currentOfficer
   const applyTemplateForType = (typeCode: string, officerName: string) => {
-    const offName = officerName || "SI Malkeet";
+    const offName = officerName || "the selected officer";
 
     switch (typeCode) {
       case "OPENING_OF_GD":
@@ -900,24 +678,7 @@ function NewGDEntryContent() {
       setHourSel(tp.hour);
       setMinuteSel(tp.minute);
       setAmpmSel(tp.ampm);
-      if (draft.entryForOfficer?.name) {
-        setStationOfficers((prev) => {
-          const match = prev.find((o) => o.name === draft.entryForOfficer.name);
-          if (match) {
-            setSelectedOfficerId(match.id);
-            return prev;
-          }
-          const off = {
-            id: `off_draft_${Date.now()}`,
-            name: draft.entryForOfficer.name,
-            rank: draft.entryForOfficer.rank || "Officer",
-            beltNumber: draft.entryForOfficer.beltNumber || "Station Staff",
-            pno: draft.entryForOfficer.pno || "00000000",
-          };
-          setSelectedOfficerId(off.id);
-          return sortOfficersList([...prev, off]);
-        });
-      }
+      if (draft.entryForOfficer?.name) setDraftOfficer(draft.entryForOfficer);
       if (draft.attachments && Array.isArray(draft.attachments)) {
         setAttachments(draft.attachments);
       } else if (draft.relatedRecords?.attachments && Array.isArray(draft.relatedRecords.attachments)) {
@@ -954,6 +715,10 @@ function NewGDEntryContent() {
   // Submit and Lock GD Entry
   const handleSaveAndLock = async () => {
     setError(null);
+    if (!currentOfficer.pno) {
+      setError("Select an officer from the active station roster.");
+      return;
+    }
     if (!selectedType) {
       setError("Please select the GD Type first.");
       return;
@@ -1044,6 +809,10 @@ function NewGDEntryContent() {
   // Save Draft
   const handleSaveDraft = async () => {
     setError(null);
+    if (!currentOfficer.pno) {
+      setError("Select an officer from the active station roster.");
+      return;
+    }
     if (!activityDate) {
       setError("Please select the Date of the activity.");
       return;
@@ -1099,9 +868,8 @@ function NewGDEntryContent() {
       // so consume the suppression immediately
       suppressAutoTemplateRef.current = false;
     }
-    setSelectedOfficerId(sortedOfficers[0]?.id || "usr_sho_1");
-    setIsAddingOfficer(false);
-    setNewOfficerInput("");
+    setSelectedOfficerId(currentUser.id);
+    setDraftOfficer(null);
     setSelectedType("");
     setTypeSearchQuery("");
     setTypeDropdownOpen(false);
@@ -1318,7 +1086,7 @@ function NewGDEntryContent() {
                 className="w-full flex items-center justify-between px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs sm:text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-[#0b192c] cursor-pointer text-left shadow-2xs"
               >
                 <div className="truncate">
-                  {currentOfficer.name} ({currentOfficer.rank}{currentOfficer.beltNumber && currentOfficer.beltNumber !== "Station Staff" ? ` - ${currentOfficer.beltNumber}` : ""})
+                  {currentOfficer.name ? `${currentOfficer.name} (${currentOfficer.rank}${currentOfficer.beltNumber ? ` - ${currentOfficer.beltNumber}` : ""})` : officersLoading ? "Loading station officers…" : "Select an officer"}
                 </div>
                 <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${officerDropdownOpen ? "rotate-180" : ""}`} />
               </button>
@@ -1332,7 +1100,7 @@ function NewGDEntryContent() {
                         key={o.id}
                         onClick={() => {
                           setSelectedOfficerId(o.id);
-                          setIsAddingOfficer(false);
+                          setDraftOfficer(null);
                           setOfficerDropdownOpen(false);
                         }}
                         className={`w-full flex items-center justify-between px-3 py-2 text-xs transition-colors cursor-pointer group ${
@@ -1344,78 +1112,18 @@ function NewGDEntryContent() {
                         <div className="flex-1 min-w-0 pr-2">
                           <p className="font-semibold text-slate-900 truncate">{o.name}</p>
                           <p className="text-[11px] text-slate-500 truncate">
-                            {o.rank} {o.beltNumber && o.beltNumber !== "Station Staff" ? `• ${o.beltNumber}` : ""}
+                            {o.rank} • {o.role === "ENQUIRY_OFFICER" ? "IO" : o.role === "MHC_GD_INCHARGE" ? "MHC" : o.role} • {o.pno}
                           </p>
                         </div>
-                        {/* Red cross in circle in small to remove officer */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveOfficer(o.id);
-                          }}
-                          className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full transition-colors cursor-pointer shrink-0"
-                          title={`Remove ${o.name} from dropdown`}
-                        >
-                          <XCircle className="w-3.5 h-3.5" />
-                        </button>
                       </div>
                     ))}
                   </div>
 
-                  {/* Add Officer Option */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsAddingOfficer(true);
-                      setOfficerDropdownOpen(false);
-                      setNewOfficerInput("");
-                    }}
-                    className="w-full text-left px-3 py-2.5 bg-slate-50 hover:bg-blue-50 border-t border-slate-200 text-xs font-bold text-blue-700 transition-colors flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <Plus className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Add officer</span>
-                  </button>
-                </div>
-              )}
-
-              {/* Add Officer Input with green Save in small font beside it */}
-              {isAddingOfficer && (
-                <div className="mt-2 p-2.5 bg-slate-50 border border-slate-300 rounded-lg space-y-2 animate-in fade-in-50">
-                  <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
-                    <input
-                      type="text"
-                      value={newOfficerInput}
-                      onChange={(e) => setNewOfficerInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          handleSaveNewOfficer();
-                        } else if (e.key === "Escape") {
-                          handleCancelAddOfficer();
-                        }
-                      }}
-                      placeholder="Enter rank & officer name (e.g. ASI Kuldeep, SI Malkeet)"
-                      className="flex-1 min-w-[200px] px-3 py-1.5 bg-white border border-slate-300 rounded-md text-xs sm:text-sm text-slate-900 focus:ring-2 focus:ring-[#0b192c]"
-                      autoFocus
-                    />
-                    {/* Green Save button in small font */}
-                    <button
-                      type="button"
-                      onClick={handleSaveNewOfficer}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-md flex items-center gap-1 cursor-pointer transition-colors shadow-2xs shrink-0"
-                      title="Save and add to dropdown"
-                    >
-                      <Check className="w-3.5 h-3.5" />
-                      <span>Save</span>
-                    </button>
-                    <VoiceInputButton
-                      onTranscript={(text) => setNewOfficerInput((prev) => (prev ? `${prev} ${text}` : text))}
-                      fieldLabel="Officer Name"
-                      preferredLang="hi-IN"
-                      iconOnly={true}
-                    />
-                  </div>
+                  {sortedOfficers.length === 0 && (
+                    <p role="status" className="px-3 py-2 text-xs text-slate-600">
+                      {officersLoading ? "Loading station officers…" : officersError || "No active officers at this station."}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
