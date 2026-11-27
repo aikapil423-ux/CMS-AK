@@ -54,6 +54,16 @@ seed into an empty database. Later starts skip the bootstrap, preserving
 account edits and credential resets. An existing populated database requires
 a deliberate decision about how to merge account changes.
 
+For an existing database, take a PostgreSQL backup and review the UPC list
+before running the merge. With the private seed already mounted:
+
+```sh
+sudo docker compose run --rm --no-deps -T -e CMS_ACCOUNTS_SEED_FILE=/run/cms-bootstrap/accounts-seed.json cms node scripts/seed-accounts.mjs --merge-missing
+```
+
+The merge adds missing UPCs and fills in missing station roster documents.
+It preserves existing users, PIN hashes, postings, and roster documents.
+
 `POSTGRES_DATABASE_URL` is required. The importer rejects plaintext credentials
 and permits missing mobile numbers. Older accounts without a usable hash are
 seeded with a random, undisclosed credential. An administrator must reset that

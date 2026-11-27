@@ -17,6 +17,7 @@ const seedFile = process.env.CMS_ACCOUNTS_SEED_FILE
   : path.join(process.cwd(), "prisma", "accounts-seed.json");
 const exporting = process.argv.includes("--export");
 const bootstrapping = process.argv.includes("--bootstrap");
+const mergingMissing = process.argv.includes("--merge-missing");
 const prisma = new PrismaClient({ datasources: { db: { url: databaseUrl } } });
 
 const STORE_PATH = "accounts-master-store.json";
@@ -114,6 +115,7 @@ async function exportAccounts() {
 }
 
 async function applyAccounts() {
+  if (bootstrapping && mergingMissing) throw new Error("Choose --bootstrap or --merge-missing.");
   if (!fs.existsSync(seedFile)) {
     throw new Error(`Seed file not found: ${seedFile}. Run with --export first, or set CMS_ACCOUNTS_SEED_FILE.`);
   }
@@ -139,16 +141,52 @@ async function applyAccounts() {
     assertNoPlaintext(roster.payload, "station roster");
   }
   const applied = await prisma.$transaction(async (tx) => {
+    if (bootstrapping || mergingMissing) {
+      await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(186367421)`;
+    }
     if (bootstrapping) {
       const marker = "deployment/account-bootstrap.json";
-      await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(186367421)`;
       if (await tx.importedJsonDocument.findUnique({ where: { path: marker } }) || await tx.user.count()) {
         return false;
       }
       await tx.importedJsonDocument.create({ data: { path: marker, payload: { completed: true } } });
     }
+    const knownPnos = mergingMissing
+      ? new Set((await tx.user.findMany({ select: { pno: true } })).map(account => account.pno.trim().toUpperCase()))
+      : new Set();
+    const accounts = seed.accounts.filter(account => !knownPnos.has(account.pno.trim().toUpperCase()));
+    const mappedUnits = new Map();
+    if (mergingMissing) {
+      const byId = new Map(units.map(unit => [unit.id, unit]));
+      const resolveUnit = async (id, visited = new Set()) => {
+        if (mappedUnits.has(id)) return mappedUnits.get(id);
+        const unit = byId.get(id);
+        if (!unit || visited.has(id)) throw new Error("Missing or cyclic station hierarchy in the seed.");
+        visited.add(id);
+        const found = await tx.policeUnit.findFirst({
+          where: { OR: [{ id }, { code: unit.code }] },
+          orderBy: { id: "asc" },
+        }) ?? await tx.policeUnit.findFirst({
+          where: { name: { equals: unit.name, mode: "insensitive" }, district: { equals: unit.district, mode: "insensitive" } },
+        });
+        if (found && (found.name.toLowerCase() !== unit.name.toLowerCase() ||
+                      found.district.toLowerCase() !== unit.district.toLowerCase())) {
+          throw new Error("A seed station ID or code belongs to a different station on the server.");
+        }
+        const resolved = found ?? await tx.policeUnit.create({
+          data: {
+            id, code: unit.code, name: unit.name, type: unit.type, district: unit.district, range: unit.range,
+            contactPhone: unit.contactPhone ?? null, email: unit.email ?? null, address: unit.address ?? null,
+            parentId: unit.parentId ? await resolveUnit(unit.parentId, visited) : null,
+          },
+        });
+        mappedUnits.set(id, resolved.id);
+        return resolved.id;
+      };
+      for (const account of accounts) await resolveUnit(account.unitId);
+    }
     // Parents first so PoliceUnit.parentId can reference a unit from the same seed.
-    const ordered = [...units].sort((a, b) => Number(Boolean(a.parentId)) - Number(Boolean(b.parentId)));
+    const ordered = mergingMissing ? [] : [...units].sort((a, b) => Number(Boolean(a.parentId)) - Number(Boolean(b.parentId)));
     for (const unit of ordered) {
       await tx.policeUnit.upsert({
         where: { id: unit.id },
@@ -165,7 +203,7 @@ async function applyAccounts() {
       });
     }
 
-    for (const account of seed.accounts) {
+    for (const account of accounts) {
       const data = {
         pno: account.pno,
         beltNumber: account.beltNumber ?? account.pno,
@@ -176,18 +214,23 @@ async function applyAccounts() {
         mobileNumber: account.mobileNumber || null,
         email: account.email ?? null,
         ...(account.passwordHash === null ? {} : { passwordHash: account.passwordHash }),
-        unitId: account.unitId,
+        unitId: mappedUnits.get(account.unitId) ?? account.unitId,
       };
+      const create = { id: account.id, ...data, passwordHash: account.passwordHash ?? newUnusableHash(), createdAt: new Date(), updatedAt: new Date() };
+      if (mergingMissing) {
+        await tx.user.create({ data: create });
+        continue;
+      }
       await tx.user.upsert({
         where: { pno: account.pno },
         update: { ...data, updatedAt: new Date() },
-        create: { id: account.id, ...data, passwordHash: account.passwordHash ?? newUnusableHash(), createdAt: new Date(), updatedAt: new Date() },
+        create,
       });
     }
 
     // The JSON document now carries only non-secret profile extensions.
     const payload = {
-      accounts: seed.accounts.map((account) => ({
+      accounts: accounts.map((account) => ({
         ...profileOf(account.profile),
         id: account.id,
         pno: account.pno,
@@ -198,26 +241,38 @@ async function applyAccounts() {
         rank: account.rank,
         role: account.role,
         status: account.status ?? "ACTIVE",
-        assignedUnitId: account.unitId,
+        assignedUnitId: mappedUnits.get(account.unitId) ?? account.unitId,
       })),
       updatedAt: new Date().toISOString(),
     };
-    await tx.$executeRaw`
-      INSERT INTO "ImportedJsonDocument" (path, payload)
-      VALUES (${STORE_PATH}, ${JSON.stringify(payload)}::jsonb)
-      ON CONFLICT (path) DO UPDATE SET payload = EXCLUDED.payload
-    `;
+    if (mergingMissing && accounts.length) {
+      const existing = await tx.importedJsonDocument.findUnique({ where: { path: STORE_PATH } });
+      const imported = new Set(accounts.map(account => account.pno.trim().toUpperCase()));
+      const profiles = (existing?.payload?.accounts ?? []).filter(account =>
+        !imported.has(String(account.pno ?? "").trim().toUpperCase()));
+      payload.accounts.unshift(...profiles);
+    }
+    if (!mergingMissing || accounts.length) {
+      await tx.importedJsonDocument.upsert({
+        where: { path: STORE_PATH },
+        update: { payload },
+        create: { path: STORE_PATH, payload },
+      });
+    }
+    let importedRosters = 0;
     for (const roster of rosters) {
+      if (mergingMissing && await tx.importedJsonDocument.findUnique({ where: { path: roster.path } })) continue;
       await tx.importedJsonDocument.upsert({
         where: { path: roster.path },
         update: { payload: roster.payload },
         create: { path: roster.path, payload: roster.payload },
       });
+      importedRosters++;
     }
-    return true;
+    return { users: accounts.length, rosters: importedRosters };
   }, { timeout: 30000 });
 
-  if (applied) console.log(`[accounts] seeded ${seed.accounts.length} users and ${rosters.length} station rosters.`);
+  if (applied) console.log(`[accounts] seeded ${applied.users} users and ${applied.rosters} station rosters.`);
   else console.log("[accounts] startup seed skipped because this database already has accounts or was bootstrapped.");
 }
 
