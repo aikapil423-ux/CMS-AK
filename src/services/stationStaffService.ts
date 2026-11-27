@@ -321,6 +321,7 @@ export const DEFAULT_STATION_STAFF: StationStaffMember[] = [
 
 function stationKey(value:string){return value.toLowerCase().replace(/^(police station|ps)\s*/,'').trim();}
 const EXEMPTEE_RANKS_APPLIED_KEY = `${STORAGE_KEY}:chandni-bagh-exemptee-ranks-2026-11-26`;
+const IMPORTED_ROSTERS_KEY = `${STORAGE_KEY}:imported-rosters`;
 const chandniBaghStationKey = stationKey("PS Chandni Bagh Panipat");
 const chandniBaghExempteeRanks = new Map(
   DEFAULT_STATION_STAFF
@@ -331,6 +332,19 @@ const chandniBaghExempteeRanks = new Map(
 function canManage(actor?:UserSession,station?:string){return !!actor && (actor.role === 'SUPER_ADMIN' || ['SHO','SP_DISTRICT','DSP_SUBDIV'].includes(actor.role) && !!station && stationKey(actor.stationName)===stationKey(station));}
 export const stationStaffService = {
   getStaffForStation(station:string):StationStaffMember[]{return this.getStaffMembers().filter(s=>stationKey(s.stationName)===stationKey(station));},
+  loadImportedRoster(station: string, members: StationStaffMember[]): StationStaffMember[] {
+    const roster = this.getStaffMembers();
+    const key = stationKey(station);
+    const imported: string[] = JSON.parse(localStorage.getItem(IMPORTED_ROSTERS_KEY) || "[]");
+    if (members.length && !imported.includes(key)) {
+      const existing = new Set(roster.filter(member => stationKey(member.stationName) === key)
+        .map(member => member.pno.trim().toUpperCase()));
+      roster.push(...members.filter(member => stationKey(member.stationName) === key && !existing.has(member.pno.trim().toUpperCase())));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(roster));
+      localStorage.setItem(IMPORTED_ROSTERS_KEY, JSON.stringify([...imported, key]));
+    }
+    return roster.filter(member => stationKey(member.stationName) === key);
+  },
   getStaffMembers: (): StationStaffMember[] => {
     if (typeof window === "undefined") {
       return DEFAULT_STATION_STAFF;
@@ -412,6 +426,7 @@ export const stationStaffService = {
     if(!actor || actor.role !== "SUPER_ADMIN")throw new Error("Only Super Admin may reset the station roster.");
     if (typeof window !== "undefined") {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_STATION_STAFF));
+      localStorage.removeItem(IMPORTED_ROSTERS_KEY);
     }
     return DEFAULT_STATION_STAFF;
   },

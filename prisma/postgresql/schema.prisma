@@ -83,7 +83,7 @@ model User {
   rank               PoliceRank
   role               SystemRole
   status             UserStatus          @default(ACTIVE)
-  mobileNumber       String              @unique
+  mobileNumber       String?              @unique
   email              String?             @unique
   passwordHash       String
   unitId             String

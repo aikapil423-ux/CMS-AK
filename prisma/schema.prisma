@@ -200,7 +200,7 @@ model User {
   rank                 String
   role                 String
   status               String              @default("ACTIVE")
-  mobileNumber         String              @unique
+  mobileNumber         String?              @unique
   email                String?             @unique
   passwordHash         String
   unitId               String

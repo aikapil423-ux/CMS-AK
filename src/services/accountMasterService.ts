@@ -36,7 +36,7 @@ type DbAccountRow = {
   rank: string;
   role: string;
   status: string;
-  mobileNumber: string;
+  mobileNumber: string | null;
   email: string | null;
   passwordHash: string;
   unitId: string;
@@ -68,7 +68,7 @@ function accountFromDbRow(row: DbAccountRow, profile?: MasterAccount): MasterAcc
     pno: row.pno,
     beltNumber: row.beltNumber || row.pno,
     fullName: row.fullName,
-    mobileNumber: row.mobileNumber,
+    mobileNumber: row.mobileNumber ?? '',
     email: row.email || undefined,
     designation: row.rank,
     rank: row.rank,
@@ -95,7 +95,7 @@ function accountFromDbRow(row: DbAccountRow, profile?: MasterAccount): MasterAcc
     pno: row.pno,
     beltNumber: row.beltNumber || base.beltNumber,
     fullName: row.fullName,
-    mobileNumber: row.mobileNumber,
+    mobileNumber: row.mobileNumber ?? '',
     email: row.email || base.email,
     rank: row.rank,
     rankDisplay: profile?.rank === row.rank ? base.rankDisplay : row.rank,
@@ -389,8 +389,10 @@ export async function createAccount(
     throw new Error(`An account with PNO / Username '${input.pno}' already exists.`);
   }
 
-  const existingMobile = store.accounts.find(
-    (a) => a.mobileNumber.replace(/\D/g, '') === input.mobileNumber.replace(/\D/g, '')
+  const mobileNumber = input.mobileNumber?.trim() || '';
+  const mobileDigits = mobileNumber.replace(/\D/g, '');
+  const existingMobile = mobileDigits && store.accounts.find(
+    (a) => a.mobileNumber.replace(/\D/g, '') === mobileDigits
   );
   if (existingMobile) {
     throw new Error(`An account with Mobile Number '${input.mobileNumber}' already exists.`);
@@ -404,8 +406,8 @@ export async function createAccount(
     pno: normalizedPno,
     beltNumber: input.beltNumber?.trim() || normalizedPno,
     fullName: input.fullName.trim(),
-    mobileNumber: input.mobileNumber.trim(),
-    email: input.email?.trim() || `${normalizedPno.toLowerCase()}@hry.police.gov.in`,
+    mobileNumber,
+    email: input.email === undefined ? `${normalizedPno.toLowerCase()}@hry.police.gov.in` : input.email.trim() || undefined,
     designation: input.designation.trim(),
     rank: input.rank,
     rankDisplay: input.rankDisplay || input.rank,
@@ -440,7 +442,7 @@ export async function createAccount(
         rank: newAccount.rank,
         role: newAccount.role,
         status: newAccount.status,
-        mobileNumber: newAccount.mobileNumber,
+        mobileNumber: newAccount.mobileNumber || null,
         email: newAccount.email,
         passwordHash,
         unitId,
@@ -496,7 +498,7 @@ export async function updateAccount(
         rank: updated.rank,
         role: updated.role,
         status: updated.status,
-        mobileNumber: updated.mobileNumber,
+        mobileNumber: updated.mobileNumber || null,
         email: updated.email,
         unitId,
       },

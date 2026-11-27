@@ -96,7 +96,8 @@ export interface StationStaffMember {
   vehicleOrBeatNo?: string;
   shift: string;
   postingDate?: string; // YYYY-MM-DD
-  status: "ACTIVE" | "ON_DUTY" | "ON_LEAVE" | "TRAINING";
+  status: "ACTIVE" | "ON_DUTY" | "ON_LEAVE" | "TRAINING" | "ABSENT";
   email?: string;
   stationName: string;
+  postingUnit?: string;
 }

@@ -79,6 +79,7 @@ const STATUS_OPTIONS: { value: StationStaffMember["status"]; label: string; labe
   { value: "ACTIVE", label: "Active", labelHi: "तैनात", color: "bg-blue-100 text-blue-800 border-blue-300" },
   { value: "ON_LEAVE", label: "On Leave", labelHi: "अवकाश पर", color: "bg-amber-100 text-amber-800 border-amber-300" },
   { value: "TRAINING", label: "Training", labelHi: "प्रशिक्षण में", color: "bg-purple-100 text-purple-800 border-purple-300" },
+  { value: "ABSENT", label: "Absent", labelHi: "अनुपस्थित", color: "bg-red-100 text-red-800 border-red-300" },
 ];
 
 export default function StationProfilePage() {
@@ -117,10 +118,19 @@ export default function StationProfilePage() {
     stationName: currentUser.stationName || "Police Station Thanesar City",
   });
 
-  // Load staff on mount
   useEffect(() => {
-    loadStaff();
-  }, []);
+    const station = currentUser.stationName;
+    const controller = new AbortController();
+    setStaffList(stationStaffService.getStaffForStation(station));
+    fetch("/api/station-profile/roster", { signal: controller.signal })
+      .then(async response => {
+        if (!response.ok || controller.signal.aborted) return;
+        const { members } = await response.json();
+        if (!controller.signal.aborted) setStaffList(stationStaffService.loadImportedRoster(station, members));
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [currentUser.id, currentUser.stationName]);
 
   const loadStaff = () => {
     const list = stationStaffService.getStaffForStation(currentUser.stationName);
@@ -172,6 +182,7 @@ export default function StationProfilePage() {
       postingDate: staff.postingDate || new Date().toISOString().slice(0, 10),
       status: staff.status,
       stationName: staff.stationName,
+      postingUnit: staff.postingUnit,
     });
     setIsModalOpen(true);
   };
@@ -254,7 +265,8 @@ export default function StationProfilePage() {
         const matchDuty = item.assignedDuty.toLowerCase().includes(q);
         const matchVehicle = (item.vehicleOrBeatNo || "").toLowerCase().includes(q);
         const matchPhone = item.mobile.includes(q);
-        return matchName || matchRank || matchPno || matchBelt || matchDuty || matchVehicle || matchPhone;
+        const matchPosting = item.postingUnit?.toLowerCase().includes(q);
+        return matchName || matchRank || matchPno || matchBelt || matchDuty || matchVehicle || matchPhone || matchPosting;
       }
       return true;
     });
@@ -668,6 +680,7 @@ export default function StationProfilePage() {
                       <div className="mt-2.5 text-xs">
                         <span className="text-[10px] text-slate-400 block font-medium">Assigned Duty:</span>
                         <p className="text-slate-800 font-semibold line-clamp-2">{staff.assignedDuty}</p>
+                        {staff.postingUnit && <p className="text-slate-600">{staff.postingUnit}</p>}
                       </div>
 
                       {/* Vehicle / Beat No if present */}
