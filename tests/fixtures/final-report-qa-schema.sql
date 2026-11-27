@@ -18,10 +18,10 @@ CREATE TABLE "FirFinalReport" (
     "reportJson" TEXT NOT NULL,
     "createdBy" TEXT NOT NULL,
     "updatedBy" TEXT NOT NULL,
-    "sentToShoAt" DATETIME,
+    "sentToShoAt" TIMESTAMP(3),
     "sentToShoBy" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL
 );
 
 -- CreateTable
@@ -45,7 +45,7 @@ CREATE TABLE "FirFinalReportEvent" (
     "version" INTEGER NOT NULL,
     "actorId" TEXT NOT NULL,
     "snapshotJson" TEXT NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "FirFinalReportEvent_reportId_fkey" FOREIGN KEY ("reportId") REFERENCES "FirFinalReport" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 

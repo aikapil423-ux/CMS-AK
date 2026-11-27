@@ -16,7 +16,7 @@ The audit corrections include SITREP point 8. Two requested exceptions remain: l
 
 ## Operational limits
 
-FIR persistence currently uses `prisma/firs-store.json` with atomic replacement, a write lock and record versions. Back up this file with the SQLite database and uploaded evidence. Hosting must provide persistent storage; independent server instances need shared storage or a transactional database implementation.
+FIR records are stored in PostgreSQL with transaction locking and record versions. Back up the PostgreSQL database and uploaded evidence. Deployments with multiple app instances need shared evidence storage.
 
 Several auxiliary registers remain browser-local. Their save failures are surfaced, but they do not become a shared multi-device database through these corrections. Historical records with missing event dates require manual verification; the application does not infer those dates from FIR registration.
 

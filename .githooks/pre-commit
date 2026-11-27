@@ -1,5 +1,5 @@
 #!/bin/sh
-if ! git diff --cached --quiet --diff-filter=ACMRT -- prisma/storage/ prisma/case-analysis/ prisma/court-affidavits/ prisma/scrutiny-records/ prisma/weekly-diary/ prisma/dev.db prisma/seed-data.json ':(glob)prisma/*-store.json' prisma/gd-dismissed-suggestions.json ':(exclude)prisma/accounts-master-store.json'; then
+if ! git diff --cached --quiet --diff-filter=ACMRT -- prisma/storage/ prisma/case-analysis/ prisma/court-affidavits/ prisma/scrutiny-records/ prisma/weekly-diary/ prisma/seed-data.json ':(glob)prisma/*-store.json' prisma/gd-dismissed-suggestions.json ':(exclude)prisma/accounts-master-store.json'; then
   echo "Unstage runtime case data before committing." >&2
   exit 1
 fi
@@ -19,12 +19,12 @@ if git diff --cached --name-only --diff-filter=ACMRT | grep -Eq '(^|/)accounts-s
   exit 1
 fi
 
-# PostgreSQL-only guard: forbid SQLite providers, file: DB URLs, or .db binaries.
+# PostgreSQL-only guard: forbid SQLite providers and database files.
 if git grep --cached -I -n -E 'provider[[:space:]]*=[[:space:]]*"sqlite"' -- prisma/ >/dev/null 2>&1; then
   echo "SQLite provider is forbidden. This repository is PostgreSQL-only." >&2
   exit 1
 fi
-if git diff --cached --name-only --diff-filter=ACMRT | grep -Eq '\.db(-wal|-shm|-journal)?$'; then
-  echo "SQLite database files (.db) are forbidden. Use PostgreSQL only." >&2
+if git diff --cached --name-only --diff-filter=ACMRT | grep -Eiq '\.(db|sqlite|sqlite3)(-wal|-shm|-journal)?$'; then
+  echo "SQLite database files are forbidden. Use PostgreSQL only." >&2
   exit 1
 fi

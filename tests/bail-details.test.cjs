@@ -1,10 +1,29 @@
-const {test,after}=require('node:test');
+const {test,before,after}=require('node:test');
 const assert=require('node:assert/strict');
-const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),vm=require('node:vm'),ts=require('typescript');
-const {DatabaseSync}=require('node:sqlite');const {PrismaClient}=require('@prisma/client');
-const dir=fs.mkdtempSync(path.join(os.tmpdir(),'cms-bail-'));const dbPath=path.join(dir,'test.db');const db=new DatabaseSync(dbPath);db.exec(fs.readFileSync('prisma/bail-details.sqlite.sql','utf8'));db.close();
-const prisma=new PrismaClient({datasources:{db:{url:`file:${dbPath.replaceAll('\\','/')}`}}});
-const modules=new Map();function load(file){if(modules.has(file))return modules.get(file);const exports={};modules.set(file,exports);vm.runInNewContext(ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports,Date,console,require(n){if(n==='@/lib/prisma')return {prisma};if(n.startsWith('@/'))return load(`src/${n.slice(2)}.ts`);return require(n);}});return exports;}
+const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),ts=require('typescript');
+const {randomUUID}=require('node:crypto');
+const {PrismaClient}=require('@prisma/client');
+require('@next/env').loadEnvConfig(process.cwd(),true);
+const databaseUrl=new URL(process.env.POSTGRES_TEST_DATABASE_URL || process.env.POSTGRES_DATABASE_URL);
+const schema='cms_qa_bail_'+randomUUID().replaceAll('-','');
+databaseUrl.searchParams.set('schema',schema);
+const client=()=>new PrismaClient({datasources:{db:{url:databaseUrl.toString()}}});
+const prisma=client();
+let schemaCreated=false;
+before(async()=>{
+ const migration=fs.readFileSync('prisma/postgresql/full/migrations/20261126000000_init/migration.sql','utf8');
+ const table=migration.match(/CREATE TABLE "FirBailDetail" \([\s\S]+?\n\);/)?.[0];
+ const index=migration.match(/CREATE INDEX "FirBailDetail_firId_accusedId_idx"[^;]+;/)?.[0];
+ const events=fs.readFileSync('prisma/postgresql/full/migrations/20261127030000_case_documents/migration.sql','utf8')
+   .match(/CREATE TABLE "CaseDocumentEvent" \([\s\S]+?\n\);/)?.[0];
+ assert(table && index && events);
+ await prisma.$executeRawUnsafe(`CREATE SCHEMA "${schema}"`);
+ schemaCreated=true;
+ await prisma.$executeRawUnsafe(table);
+ await prisma.$executeRawUnsafe(index);
+ await prisma.$executeRawUnsafe(events);
+});
+const modules=new Map();function load(file){if(modules.has(file))return modules.get(file);const exports={};modules.set(file,exports);vm.runInNewContext(ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports,Date,console,require(n){if(n==='@/lib/prisma')return {prisma};if(n==='@/lib/runtimeJsonStore')return {usesPostgresStore:()=>true};if(n==='./locationMasterService')return {readLocationStore:async()=>({states:[],ranges:[],districts:[],policeStations:[]})};if(n.startsWith('@/'))return load(`src/${n.slice(2)}.ts`);if(n.startsWith('./'))return load(path.join(path.dirname(file),n+'.ts'));return require(n);}});return exports;}
 const {bailSchema,emptyBail}=load('src/lib/bailSchema.ts');const {bailDbService:s}=load('src/services/bailDbService.ts');
 function input(){return {id:'b8a70ad2-135d-47f1-9db5-799bb78b0db7',expectedVersion:0,firId:'test-fir',policeStation:'Test PS',district:'Test',authorId:'test-io',firSnapshot:{policeStation:'Test PS',district:'Test',assignedIoId:'test-io'},data:{...emptyBail(),accusedId:'acc1',accusedName:'Accused',advocateName:'Advocate',courtType:'Sessions Court',bailType:'Regular',hearingDate:'2026-10-29',suretyType:'Unknown',sameAddress:true,presentAddress:{...emptyBail().presentAddress,city:'Panipat',state:'Haryana',district:'Panipat'},attachment:{name:'order.pdf',type:'application/pdf',data:'data:application/pdf;base64,JVBERi0xLjQ='}}};}
 test('required fields and invalid dates are rejected without exceptions',()=>{
@@ -17,9 +36,10 @@ test('backend saves, reloads attachment and surety, retries idempotently and pre
  const body=input();const saved=await s.save(body);assert.equal(saved.version,1);assert.equal((await s.save(body)).id,saved.id);assert.equal(await prisma.firBailDetail.count(),1);
  const [loaded]=await s.list(body.firId);assert.equal(loaded.data.attachment.data,body.data.attachment.data);assert.deepEqual(loaded.data.permanentAddress,loaded.data.presentAddress);
  const edited=await s.save({...body,expectedVersion:1,data:{...body.data,advocateName:'Changed'}});assert.equal(edited.version,2);
+ assert.equal(await prisma.caseDocumentEvent.count({where:{recordId:body.id}}),2);
  await assert.rejects(s.save({...body,expectedVersion:1}),/changed/);
  await assert.rejects(s.save({...body,expectedVersion:2,firId:'another'}),/another FIR/);
- const fresh=new PrismaClient({datasources:{db:{url:`file:${dbPath.replaceAll('\\','/')}`}}});assert.equal((await fresh.firBailDetail.findUnique({where:{id:body.id}})).version,2);await fresh.$disconnect();
+ const fresh=client();try{assert.equal((await fresh.firBailDetail.findUnique({where:{id:body.id}})).version,2);}finally{await fresh.$disconnect();}
 });
 test('every personal, age, phone and address field survives a backend round trip',async()=>{
  const body=input();body.id='b8a70ad2-135d-47f1-9db5-799bb78b0db8';
@@ -29,4 +49,7 @@ test('every personal, age, phone and address field survives a backend round trip
  const saved=await s.save(body);assert.deepEqual(JSON.parse(JSON.stringify(saved.data)),JSON.parse(JSON.stringify(body.data)));
  const loaded=(await s.list(body.firId)).find(r=>r.id===saved.id);assert.deepEqual(JSON.parse(JSON.stringify(loaded.data)),JSON.parse(JSON.stringify(body.data)));
 });
-after(async()=>{await prisma.$disconnect();fs.rmSync(dir,{recursive:true,force:true});});
+after(async()=>{
+ try{if(schemaCreated)await prisma.$executeRawUnsafe(`DROP SCHEMA "${schema}" CASCADE`);}
+ finally{await prisma.$disconnect();}
+});

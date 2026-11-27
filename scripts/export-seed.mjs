@@ -44,8 +44,8 @@ async function exportSeedData() {
 
     const payload = {
       meta: {
-        schema: "prisma/schema.prisma",
-        databaseFile: "prisma/dev.db",
+        schema: "prisma/postgresql/full/schema.prisma",
+        databaseProvider: "postgresql",
         counts: {
           policeUnits: policeUnits.length,
           users: users.length,

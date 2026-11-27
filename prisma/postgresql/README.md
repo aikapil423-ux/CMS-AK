@@ -1,33 +1,14 @@
-# PostgreSQL migration
+# PostgreSQL setup
 
-Generated from `prisma/schema.postgresql.prisma`.
-
-Apply with:
-
-```
-npx prisma migrate deploy --schema prisma/postgresql/schema.prisma
-```
-
-The SQLite equivalent lives in `prisma/migrations/`.
-
-## Current CMS data import
-
-`full/schema.prisma` matches the current SQLite models, including `GDRecord`,
-and adds relational location masters. It has its own migrations and expects
-`POSTGRES_DATABASE_URL`. Use an empty test database dedicated to this import.
-
-From the repository root:
+The application uses `prisma/postgresql/full/schema.prisma` and requires
+`POSTGRES_DATABASE_URL`. Configure the connection before running:
 
 ```powershell
 .\node_modules\.bin\prisma.cmd migrate deploy --schema prisma/postgresql/full/schema.prisma
-$importFile = Join-Path $env:TEMP ("cms-postgres-import-" + [guid]::NewGuid() + ".sql")
-python scripts/export-postgresql-import.py --output $importFile
-.\node_modules\.bin\prisma.cmd db execute --schema prisma/postgresql/full/schema.prisma --file $importFile
 ```
 
-Create the export while application writes are paused so the SQLite and JSON
-sources represent the same point in time. The SQL export contains case and
-account data. Keep it in authorized local storage. 
+Fresh environments can restore an authorized PostgreSQL backup. Use a fresh
+database for a full restore and verify the restored records before switching the app.
 
 ## Account credentials seed
 
@@ -75,9 +56,9 @@ Unverified items remain available in the original browser storage.
 
 Set `POSTGRES_DATABASE_URL` in the Git-ignored `.env.local` and run
 `npm run dev` after importing. The dev and build scripts generate the Prisma
-client for the configured provider. When the variable is set, PostgreSQL
-must be reachable. The standalone Docker image still uses its SQLite
-configuration.
+PostgreSQL client. The Docker container also requires a reachable PostgreSQL
+connection via its runtime environment. It applies the full schema migrations
+before starting Next.js.
 
 On the local Windows test setup, if the PostgreSQL process is stopped, start
 the existing cluster before starting the app:

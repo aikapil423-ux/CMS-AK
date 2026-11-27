@@ -4,17 +4,19 @@ The FIR profile header opens Bail Details. The form includes Bail Details, Suret
 
 Data is stored in FirBailDetail, with FIR/accused IDs, structured form JSON, document content, officer attribution, timestamps, and an optimistic version. Repeated initial submissions use the same UUID and do not duplicate the record. Conflicting edits return HTTP 409.
 
-For an existing SQLite database, run:
+Apply migrations for the full PostgreSQL schema before starting the app:
 
 ```sh
-npx prisma db execute --file prisma/bail-details.sqlite.sql --schema prisma/schema.prisma
-npx prisma generate
+npx prisma migrate deploy --schema prisma/postgresql/full/schema.prisma
+npx prisma generate --schema prisma/postgresql/full/schema.prisma
 ```
 
-The setup SQL only creates the bail table and index. It does not reset other tables. The local database has already received this addition. If Prisma generation reports a locked Windows engine DLL, close the app's development server before regenerating, then restart it. Runtime persistence uses parameterized Prisma SQL and also works with an already running Prisma client.
+The PostgreSQL migration already includes `FirBailDetail` and its FIR/accused index.
 
-For PostgreSQL, include the FirBailDetail model from schema.postgresql.prisma in the normal schema migration process. Do not run the SQLite setup script against PostgreSQL.
+Verification uses an isolated PostgreSQL schema. Set `POSTGRES_TEST_DATABASE_URL`
+to use a separate test database, or use the configured local `POSTGRES_DATABASE_URL`.
 
-The API follows the application's current demo officer identity model (x-cms-user), with FIR visibility checks. This is not a signed production login session; production authentication must replace the demo identity model across the application. FIR metadata is still supplied by the local FIR store, as in the existing FIR workflows.
-
-Verification: node --test tests/bail-details.test.cjs; npx tsc --noEmit --incremental false.
+```sh
+node --test tests/bail-details.test.cjs
+npx tsc --noEmit --incremental false
+```

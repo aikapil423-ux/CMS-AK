@@ -14,10 +14,6 @@
 - The legacy plaintext sample property has been removed from the type, the account service,
   the runtime stores and the login fallback. Do not reintroduce it in any form.
 
-File/SQLite mode remains a local development fallback. Accounts created there keep their hash
-in the JSON store because there is no Postgres `User` table in that mode; the committed seed
-carries no credentials at all, and no mode ever stores a plaintext PIN.
-
 ## Login and session flow
 
 1. `validLogin()` looks up `User` by `pno` first and verifies `passwordHash` with scrypt.

@@ -28,7 +28,7 @@ const prisma = new PrismaClient({ datasources: { db: { url: `${stripped}${stripp
 const schemaReady = (async () => {
   await prisma.$executeRawUnsafe(`DROP SCHEMA IF EXISTS "${schemaName}" CASCADE`);
   await prisma.$executeRawUnsafe(`CREATE SCHEMA "${schemaName}"`);
-  const ddl = fs.readFileSync('tests/fixtures/final-report-qa-schema.sql', 'utf8').replace(/DATETIME/g, 'TIMESTAMP(3)');
+  const ddl = fs.readFileSync('tests/fixtures/final-report-qa-schema.sql', 'utf8');
   const statements = ddl.split('\n').filter(line => !line.trim().startsWith('--')).join('\n').split(';').map(s => s.trim()).filter(Boolean);
   for (const statement of statements) await prisma.$executeRawUnsafe(statement);
 })();

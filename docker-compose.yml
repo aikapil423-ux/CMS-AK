@@ -6,7 +6,8 @@ services:
     restart: unless-stopped
     ports:
       - "8091:8091"
-    # Server-side secrets (GEMINI_API_KEY for voice dictation, etc.).
+    # Requires POSTGRES_DATABASE_URL for a database reachable from the container.
+    # This file can also supply other server-side secrets.
     # The file itself is git-ignored and excluded from the image; keep it on
     # the host so `docker compose up -d` can read it without rebuilding.
     env_file:
