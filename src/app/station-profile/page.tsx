@@ -45,6 +45,7 @@ const CATEGORY_TABS: { code: StaffRoleCategory | "ALL"; label: string; labelHi: 
   { code: "ERV", label: "ERV Staff (Dial 112)", labelHi: "ई.आर.वी. (डायल 112)" },
   { code: "RIDER", label: "Rider Staff", labelHi: "राइडर पेट्रोलिंग" },
   { code: "MHC", label: "MHC Staff", labelHi: "मुहर्रिर / मालखाना" },
+  { code: "MM", label: "MM Staff", labelHi: "एमएम स्टाफ" },
 ];
 
 const RANK_OPTIONS = [
@@ -52,6 +53,9 @@ const RANK_OPTIONS = [
   "Sub-Inspector",
   "Assistant Sub-Inspector",
   "Head Constable",
+  "E/SI",
+  "E/ASI",
+  "E/HC",
   "Constable",
   "Lady Constable",
   "Constable (Pilot)",
@@ -261,7 +265,7 @@ export default function StationProfilePage() {
     const onDuty = staffList.filter((s) => s.status === "ON_DUTY").length;
     const eoIoCount = staffList.filter((s) => s.category === "EO_IO").length;
     const ervRiderCount = staffList.filter((s) => s.category === "ERV" || s.category === "RIDER").length;
-    const mhcCount = staffList.filter((s) => s.category === "MHC").length;
+    const mhcCount = staffList.filter((s) => s.category === "MHC" || s.category === "MM").length;
     return {
       total: staffList.length,
       onDuty,
@@ -283,6 +287,7 @@ export default function StationProfilePage() {
       case "RIDER":
         return <Bike className="w-4 h-4 text-emerald-600" />;
       case "MHC":
+      case "MM":
         return <Building2 className="w-4 h-4 text-purple-600" />;
       case "GENERAL":
       default:
@@ -810,6 +815,7 @@ export default function StationProfilePage() {
                     <option value="ERV">ERV Staff (डायल 112 / First Responder)</option>
                     <option value="RIDER">Rider Staff (मोटरसाइकिल बीट पेट्रोलिंग)</option>
                     <option value="MHC">MHC Staff (मुहर्रिर हेड कांस्टेबल / मालखाना)</option>
+                    <option value="MM">MM Staff (एमएम स्टाफ)</option>
                   </select>
                 </div>
 

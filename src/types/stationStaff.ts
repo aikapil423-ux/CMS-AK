@@ -5,7 +5,8 @@ export type StaffRoleCategory =
   | "GENERAL"
   | "ERV"
   | "RIDER"
-  | "MHC";
+  | "MHC"
+  | "MM";
 
 export interface StaffCategoryDef {
   code: StaffRoleCategory;
@@ -68,6 +69,15 @@ export const STAFF_CATEGORY_CONFIG: Record<StaffRoleCategory, StaffCategoryDef> 
     label: "MHC Staff",
     labelHi: "मुहर्रिर हेड कांस्टेबल (MHC / मालखाना)",
     description: "Moharrir Head Constable, Station Writer, Malkhana & Record Keepers",
+    badgeColor: "bg-purple-100 text-purple-800 border-purple-300",
+    borderColor: "border-purple-400",
+    iconBg: "bg-purple-50 text-purple-700",
+  },
+  MM: {
+    code: "MM",
+    label: "MM Staff",
+    labelHi: "एमएम स्टाफ",
+    description: "Staff assigned to MM duty",
     badgeColor: "bg-purple-100 text-purple-800 border-purple-300",
     borderColor: "border-purple-400",
     iconBg: "bg-purple-50 text-purple-700",

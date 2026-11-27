@@ -243,10 +243,10 @@ export const DEFAULT_STATION_STAFF: StationStaffMember[] = [
   {"id":"staff-cb-spo155","name":"BALWAN","rank":"SPO","category":"ERV","pno":"SPO155","beltNumber":"155/SPO","mobile":"-","assignedDuty":"ERV 538","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-wnaxg3","name":"BALWAN SINGH","rank":"SPO","category":"GENERAL","pno":"WNAXG3","beltNumber":"155/SPO","mobile":"-","assignedDuty":"General Duty","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-3g3gaf","name":"BALWAN SINGH","rank":"Sub-Inspector","category":"EO_IO","pno":"3G3GAF","beltNumber":"1141","mobile":"-","assignedDuty":"IO","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
-  {"id":"staff-cb-2e4lqn","name":"BIJENDER","rank":"Constable","category":"ERV","pno":"2E4LQN","beltNumber":"1066","mobile":"-","assignedDuty":"ERV 537 Night","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
+  {"id":"staff-cb-2e4lqn","name":"BIJENDER","rank":"E/ASI","category":"ERV","pno":"2E4LQN","beltNumber":"1066","mobile":"-","assignedDuty":"ERV 537 Night","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-spo004","name":"BIJENDER","rank":"SPO","category":"ERV","pno":"SPO004","beltNumber":"4/SPO","mobile":"-","assignedDuty":"ERV 537","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-viabjs","name":"BIJENDER KUMAR","rank":"SPO","category":"GENERAL","pno":"VIABJS","beltNumber":"4/SPO","mobile":"-","assignedDuty":"General Duty","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
-  {"id":"staff-cb-3f4l11","name":"BIJENDER SINGH","rank":"Constable","category":"MHC","pno":"3F4L11","beltNumber":"958","mobile":"-","assignedDuty":"MM Staff","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
+  {"id":"staff-cb-3f4l11","name":"BIJENDER SINGH","rank":"E/ASI","category":"MM","pno":"3F4L11","beltNumber":"958","mobile":"-","assignedDuty":"MM Staff","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-3e4lak","name":"CHANDERPAL","rank":"Sub-Inspector","category":"EO_IO","pno":"3E4LAK","beltNumber":"26/PPT","mobile":"-","assignedDuty":"IO","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-1fbkyr","name":"DEEPAK","rank":"Constable","category":"GENERAL","pno":"1FBKYR","beltNumber":"1566","mobile":"-","assignedDuty":"General Duty","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-ct1566","name":"DEEPAK","rank":"Constable","category":"RIDER","pno":"CT1566","beltNumber":"1566/PPT","mobile":"-","assignedDuty":"Rider 135 Day","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
@@ -254,13 +254,13 @@ export const DEFAULT_STATION_STAFF: StationStaffMember[] = [
   {"id":"staff-cb-3ral0t","name":"DEEPAK KUMAR","rank":"SPO","category":"GENERAL","pno":"3RAL0T","beltNumber":"71/SPO","mobile":"-","assignedDuty":"General Duty","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-spo112","name":"DEVENDER","rank":"SPO","category":"GENERAL","pno":"SPO112","beltNumber":"112/SPO","mobile":"-","assignedDuty":"General Duty","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-1balbr","name":"DEVINDER SINGH","rank":"SPO","category":"GENERAL","pno":"1BALBR","beltNumber":"112/SPO","mobile":"-","assignedDuty":"General Duty","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
-  {"id":"staff-cb-2e4lop","name":"DHARAMPAL","rank":"Constable","category":"ERV","pno":"2E4LOP","beltNumber":"855","mobile":"-","assignedDuty":"ERV 537 Day","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
+  {"id":"staff-cb-2e4lop","name":"DHARAMPAL","rank":"E/ASI","category":"ERV","pno":"2E4LOP","beltNumber":"855","mobile":"-","assignedDuty":"ERV 537 Day","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-3f4li2","name":"DILBAG SINGH","rank":"Sub-Inspector","category":"EO_IO","pno":"3F4LI2","beltNumber":"80/PPT","mobile":"-","assignedDuty":"IO","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-ad9q2l","name":"HARI OM","rank":"Head Constable","category":"EO_IO","pno":"AD9Q2L","beltNumber":"929","mobile":"-","assignedDuty":"IO","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-1b4l1y","name":"HAWA SINGH","rank":"Sub-Inspector","category":"EO_IO","pno":"1B4L1Y","beltNumber":"14/PPT","mobile":"-","assignedDuty":"IO","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
-  {"id":"staff-cb-oh9g0f","name":"IMRAN KHAN","rank":"Constable","category":"ERV","pno":"OH9G0F","beltNumber":"1886","mobile":"-","assignedDuty":"ERV 538 Day","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
+  {"id":"staff-cb-oh9g0f","name":"IMRAN KHAN","rank":"E/HC","category":"ERV","pno":"OH9G0F","beltNumber":"1886","mobile":"-","assignedDuty":"ERV 538 Day","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-kfakx1","name":"JAGMANDER","rank":"Constable","category":"MHC","pno":"KFAKX1","beltNumber":"1388","mobile":"-","assignedDuty":"MHC Staff","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
-  {"id":"staff-cb-1e4lcb","name":"KAMAL SINGH","rank":"Constable","category":"ERV","pno":"1E4LCB","beltNumber":"186","mobile":"-","assignedDuty":"ERV 538 Day","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
+  {"id":"staff-cb-1e4lcb","name":"KAMAL SINGH","rank":"E/SI","category":"ERV","pno":"1E4LCB","beltNumber":"186","mobile":"-","assignedDuty":"ERV 538 Day","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-8d5g0l","name":"KAMLESH","rank":"Inspector","category":"EO_IO","pno":"8D5G0L","beltNumber":"135/SPT","mobile":"-","assignedDuty":"IO","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-3c4l05","name":"KIRAN DEEP","rank":"Head Constable","category":"GENERAL","pno":"3C4L05","beltNumber":"143","mobile":"-","assignedDuty":"General Duty","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-si137kirpal","name":"KIRPAL","rank":"Sub-Inspector","category":"EO_IO","pno":"SI137KIRPAL","beltNumber":"137","mobile":"-","assignedDuty":"IO","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
@@ -285,12 +285,12 @@ export const DEFAULT_STATION_STAFF: StationStaffMember[] = [
   {"id":"staff-cb-hg2031","name":"RAJBEER","rank":"HGH","category":"RIDER","pno":"HG2031","beltNumber":"2031/HGH","mobile":"-","assignedDuty":"Rider 135 Day","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-hg0633","name":"RAJU","rank":"HGH","category":"RIDER","pno":"HG0633","beltNumber":"633/HGH","mobile":"-","assignedDuty":"Rider 170 Day","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-4g2b21","name":"RAKESH KUMAR","rank":"Assistant Sub-Inspector","category":"EO_IO","pno":"4G2B21","beltNumber":"250/PPT","mobile":"-","assignedDuty":"IO","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
-  {"id":"staff-cb-1c4l43","name":"RAM KISHAN","rank":"Constable","category":"GENERAL","pno":"1C4L43","beltNumber":"329","mobile":"-","assignedDuty":"General Duty","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
+  {"id":"staff-cb-1c4l43","name":"RAM KISHAN","rank":"E/SI","category":"GENERAL","pno":"1C4L43","beltNumber":"329","mobile":"-","assignedDuty":"General Duty","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-hg2033","name":"RANJIT","rank":"HGH","category":"GENERAL","pno":"HG2033","beltNumber":"2033/HGH","mobile":"-","assignedDuty":"General Duty","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-2c4lx0","name":"RAVINDER SINGH","rank":"Sub-Inspector","category":"EO_IO","pno":"2C4LX0","beltNumber":"195/PPT","mobile":"-","assignedDuty":"IO","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-5i4lhg","name":"REKHA","rank":"Inspector","category":"SHO","pno":"5I4LHG","beltNumber":"-","mobile":"-","assignedDuty":"SHO","shift":"Round the Clock (24x7)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-ca9x71","name":"ROHIT","rank":"Head Constable","category":"EO_IO","pno":"CA9X71","beltNumber":"773","mobile":"-","assignedDuty":"IO","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
-  {"id":"staff-cb-3f4l6e","name":"SATENDER SINGH","rank":"Head Constable","category":"EO_IO","pno":"3F4L6E","beltNumber":"59","mobile":"-","assignedDuty":"IO","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
+  {"id":"staff-cb-3f4l6e","name":"SATENDER SINGH","rank":"E/ASI","category":"EO_IO","pno":"3F4L6E","beltNumber":"59","mobile":"-","assignedDuty":"IO","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-hg2040","name":"SATISH","rank":"HGH","category":"GENERAL","pno":"HG2040","beltNumber":"2040/HGH","mobile":"-","assignedDuty":"General Duty","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-133376","name":"SATISH GIRI","rank":"Driver","category":"ERV","pno":"133376","beltNumber":"-","mobile":"-","assignedDuty":"ERV 537","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-si564h","name":"SATPAL SINGH","rank":"Sub-Inspector","category":"EO_IO","pno":"SI564H","beltNumber":"564/H","mobile":"-","assignedDuty":"IO","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
@@ -298,7 +298,7 @@ export const DEFAULT_STATION_STAFF: StationStaffMember[] = [
   {"id":"staff-cb-spo229","name":"SATYAWAN","rank":"SPO","category":"GENERAL","pno":"SPO229","beltNumber":"229/SPO","mobile":"-","assignedDuty":"General Duty","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-hg2133","name":"SATYAWAN","rank":"HGH","category":"GENERAL","pno":"HG2133","beltNumber":"2133/HGH","mobile":"-","assignedDuty":"General Duty","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-df3glm","name":"SENU RANI","rank":"Assistant Sub-Inspector","category":"EO_IO","pno":"DF3GLM","beltNumber":"395/PPT","mobile":"-","assignedDuty":"IO","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
-  {"id":"staff-cb-3a4l4c","name":"SILAK RAM","rank":"Constable","category":"GENERAL","pno":"3A4L4C","beltNumber":"1157","mobile":"-","assignedDuty":"General Duty","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
+  {"id":"staff-cb-3a4l4c","name":"SILAK RAM","rank":"E/ASI","category":"GENERAL","pno":"3A4L4C","beltNumber":"1157","mobile":"-","assignedDuty":"General Duty","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-deayj9","name":"SUMIT","rank":"Constable","category":"MHC","pno":"DEAYJ9","beltNumber":"1233","mobile":"-","assignedDuty":"Computer Operator","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-0fa7al","name":"SUMIT","rank":"Constable","category":"MHC","pno":"0FA7AL","beltNumber":"1014","mobile":"-","assignedDuty":"MHC Staff","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-132003","name":"SUMIT KUMAR","rank":"Driver","category":"ERV","pno":"132003","beltNumber":"-","mobile":"-","assignedDuty":"ERV 538","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
@@ -309,9 +309,9 @@ export const DEFAULT_STATION_STAFF: StationStaffMember[] = [
   {"id":"staff-cb-qrbxch","name":"SUNIL KUMAR","rank":"SPO","category":"GENERAL","pno":"QRBXCH","beltNumber":"7/SPO","mobile":"-","assignedDuty":"General Duty","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-hg0720","name":"SURAJ BHAN","rank":"HGH","category":"RIDER","pno":"HG0720","beltNumber":"720/HGH","mobile":"-","assignedDuty":"Rider 170 Day","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-hg2151","name":"SURENDER","rank":"HGH","category":"RIDER","pno":"HG2151","beltNumber":"2151/HGH","mobile":"-","assignedDuty":"Rider 135 Day","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
-  {"id":"staff-cb-6d9wc9","name":"SURENDER","rank":"Constable","category":"ERV","pno":"6D9WC9","beltNumber":"769","mobile":"-","assignedDuty":"ERV 538 Day","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
+  {"id":"staff-cb-6d9wc9","name":"SURENDER","rank":"E/HC","category":"ERV","pno":"6D9WC9","beltNumber":"769","mobile":"-","assignedDuty":"ERV 538 Day","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-0hbkbv","name":"SUSHIL MOR","rank":"Constable","category":"GENERAL","pno":"0HBKBV","beltNumber":"1453","mobile":"-","assignedDuty":"General Duty","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
-  {"id":"staff-cb-1h4l56","name":"TRILOCK","rank":"Constable","category":"GENERAL","pno":"1H4L56","beltNumber":"459","mobile":"-","assignedDuty":"General Duty","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
+  {"id":"staff-cb-1h4l56","name":"TRILOCK","rank":"E/SI","category":"GENERAL","pno":"1H4L56","beltNumber":"459","mobile":"-","assignedDuty":"General Duty","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-maaxqp","name":"USHA KUMARI","rank":"Constable","category":"GENERAL","pno":"MAAXQP","beltNumber":"1722","mobile":"-","assignedDuty":"General Duty","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-wbpk1s","name":"VIKASH","rank":"Constable","category":"GENERAL","pno":"WBPK1S","beltNumber":"1479","mobile":"-","assignedDuty":"General Duty","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
   {"id":"staff-cb-hg2042","name":"VINOD","rank":"HGH","category":"GENERAL","pno":"HG2042","beltNumber":"2042/HGH","mobile":"-","assignedDuty":"General Duty","shift":"Day Shift (08:00 - 20:00)","postingDate":"2026-11-26","status":"ON_DUTY","stationName":"PS Chandni Bagh Panipat"},
@@ -320,6 +320,14 @@ export const DEFAULT_STATION_STAFF: StationStaffMember[] = [
 ];
 
 function stationKey(value:string){return value.toLowerCase().replace(/^(police station|ps)\s*/,'').trim();}
+const EXEMPTEE_RANKS_APPLIED_KEY = `${STORAGE_KEY}:chandni-bagh-exemptee-ranks-2026-11-26`;
+const chandniBaghStationKey = stationKey("PS Chandni Bagh Panipat");
+const chandniBaghExempteeRanks = new Map(
+  DEFAULT_STATION_STAFF
+    .filter(member => stationKey(member.stationName) === chandniBaghStationKey && member.rank.startsWith("E/"))
+    .map(member => [member.pno.toUpperCase(), member.rank])
+);
+
 function canManage(actor?:UserSession,station?:string){return !!actor && (actor.role === 'SUPER_ADMIN' || ['SHO','SP_DISTRICT','DSP_SUBDIV'].includes(actor.role) && !!station && stationKey(actor.stationName)===stationKey(station));}
 export const stationStaffService = {
   getStaffForStation(station:string):StationStaffMember[]{return this.getStaffMembers().filter(s=>stationKey(s.stationName)===stationKey(station));},
@@ -331,9 +339,28 @@ export const stationStaffService = {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (!stored) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_STATION_STAFF));
+        localStorage.setItem(EXEMPTEE_RANKS_APPLIED_KEY, "1");
         return DEFAULT_STATION_STAFF;
       }
-      return JSON.parse(stored);
+      const roster: StationStaffMember[] = JSON.parse(stored);
+      const applyExempteeRanks = !localStorage.getItem(EXEMPTEE_RANKS_APPLIED_KEY);
+      const updatedRoster = roster.map(member => {
+        const rank = applyExempteeRanks && stationKey(member.stationName) === chandniBaghStationKey
+          ? chandniBaghExempteeRanks.get(member.pno.trim().toUpperCase())
+          : undefined;
+        return rank && rank !== member.rank ? { ...member, rank } : member;
+      });
+      if (applyExempteeRanks) {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedRoster));
+          localStorage.setItem(EXEMPTEE_RANKS_APPLIED_KEY, "1");
+        } catch {
+          // The updated ranks are still available for this view if storage is full.
+        }
+      }
+      return updatedRoster.map(member => member.category === "MHC" && member.assignedDuty?.trim().toLowerCase() === "mm staff"
+        ? { ...member, category: "MM" }
+        : member);
     } catch {
       return DEFAULT_STATION_STAFF;
     }
