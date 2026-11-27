@@ -26,6 +26,8 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 
 ## Dictation and deployment
 
-`npm run dev` and `npm start` prepare the same Whisper Large-v3 Turbo model automatically. The first run downloads about 1.62 GB, verifies the model files against pinned SHA-256 checksums, and caches them in `.whisper/model`. Run `npm run whisper:setup` to provision the model ahead of time. Set `WHISPER_SETUP_PYTHON` if your Python executable has a different name or path.
+`npm run dev` and, outside Render, `npm start` prepare the same Whisper Large-v3 Turbo model automatically. The first run downloads about 1.62 GB, verifies the model files against pinned SHA-256 checksums, and caches them in `.whisper/model`. Run `npm run whisper:setup` to provision the model ahead of time. Set `WHISPER_SETUP_PYTHON` if your Python executable has a different name or path.
+
+On Render Node services, `npm start` skips Whisper provisioning by default so the web server can bind immediately. Browser speech recognition remains available in supported browsers. For the server-side Whisper fallback, provision the model on persistent storage first, or set `WHISPER_SETUP_ON_START=true` to opt into provisioning during startup.
 
 For production dictation, use a persistent Node.js host with Python and writable storage. Run `npm ci`, `npm run build`, and `npm start` from the checkout. Persist `.whisper` between starts on the same host to reuse the model and Python environment. The dictation worker requires a local Python process and model files. A standard Vercel serverless deployment does not provide this setup.
