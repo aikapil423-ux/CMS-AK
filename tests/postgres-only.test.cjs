@@ -18,9 +18,11 @@ test("Prisma schemas and migration lock strictly enforce PostgreSQL only", () =>
   assert.doesNotMatch(migrationLock, /provider\s*=\s*"sqlite"/);
   assert.doesNotMatch(runtimeGenerator, /prisma\/schema\.prisma/);
   const dockerfile = fs.readFileSync(path.join(root, "Dockerfile"), "utf8");
-  assert.match(dockerfile, /prisma migrate deploy/);
-  assert.match(dockerfile, /POSTGRES_DATABASE_URL/);
-  assert.doesNotMatch(dockerfile, /file:\.\/dev\.db|prisma db push/);
+  const startup = fs.readFileSync(path.join(root, "deploy", "start-cms.sh"), "utf8");
+  assert.match(dockerfile, /deploy\/start-cms\.sh/);
+  assert.match(startup, /POSTGRES_DATABASE_URL/);
+  assert.match(startup, /prisma migrate deploy[\s\S]*seed-accounts\.mjs --bootstrap[\s\S]*next start/);
+  assert.doesNotMatch(dockerfile + startup, /file:\.\/dev\.db|prisma db push/);
   for (const legacyFile of ["dev.db", "local-data.snapshot.sqlite", "bail-details.sqlite.sql"]) {
     assert.equal(fs.existsSync(path.join(root, "prisma", legacyFile)), false);
   }

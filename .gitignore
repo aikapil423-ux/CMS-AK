@@ -63,6 +63,7 @@ prisma/iif-vii/
 
 # Account credential seed exports (contain password hashes; never commit)
 *accounts-seed*.json
+deploy/bootstrap/
 
 # Temporary Office and scratch files
 ~$*

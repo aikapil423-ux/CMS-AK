@@ -19,4 +19,4 @@ COPY --from=build /app/prisma/postgresql/full/ /app/runtime-postgresql/
 EXPOSE 8091
 HEALTHCHECK --interval=30s --timeout=8s --start-period=25s --retries=3 \
   CMD wget -qO- http://127.0.0.1:8091/ >/dev/null 2>&1 || exit 1
-CMD ["sh", "-c", "test -n \"$POSTGRES_DATABASE_URL\" && ./node_modules/.bin/prisma migrate deploy --schema /app/runtime-postgresql/schema.prisma && exec ./node_modules/.bin/next start -p 8091"]
+CMD ["sh", "/app/deploy/start-cms.sh"]

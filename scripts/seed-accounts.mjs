@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { randomBytes, scryptSync } from "node:crypto";
 import nextEnv from "@next/env";
 import { PrismaClient } from "@prisma/client";
 
@@ -15,6 +16,7 @@ const seedFile = process.env.CMS_ACCOUNTS_SEED_FILE
   ? path.resolve(process.env.CMS_ACCOUNTS_SEED_FILE)
   : path.join(process.cwd(), "prisma", "accounts-seed.json");
 const exporting = process.argv.includes("--export");
+const bootstrapping = process.argv.includes("--bootstrap");
 const prisma = new PrismaClient({ datasources: { db: { url: databaseUrl } } });
 
 const STORE_PATH = "accounts-master-store.json";
@@ -49,6 +51,11 @@ function assertHash(value, label) {
   }
 }
 
+function newUnusableHash() {
+  const salt = randomBytes(16).toString("hex");
+  return `${salt}:${scryptSync(randomBytes(32), salt, 64).toString("hex")}`;
+}
+
 function unitOf(user) {
   return {
     id: user.unit.id,
@@ -65,10 +72,11 @@ function unitOf(user) {
 }
 
 async function exportAccounts() {
-  const [users, units, rows] = await Promise.all([
+  const [users, units, rows, rosters] = await Promise.all([
     prisma.user.findMany({ include: { unit: true }, orderBy: { pno: "asc" } }),
     prisma.policeUnit.findMany({ orderBy: { id: "asc" } }),
     prisma.$queryRaw`SELECT payload FROM "ImportedJsonDocument" WHERE path = ${STORE_PATH}`,
+    prisma.importedJsonDocument.findMany({ where: { path: { startsWith: "station-roster/" } } }),
   ]);
   const profiles = new Map(
     (rows[0]?.payload?.accounts ?? []).map((account) => [String(account.pno ?? "").toUpperCase(), account]),
@@ -83,7 +91,7 @@ async function exportAccounts() {
     status: user.status,
     mobileNumber: user.mobileNumber,
     email: user.email,
-    passwordHash: user.passwordHash,
+    passwordHash: /^[a-f0-9]{32}:[a-f0-9]{128}$/i.test(user.passwordHash) ? user.passwordHash : null,
     unitId: user.unitId,
     unit: unitOf(user),
     profile: profileOf(profiles.get(user.pno.toUpperCase())),
@@ -97,9 +105,10 @@ async function exportAccounts() {
       email: unit.email, address: unit.address, parentId: unit.parentId,
     })),
     accounts,
+    rosters,
   };
   fs.mkdirSync(path.dirname(seedFile), { recursive: true });
-  fs.writeFileSync(seedFile, JSON.stringify(seed, null, 2) + "\n", { mode: 0o600 });
+  fs.writeFileSync(seedFile, JSON.stringify(seed, null, 2) + "\n", { mode: 0o600, flag: "wx" });
   console.log(`[accounts] exported ${accounts.length} accounts and ${units.length} units (hashes only) to ${seedFile}`);
   console.log("[accounts] keep this file out of git; it contains credential hashes.");
 }
@@ -114,14 +123,30 @@ async function applyAccounts() {
   }
   for (const account of seed.accounts) {
     assertNoPlaintext(account, `account ${account.pno}`);
-    assertHash(account.passwordHash, `account ${account.pno}`);
-    if (!account.pno || !account.fullName || !account.mobileNumber || !account.unitId) {
+    if (account.passwordHash !== null) assertHash(account.passwordHash, `account ${account.pno}`);
+    if (!account.pno || !account.fullName || !account.unitId) {
       throw new Error(`Account ${account.pno ?? "(missing pno)"} is missing required identity fields.`);
     }
   }
 
   const units = Array.isArray(seed.units) ? seed.units : seed.accounts.map((account) => account.unit);
-  await prisma.$transaction(async (tx) => {
+  const rosters = seed.rosters ?? [];
+  if (!Array.isArray(rosters)) throw new Error("Invalid station roster seed.");
+  for (const roster of rosters) {
+    if (!/^station-roster\/[a-z0-9-]+\.json$/.test(roster.path) || !Array.isArray(roster.payload)) {
+      throw new Error("Invalid station roster seed.");
+    }
+    assertNoPlaintext(roster.payload, "station roster");
+  }
+  const applied = await prisma.$transaction(async (tx) => {
+    if (bootstrapping) {
+      const marker = "deployment/account-bootstrap.json";
+      await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(186367421)`;
+      if (await tx.importedJsonDocument.findUnique({ where: { path: marker } }) || await tx.user.count()) {
+        return false;
+      }
+      await tx.importedJsonDocument.create({ data: { path: marker, payload: { completed: true } } });
+    }
     // Parents first so PoliceUnit.parentId can reference a unit from the same seed.
     const ordered = [...units].sort((a, b) => Number(Boolean(a.parentId)) - Number(Boolean(b.parentId)));
     for (const unit of ordered) {
@@ -148,15 +173,15 @@ async function applyAccounts() {
         rank: account.rank,
         role: account.role,
         status: account.status ?? "ACTIVE",
-        mobileNumber: account.mobileNumber,
+        mobileNumber: account.mobileNumber || null,
         email: account.email ?? null,
-        passwordHash: account.passwordHash,
+        ...(account.passwordHash === null ? {} : { passwordHash: account.passwordHash }),
         unitId: account.unitId,
       };
       await tx.user.upsert({
         where: { pno: account.pno },
         update: { ...data, updatedAt: new Date() },
-        create: { id: account.id, ...data, createdAt: new Date(), updatedAt: new Date() },
+        create: { id: account.id, ...data, passwordHash: account.passwordHash ?? newUnusableHash(), createdAt: new Date(), updatedAt: new Date() },
       });
     }
 
@@ -182,9 +207,18 @@ async function applyAccounts() {
       VALUES (${STORE_PATH}, ${JSON.stringify(payload)}::jsonb)
       ON CONFLICT (path) DO UPDATE SET payload = EXCLUDED.payload
     `;
+    for (const roster of rosters) {
+      await tx.importedJsonDocument.upsert({
+        where: { path: roster.path },
+        update: { payload: roster.payload },
+        create: { path: roster.path, payload: roster.payload },
+      });
+    }
+    return true;
   }, { timeout: 30000 });
 
-  console.log(`[accounts] seeded ${seed.accounts.length} users into the User table from ${seedFile}.`);
+  if (applied) console.log(`[accounts] seeded ${seed.accounts.length} users and ${rosters.length} station rosters.`);
+  else console.log("[accounts] startup seed skipped because this database already has accounts or was bootstrapped.");
 }
 
 try {

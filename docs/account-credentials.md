@@ -30,8 +30,8 @@ operational deployments.
 
 ## Reproducible deploy seed
 
-Credentials are not committed. Export a hash-only seed from a known-good database once, keep the
-file outside git, and apply it on every fresh deployment:
+Export a private seed from a known-good database. It contains user profiles, usable
+password hashes, postings, and imported station rosters. Keep it outside git.
 
 ```powershell
 # 1. Generate the Prisma client for the target (Postgres) schema.
@@ -42,16 +42,22 @@ npm run accounts:seed:export
 # Default output: prisma/accounts-seed.json
 # Custom path:   $env:CMS_ACCOUNTS_SEED_FILE = 'C:\secure\accounts-seed.json'
 
-# 3. On the target deployment, after migrations:
+# 3. For a non-Docker deployment, after migrations:
 npm run prisma:generate
-npm run accounts:seed
+npm run accounts:seed -- --bootstrap
 ```
 
-`POSTGRES_DATABASE_URL` is required. The script refuses to run without it, validates that every
-account has a well-formed `passwordHash`, and rejects any seed containing a plaintext PIN or
-password field. It upserts `PoliceUnit` rows (parents first), upserts users by `pno`, and writes
-only non-secret profiles to `accounts-master-store.json`. Re-running it is idempotent: hashes
-from the seed are authoritative, so keep the seed encrypted and access-controlled.
+For Docker Compose, provision the seed as `accounts-seed.json` in a private
+directory on the deployment host. Set `CMS_PRIVATE_SEED_DIR` to that directory
+in the Compose environment. Startup runs migrations and imports the mounted
+seed into an empty database. Later starts skip the bootstrap, preserving
+account edits and credential resets. An existing populated database requires
+a deliberate decision about how to merge account changes.
+
+`POSTGRES_DATABASE_URL` is required. The importer rejects plaintext credentials
+and permits missing mobile numbers. Older accounts without a usable hash are
+seeded with a random, undisclosed credential. An administrator must reset that
+credential before those officers can use PIN login.
 
 The seed is ignored by git via `*accounts-seed*.json`. If you place it elsewhere, add that exact
 path to your own ignore rules or store it in a secret manager.

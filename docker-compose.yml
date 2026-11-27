@@ -15,6 +15,10 @@ services:
         required: false
     volumes:
       - 18k-cms-db:/app/prisma
+      - type: bind
+        source: ${CMS_PRIVATE_SEED_DIR:-./deploy/bootstrap}
+        target: /run/cms-bootstrap
+        read_only: true
 
   # HTTPS front door: browsers only grant microphone access inside a secure
   # context, so voice dictation needs this even on an internal test box.
