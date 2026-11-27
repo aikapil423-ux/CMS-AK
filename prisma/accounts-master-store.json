@@ -1,341 +1,604 @@
 {
   "accounts": [
     {
-      "id": "cb_udbh0j",
-      "username": "UDBH0J",
-      "pno": "UDBH0J",
-      "fullName": "AAKASH",
-      "role": "IO",
-      "roleDisplay": "Investigating Officer (IO)",
-      "rank": "Sub-Inspector",
-      "district": "Panipat",
-      "policeStation": "PS Chandni Bagh Panipat",
-      "status": "ACTIVE"
-    },
-    {
-      "id": "cb_hi3gs8",
-      "username": "HI3GS8",
-      "pno": "HI3GS8",
-      "fullName": "AJAY KUMAR",
-      "role": "IO",
-      "roleDisplay": "Investigating Officer (IO)",
-      "rank": "Head Constable",
-      "district": "Panipat",
-      "policeStation": "PS Chandni Bagh Panipat",
-      "status": "ACTIVE"
-    },
-    {
-      "id": "cb_7g161w",
-      "username": "7G161W",
-      "pno": "7G161W",
-      "fullName": "AJAY KUMAR",
+      "id": "cb_0fa7al",
+      "pno": "0FA7AL",
+      "fullName": "SUMIT",
       "role": "MHC",
-      "roleDisplay": "Moharrir Head Constable (MHC)",
-      "rank": "Head Constable",
-      "district": "Panipat",
-      "policeStation": "PS Chandni Bagh Panipat",
-      "status": "ACTIVE"
-    },
-    {
-      "id": "cb_3g3gaf",
-      "username": "3G3GAF",
-      "pno": "3G3GAF",
-      "fullName": "BALWAN SINGH",
-      "role": "IO",
-      "roleDisplay": "Investigating Officer (IO)",
-      "rank": "Sub-Inspector",
-      "district": "Panipat",
-      "policeStation": "PS Chandni Bagh Panipat",
-      "status": "ACTIVE"
-    },
-    {
-      "id": "cb_3f4l11",
-      "username": "3F4L11",
-      "pno": "3F4L11",
-      "fullName": "BIJENDER SINGH",
-      "role": "MM",
-      "roleDisplay": "MM",
       "rank": "Constable",
-      "district": "Panipat",
-      "policeStation": "PS Chandni Bagh Panipat",
-      "status": "ACTIVE"
-    },
-    {
-      "id": "cb_3e4lak",
-      "username": "3E4LAK",
-      "pno": "3E4LAK",
-      "fullName": "CHANDERPAL",
-      "role": "IO",
-      "roleDisplay": "Investigating Officer (IO)",
-      "rank": "Sub-Inspector",
-      "district": "Panipat",
-      "policeStation": "PS Chandni Bagh Panipat",
-      "status": "ACTIVE"
-    },
-    {
-      "id": "cb_3f4li2",
-      "username": "3F4LI2",
-      "pno": "3F4LI2",
-      "fullName": "DILBAG SINGH",
-      "role": "IO",
-      "roleDisplay": "Investigating Officer (IO)",
-      "rank": "Sub-Inspector",
-      "district": "Panipat",
-      "policeStation": "PS Chandni Bagh Panipat",
-      "status": "ACTIVE"
-    },
-    {
-      "id": "cb_ad9q2l",
-      "username": "AD9Q2L",
-      "pno": "AD9Q2L",
-      "fullName": "HARI OM",
-      "role": "IO",
-      "roleDisplay": "Investigating Officer (IO)",
-      "rank": "Head Constable",
-      "district": "Panipat",
-      "policeStation": "PS Chandni Bagh Panipat",
       "status": "ACTIVE"
     },
     {
       "id": "cb_1b4l1y",
-      "username": "1B4L1Y",
       "pno": "1B4L1Y",
       "fullName": "HAWA SINGH",
       "role": "IO",
-      "roleDisplay": "Investigating Officer (IO)",
       "rank": "Sub-Inspector",
-      "district": "Panipat",
-      "policeStation": "PS Chandni Bagh Panipat",
-      "status": "ACTIVE"
-    },
-    {
-      "id": "cb_kfakx1",
-      "username": "KFAKX1",
-      "pno": "KFAKX1",
-      "fullName": "JAGMANDER",
-      "role": "MHC",
-      "roleDisplay": "Moharrir Head Constable (MHC)",
-      "rank": "Constable",
-      "district": "Panipat",
-      "policeStation": "PS Chandni Bagh Panipat",
-      "status": "ACTIVE"
-    },
-    {
-      "id": "cb_8d5g0l",
-      "username": "8D5G0L",
-      "pno": "8D5G0L",
-      "fullName": "KAMLESH",
-      "role": "IO",
-      "roleDisplay": "Investigating Officer (IO)",
-      "rank": "Inspector",
-      "district": "Panipat",
-      "policeStation": "PS Chandni Bagh Panipat",
-      "status": "ACTIVE"
-    },
-    {
-      "id": "cb_si137kirpal",
-      "username": "SI137KIRPAL",
-      "pno": "SI137KIRPAL",
-      "fullName": "KIRPAL",
-      "role": "IO",
-      "roleDisplay": "Investigating Officer (IO)",
-      "rank": "Sub-Inspector",
-      "district": "Panipat",
-      "policeStation": "PS Chandni Bagh Panipat",
-      "status": "ACTIVE"
-    },
-    {
-      "id": "cb_3d4l0v",
-      "username": "3D4L0V",
-      "pno": "3D4L0V",
-      "fullName": "LAKHWINDER",
-      "role": "IO",
-      "roleDisplay": "Investigating Officer (IO)",
-      "rank": "Assistant Sub-Inspector",
-      "district": "Panipat",
-      "policeStation": "PS Chandni Bagh Panipat",
-      "status": "ACTIVE"
-    },
-    {
-      "id": "cb_eaaym0",
-      "username": "EAAYM0",
-      "pno": "EAAYM0",
-      "fullName": "MAHIPAL",
-      "role": "IO",
-      "roleDisplay": "Investigating Officer (IO)",
-      "rank": "Sub-Inspector",
-      "district": "Panipat",
-      "policeStation": "PS Chandni Bagh Panipat",
-      "status": "ACTIVE"
-    },
-    {
-      "id": "cb_5h1qgp",
-      "username": "5H1QGP",
-      "pno": "5H1QGP",
-      "fullName": "MOHKAM SINGH",
-      "role": "IO",
-      "roleDisplay": "Investigating Officer (IO)",
-      "rank": "Sub-Inspector",
-      "district": "Panipat",
-      "policeStation": "PS Chandni Bagh Panipat",
-      "status": "ACTIVE"
-    },
-    {
-      "id": "cb_cb9q5r",
-      "username": "CB9Q5R",
-      "pno": "CB9Q5R",
-      "fullName": "PAWAN KUMAR",
-      "role": "IO",
-      "roleDisplay": "Investigating Officer (IO)",
-      "rank": "Head Constable",
-      "district": "Panipat",
-      "policeStation": "PS Chandni Bagh Panipat",
-      "status": "ACTIVE"
-    },
-    {
-      "id": "cb_hhbhgl",
-      "username": "HHBHGL",
-      "pno": "HHBHGL",
-      "fullName": "RAHUL",
-      "role": "IO",
-      "roleDisplay": "Investigating Officer (IO)",
-      "rank": "Sub-Inspector",
-      "district": "Panipat",
-      "policeStation": "PS Chandni Bagh Panipat",
-      "status": "ACTIVE"
-    },
-    {
-      "id": "cb_4g2b21",
-      "username": "4G2B21",
-      "pno": "4G2B21",
-      "fullName": "RAKESH KUMAR",
-      "role": "IO",
-      "roleDisplay": "Investigating Officer (IO)",
-      "rank": "Assistant Sub-Inspector",
-      "district": "Panipat",
-      "policeStation": "PS Chandni Bagh Panipat",
       "status": "ACTIVE"
     },
     {
       "id": "cb_2c4lx0",
-      "username": "2C4LX0",
       "pno": "2C4LX0",
       "fullName": "RAVINDER SINGH",
       "role": "IO",
-      "roleDisplay": "Investigating Officer (IO)",
       "rank": "Sub-Inspector",
-      "district": "Panipat",
-      "policeStation": "PS Chandni Bagh Panipat",
       "status": "ACTIVE"
     },
     {
-      "id": "cb_5i4lhg",
-      "username": "5I4LHG",
-      "pno": "5I4LHG",
-      "fullName": "REKHA",
-      "role": "SHO",
-      "roleDisplay": "Station House Officer (SHO)",
-      "rank": "Inspector",
-      "district": "Panipat",
-      "policeStation": "PS Chandni Bagh Panipat",
-      "status": "ACTIVE"
-    },
-    {
-      "id": "cb_ca9x71",
-      "username": "CA9X71",
-      "pno": "CA9X71",
-      "fullName": "ROHIT",
+      "id": "cb_3f4li2",
+      "pno": "3F4LI2",
+      "fullName": "DILBAG SINGH",
       "role": "IO",
-      "roleDisplay": "Investigating Officer (IO)",
-      "rank": "Head Constable",
-      "district": "Panipat",
-      "policeStation": "PS Chandni Bagh Panipat",
-      "status": "ACTIVE"
-    },
-    {
-      "id": "cb_3f4l6e",
-      "username": "3F4L6E",
-      "pno": "3F4L6E",
-      "fullName": "SATENDER SINGH",
-      "role": "IO",
-      "roleDisplay": "Investigating Officer (IO)",
-      "rank": "Head Constable",
-      "district": "Panipat",
-      "policeStation": "PS Chandni Bagh Panipat",
-      "status": "ACTIVE"
-    },
-    {
-      "id": "cb_si564h",
-      "username": "SI564H",
-      "pno": "SI564H",
-      "fullName": "SATPAL SINGH",
-      "role": "IO",
-      "roleDisplay": "Investigating Officer (IO)",
       "rank": "Sub-Inspector",
-      "district": "Panipat",
-      "policeStation": "PS Chandni Bagh Panipat",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "cb_3g3gaf",
+      "pno": "3G3GAF",
+      "fullName": "BALWAN SINGH",
+      "role": "IO",
+      "rank": "Sub-Inspector",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "cb_4g2b21",
+      "pno": "4G2B21",
+      "fullName": "RAKESH KUMAR",
+      "role": "IO",
+      "rank": "Assistant Sub-Inspector",
       "status": "ACTIVE"
     },
     {
       "id": "cb_5i4lc3",
-      "username": "5I4LC3",
       "pno": "5I4LC3",
       "fullName": "SATPAL SINGH",
       "role": "IO",
-      "roleDisplay": "Investigating Officer (IO)",
       "rank": "Sub-Inspector",
-      "district": "Panipat",
-      "policeStation": "PS Chandni Bagh Panipat",
       "status": "ACTIVE"
     },
     {
-      "id": "cb_df3glm",
-      "username": "DF3GLM",
-      "pno": "DF3GLM",
-      "fullName": "SENU RANI",
-      "role": "IO",
-      "roleDisplay": "Investigating Officer (IO)",
-      "rank": "Assistant Sub-Inspector",
-      "district": "Panipat",
-      "policeStation": "PS Chandni Bagh Panipat",
+      "id": "cb_5i4lhg",
+      "pno": "5I4LHG",
+      "fullName": "REKHA",
+      "role": "SHO",
+      "rank": "Inspector",
       "status": "ACTIVE"
     },
     {
-      "id": "cb_0fa7al",
-      "username": "0FA7AL",
-      "pno": "0FA7AL",
-      "fullName": "SUMIT",
+      "id": "cb_kfakx1",
+      "pno": "KFAKX1",
+      "fullName": "JAGMANDER",
       "role": "MHC",
-      "roleDisplay": "Moharrir Head Constable (MHC)",
       "rank": "Constable",
-      "district": "Panipat",
-      "policeStation": "PS Chandni Bagh Panipat",
       "status": "ACTIVE"
     },
     {
-      "id": "cb_4g2biu",
-      "username": "4G2BIU",
-      "pno": "4G2BIU",
-      "fullName": "SUNIL KUMAR",
+      "id": "cb_udbh0j",
+      "pno": "UDBH0J",
+      "fullName": "AAKASH",
       "role": "IO",
-      "roleDisplay": "Investigating Officer (IO)",
-      "rank": "Head Constable",
-      "district": "Panipat",
-      "policeStation": "PS Chandni Bagh Panipat",
+      "rank": "Sub-Inspector",
       "status": "ACTIVE"
     },
     {
-      "id": "cb_5c16f6",
-      "username": "5C16F6",
+      "id": "usr_0008cf20",
+      "pno": "SI564H",
+      "fullName": "SATPAL SINGH",
+      "role": "IO",
+      "rank": "Sub-Inspector",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_0180e2de",
+      "pno": "4F1AFR",
+      "fullName": "SUNIL KUMAR",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "ASSISTANT_SUB_INSPECTOR",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_036d1f86",
+      "pno": "5E1A9O",
+      "fullName": "NAVEEN KUMAR",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "HEAD_CONSTABLE",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_0521fc28",
+      "pno": "6D0188",
+      "fullName": "SANJAY",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "ASSISTANT_SUB_INSPECTOR",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_08e34b3d",
+      "pno": "3E4LAK",
+      "fullName": "CHANDERPAL",
+      "role": "IO",
+      "rank": "Sub-Inspector",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_09c743b8",
+      "pno": "HABH6K",
+      "fullName": "DEEPAK CHAHAL",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "SUB_INSPECTOR",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_0aaaf69e",
+      "pno": "JI9QP2",
+      "fullName": "RAVIT RAMAN",
+      "role": "MHC_GD_INCHARGE",
+      "rank": "HEAD_CONSTABLE",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_0df678f9",
+      "pno": "EFAYF2",
+      "fullName": "AJAY KUMAR",
+      "role": "SHO",
+      "rank": "SUB_INSPECTOR",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_178c0dfe",
+      "pno": "3E4L7W",
+      "fullName": "RAJ KUMAR",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "HEAD_CONSTABLE",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_19d88aed",
+      "pno": "SA9W5F",
+      "fullName": "KULDEEP SINGH",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "HEAD_CONSTABLE",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_1a774f59",
+      "pno": "1B4LD4",
+      "fullName": "SUNITA",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "ASSISTANT_SUB_INSPECTOR",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_20ff566e",
+      "pno": "QG9GCK",
+      "fullName": "SUBHASH",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "HEAD_CONSTABLE",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_21c25859",
+      "pno": "3A4LOA",
+      "fullName": "SUMAN DEVI",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "HEAD_CONSTABLE",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_267607f0",
+      "pno": "OH9GDB",
+      "fullName": "NAVEEN KUMAR",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "HEAD_CONSTABLE",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_30514214",
+      "pno": "9A4VXL",
+      "fullName": "PUNEET",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "ASSISTANT_SUB_INSPECTOR",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_38afd7df",
+      "pno": "9H3G6L",
+      "fullName": "VIRENDER SINGH",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "ASSISTANT_SUB_INSPECTOR",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_3c04221f",
+      "pno": "3F4L6E",
+      "fullName": "SATENDER SINGH",
+      "role": "IO",
+      "rank": "Head Constable",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_3d051060",
+      "pno": "5F4LJH",
+      "fullName": "RAKESH",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "ASSISTANT_SUB_INSPECTOR",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_3ef971b0",
+      "pno": "9D9G79",
+      "fullName": "NAVEEN MALIK",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "HEAD_CONSTABLE",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_42270646",
+      "pno": "3D4L7X",
+      "fullName": "SANDEEP KUMAR",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "HEAD_CONSTABLE",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_5025ced1",
+      "pno": "7G161W",
+      "fullName": "AJAY KUMAR",
+      "role": "MHC",
+      "rank": "Head Constable",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_52e41a54",
       "pno": "5C16F6",
       "fullName": "WAZIR KUMAR",
       "role": "IO",
-      "roleDisplay": "Investigating Officer (IO)",
       "rank": "Head Constable",
-      "district": "Panipat",
-      "policeStation": "PS Chandni Bagh Panipat",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_5492280e",
+      "pno": "3E4LHV",
+      "fullName": "NARENDER KUMAR",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "ASSISTANT_SUB_INSPECTOR",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_5b74bb71",
+      "pno": "3G4L37",
+      "fullName": "JITENDER KUMAR",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "SUB_INSPECTOR",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_5b7b0f67",
+      "pno": "5A2VVB",
+      "fullName": "SACHIN KUMAR",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "SUB_INSPECTOR",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_5c885675",
+      "pno": "DG3G0O",
+      "fullName": "AGARSAIN",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "HEAD_CONSTABLE",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_64479420",
+      "pno": "CB9Q5R",
+      "fullName": "PAWAN KUMAR",
+      "role": "IO",
+      "rank": "Head Constable",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_6601c394",
+      "pno": "7D5GK2",
+      "fullName": "RAJBIR",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "ASSISTANT_SUB_INSPECTOR",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_67291ddc",
+      "pno": "5H1QGP",
+      "fullName": "MOHKAM SINGH",
+      "role": "IO",
+      "rank": "Sub-Inspector",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_6b34097a",
+      "pno": "3E4L39",
+      "fullName": "SUBHASH KUMAR",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "SUB_INSPECTOR",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_6c21b74e",
+      "pno": "3F4LM7",
+      "fullName": "HAPPY",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "ASSISTANT_SUB_INSPECTOR",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_6e74464f",
+      "pno": "DF3GLM",
+      "fullName": "SENU RANI",
+      "role": "IO",
+      "rank": "Assistant Sub-Inspector",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_709b5034",
+      "pno": "7A01KG",
+      "fullName": "PARVEEN KUMAR",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "ASSISTANT_SUB_INSPECTOR",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_70b9d68e",
+      "pno": "EAAYE8",
+      "fullName": "SOURABH SHARMA",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "SUB_INSPECTOR",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_791d76d5",
+      "pno": "SI137KIRPAL",
+      "fullName": "KIRPAL",
+      "role": "IO",
+      "rank": "Sub-Inspector",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_7b86e79a",
+      "pno": "HHBHJ9",
+      "fullName": "ROBIN NAIN",
+      "role": "SHO",
+      "rank": "SUB_INSPECTOR",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_83f9dd60",
+      "pno": "EAAYM0",
+      "fullName": "MAHIPAL",
+      "role": "IO",
+      "rank": "Sub-Inspector",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_8ec5cd9b",
+      "pno": "CA9X71",
+      "fullName": "ROHIT",
+      "role": "IO",
+      "rank": "Head Constable",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_98006793",
+      "pno": "BA21N7",
+      "fullName": "DEEPAK",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "ASSISTANT_SUB_INSPECTOR",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_989c56f6",
+      "pno": "BI4BBQ",
+      "fullName": "SURENDER SINGH",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "ASSISTANT_SUB_INSPECTOR",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_9dfe5fc1",
+      "pno": "3C4L5I",
+      "fullName": "MONINDER SINGH",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "HEAD_CONSTABLE",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_9e924a85",
+      "pno": "3F4L11",
+      "fullName": "BIJENDER SINGH",
+      "role": "MM",
+      "rank": "Constable",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_9f81728f",
+      "pno": "3D4L0V",
+      "fullName": "LAKHWINDER",
+      "role": "IO",
+      "rank": "Assistant Sub-Inspector",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_a2361391",
+      "pno": "HFBH7E",
+      "fullName": "SOMVIR",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "SUB_INSPECTOR",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_a3793330",
+      "pno": "AD9Q2L",
+      "fullName": "HARI OM",
+      "role": "IO",
+      "rank": "Head Constable",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_a458fd3f",
+      "pno": "HHBHGL",
+      "fullName": "RAHUL",
+      "role": "IO",
+      "rank": "Sub-Inspector",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_b3138dd4",
+      "pno": "AH0BSF",
+      "fullName": "VINOD KUMAR",
+      "role": "MM",
+      "rank": "HEAD_CONSTABLE",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_b5076d27",
+      "pno": "5G4L08",
+      "fullName": "JOGINDER SINGH",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "ASSISTANT_SUB_INSPECTOR",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_c032b392",
+      "pno": "9D3G8N",
+      "fullName": "VED SINGH",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "ASSISTANT_SUB_INSPECTOR",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_c794c124",
+      "pno": "4G2BIU",
+      "fullName": "SUNIL KUMAR",
+      "role": "IO",
+      "rank": "Head Constable",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_c7e657d9",
+      "pno": "2C4LFI",
+      "fullName": "SUKHRAM PAL",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "HEAD_CONSTABLE",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_c8e33799",
+      "pno": "5F3QBL",
+      "fullName": "SEEMA",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "ASSISTANT_SUB_INSPECTOR",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_cd9a9f2c",
+      "pno": "JEAX7P",
+      "fullName": "DEEPAK DAHIYA",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "SUB_INSPECTOR",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_cfac1920",
+      "pno": "DI21UH",
+      "fullName": "SONU DESWAL",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "HEAD_CONSTABLE",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_cfe2a32d",
+      "pno": "5A2L7I",
+      "fullName": "LALITA",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "HEAD_CONSTABLE",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_cfe75d4a",
+      "pno": "9F9GHX",
+      "fullName": "JOGINDER SINGH",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "HEAD_CONSTABLE",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_d139afa8",
+      "pno": "HI3GS8",
+      "fullName": "AJAY KUMAR",
+      "role": "IO",
+      "rank": "Head Constable",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_dcadfc7d",
+      "pno": "3H4LKP",
+      "fullName": "SHUKENDER SINGH",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "ASSISTANT_SUB_INSPECTOR",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_e316303f",
+      "pno": "3F4LHU",
+      "fullName": "BALJIT SINGH",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "SUB_INSPECTOR",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_e3be1835",
+      "pno": "9C5GPW",
+      "fullName": "SANJAY",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "HEAD_CONSTABLE",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_ea311a82",
+      "pno": "3F4L56",
+      "fullName": "RAJINDER SINGH",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "ASSISTANT_SUB_INSPECTOR",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_f50880c4",
+      "pno": "3C4LIN",
+      "fullName": "SUNIL KUMAR",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "ASSISTANT_SUB_INSPECTOR",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_f749804b",
+      "pno": "8C9WT0",
+      "fullName": "RISHI PARKASH",
+      "role": "ENQUIRY_OFFICER",
+      "rank": "ASSISTANT_SUB_INSPECTOR",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_fe2c0df0",
+      "pno": "8D5G0L",
+      "fullName": "KAMLESH",
+      "role": "IO",
+      "rank": "Inspector",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "usr_ff93e2fe",
+      "pno": "3H3GVK",
+      "fullName": "RAVINDER",
+      "role": "MHC_GD_INCHARGE",
+      "rank": "CONSTABLE",
       "status": "ACTIVE"
     }
-  ],
-  "updatedAt": "2026-11-26T12:49:04.960Z"
+  ]
 }
